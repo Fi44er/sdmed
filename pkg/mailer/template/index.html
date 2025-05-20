@@ -1,0 +1,89 @@
+<html>
+  <head>
+    <title>Registration Confirmation</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f8f8;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .container {
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 90%;
+        max-width: 400px;
+        text-align: center;
+        padding: 20px;
+      }
+      .image-container {
+        margin-bottom: 20px;
+        box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+      }
+      .image-container img {
+        width: 100%;
+        border-radius: 10px;
+      }
+      .code-container {
+        background-color: #1cc4b7;
+        color: #ffffff;
+        font-size: 24px;
+        font-weight: bold;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .footer-text {
+        color: #000000;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+      .info-text {
+        color: #888888;
+        margin-bottom: 20px;
+      }
+      .info-text-container {
+        margin-bottom: 20px;
+        padding: 20px;
+        box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="image-container">
+        <img
+          alt="Illustration of a person pushing another person in a wheelchair"
+          height="200"
+          src="https://i.postimg.cc/Wb8x2rkv/img.png"
+          width="400"
+        />
+      </div>
+      <div class="info-text-container">
+        <div class="info-text">
+          <h3>Вы зарегистрировались на сайте Sdmedik.</h3>
+          <br />
+          Ваш код для подтверждения регистрации:
+        </div>
+        <div class="code-container">{{.Code}}</div>
+        <div class="info-text">Код действует в течение 5 минут</div>
+      </div>
+      <div class="footer-text">
+        Спасибо за регистрацию,
+        <br />
+        команда Sdmedik
+      </div>
+    </div>
+  </body>
+</html>
