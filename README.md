@@ -8,8 +8,8 @@
 - [Docker compose](https://www.npmjs.com/) (версия 2.x. или выше)
 
 ```bash
-git clone https://github.com/Fi44er/sdmed.git
-cd ./sdmed
+git clone https://github.com/Fi44er/sdmedik.git
+cd ./sdmedik/backend
    ```
 ## Запуск
 

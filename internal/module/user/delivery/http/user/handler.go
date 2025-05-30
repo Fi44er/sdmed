@@ -11,6 +11,7 @@ import (
 	"github.com/Fi44er/sdmedik/backend/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 type IUserUsecase interface {
@@ -100,6 +101,7 @@ func (h *UserHandler) GetByID(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.Response "Error"
 // @Router /users [get]
 func (h *UserHandler) GetAll(ctx *fiber.Ctx) error {
+	log.Info("test")
 	offset := ctx.QueryInt("offset")
 	limit := ctx.QueryInt("limit")
 

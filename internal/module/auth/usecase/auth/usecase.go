@@ -1,4 +1,4 @@
-package auth
+package usecase
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/Fi44er/sdmedik/backend/internal/module/auth/dto"
 	"github.com/Fi44er/sdmedik/backend/internal/module/auth/entity"
 	"github.com/Fi44er/sdmedik/backend/internal/module/auth/pkg/constant"
+	"github.com/Fi44er/sdmedik/backend/internal/module/notification/service"
 	"github.com/Fi44er/sdmedik/backend/pkg/logger"
-	"github.com/Fi44er/sdmedik/backend/pkg/mailer"
 	"github.com/Fi44er/sdmedik/backend/pkg/utils"
 )
 
@@ -27,11 +27,11 @@ type ICache interface {
 }
 
 type AuthUsecase struct {
-	logger      *logger.Logger
-	cache       ICache
-	config      *config.Config
-	mailer      *mailer.Mailer
-	userUsecase IUserUsecase
+	logger         *logger.Logger
+	cache          ICache
+	config         *config.Config
+	userUsecase    IUserUsecase
+	notifyerServce *service.NotificationService
 }
 
 func NewAuthUsecase(
@@ -39,25 +39,14 @@ func NewAuthUsecase(
 	cache ICache,
 	config *config.Config,
 	userUsecase IUserUsecase,
+	notificationService *service.NotificationService,
 ) *AuthUsecase {
-	templatePath := config.SMTPTemplatePath
-	m, err := mailer.NewMailer(
-		"", "", "", "", // Пароль от почты
-		templatePath+"index.html", // Путь к шаблону
-		5,                         // Размер пула соединений
-	)
-
-	if err != nil {
-		logger.Fatalf("Failed to initialize mailer: %v", err)
-		return nil
-	}
-
 	return &AuthUsecase{
-		logger:      logger,
-		config:      config,
-		cache:       cache,
-		mailer:      m,
-		userUsecase: userUsecase,
+		logger:         logger,
+		config:         config,
+		cache:          cache,
+		userUsecase:    userUsecase,
+		notifyerServce: notificationService,
 	}
 }
 
@@ -110,7 +99,7 @@ func (s *AuthUsecase) VerifyCode(ctx context.Context, data *dto.VerifyCodeDTO) e
 		return err
 	}
 
-	var tempUser dto.RegisterDTO
+	var tempUser dto.SignUpDTO
 	if err := s.cache.Get(ctx, UserRedisPrefix+hashEmail, &tempUser); err != nil {
 		return err
 	}
@@ -125,7 +114,11 @@ func (s *AuthUsecase) SignUp(ctx context.Context, entity *entity.User) error {
 	}
 
 	user, err := s.userUsecase.GetByEmail(ctx, entity.Email)
-	if err != nil || user != nil {
+	if err != nil {
+
+	}
+
+	if user != nil {
 		return constant.ErrUserAlreadyExists
 	}
 
@@ -150,7 +143,7 @@ func (s *AuthUsecase) SendCode(ctx context.Context, email string) error {
 		return err
 	}
 
-	var tempUser dto.RegisterDTO
+	var tempUser dto.SignUpDTO
 	if err := s.cache.Get(ctx, UserRedisPrefix+hashEmail, &tempUser); err != nil {
 		return constant.ErrUnprocessableEntity
 	}
@@ -159,14 +152,23 @@ func (s *AuthUsecase) SendCode(ctx context.Context, email string) error {
 		return err
 	}
 
-	templateData := struct{ Code string }{Code: code}
+	date := time.Now().Format("2006")
+	templateData := struct {
+		VerifyCode string
+		Date       string
+	}{
+		VerifyCode: code,
+		Date:       date,
+	}
 
-	s.mailer.SendMailAsync(
-		s.config.SMTPFrom,
-		email,
-		"Код подтверждения регистрации",
-		templateData,
-	)
+	msg := &service.Message{
+		Recipient:    email,
+		Subject:      "Код подтверждения регистрации",
+		Data:         templateData,
+		TemplatePath: "./internal/module/auth/pkg/template/verify_code.html",
+	}
+
+	s.notifyerServce.Send(msg, "smtp")
 
 	s.logger.Info(code)
 	return nil

@@ -8,15 +8,16 @@ import (
 )
 
 type Message struct {
-	Recipient string
-	Subject   string
-	Content   string
-	Data      interface{}
-	Timestamp time.Time
+	Recipient    string
+	Subject      string
+	Content      string
+	TemplatePath string
+	Data         interface{}
+	Timestamp    time.Time
 }
 
 type Notifier interface {
-	Send(msg *Message) error
+	Send(msg *Message)
 }
 
 type NotificationService struct {
@@ -24,9 +25,10 @@ type NotificationService struct {
 	logger    *logger.Logger
 }
 
-func NewNotificationService(notifiers map[string]Notifier) *NotificationService {
+func NewNotificationService(notifiers map[string]Notifier, logger *logger.Logger) *NotificationService {
 	return &NotificationService{
 		notifiers: notifiers,
+		logger:    logger,
 	}
 }
 
@@ -34,9 +36,7 @@ func (ns *NotificationService) Send(msg *Message, selectedNotifiers ...string) e
 	var errors []error
 	for _, notifier := range selectedNotifiers {
 		if notifier, ok := ns.notifiers[notifier]; ok {
-			if err := notifier.Send(msg); err != nil {
-				errors = append(errors, err)
-			}
+			notifier.Send(msg)
 		}
 	}
 	if len(errors) > 0 {
