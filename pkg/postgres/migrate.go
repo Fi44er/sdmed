@@ -18,6 +18,7 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 
 		log.Info("📦 Creating types...")
 
+		db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 		if err := db.Exec("CREATE SCHEMA IF NOT EXISTS \"user_module\"").Error; err != nil {
 			return err
 		}

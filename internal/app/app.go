@@ -14,7 +14,6 @@ import (
 	"github.com/Fi44er/sdmedik/backend/pkg/session"
 	sessionadapter "github.com/Fi44er/sdmedik/backend/pkg/session/adapters"
 	sessionstore "github.com/Fi44er/sdmedik/backend/pkg/session/store"
-	eventBus "github.com/asaskevich/EventBus"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -36,8 +35,6 @@ type App struct {
 
 	redisManager   redisConnect.IRedisManager
 	sessionManager *session.SessionManager
-
-	eventbus *EventBus
 
 	moduleProvider *moduleProvider
 
@@ -86,7 +83,6 @@ func (app *App) initDeps() error {
 		app.initValidator,
 		app.initModuleProvider,
 		app.initRouter,
-		app.initEventBus,
 	}
 	for _, init := range inits {
 		err := init()
@@ -181,13 +177,6 @@ func (app *App) initSessionManager() error {
 	return nil
 }
 
-func (app *App) initEventBus() error {
-	if app.eventbus == nil {
-		app.eventbus = eventBus.New()
-	}
-	return nil
-}
-
 func (app *App) initModuleProvider() error {
 	err := error(nil)
 	app.moduleProvider, err = NewModuleProvider(app)
@@ -223,5 +212,6 @@ func (app *App) initRouter() error {
 	api := app.app.Group("/api")
 
 	app.moduleProvider.userModule.InitDelivery(api)
+	app.moduleProvider.authModule.InitDelivery(api)
 	return nil
 }

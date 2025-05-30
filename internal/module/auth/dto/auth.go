@@ -1,6 +1,6 @@
 package dto
 
-type LoginDTO struct {
+type SignInDTO struct {
 	Email     string `json:"email" validate:"required"`
 	Password  string `json:"password" validate:"required"`
 	UserAgent string `json:"user_agent"`
@@ -21,7 +21,7 @@ type RefreshTokenDTO struct {
 	UserAgent    string `json:"user_agent"`
 }
 
-type RegisterDTO struct {
+type SignUpDTO struct {
 	Email       string `json:"email" validate:"required,email"`
 	Password    string `json:"password" validate:"required"`
 	FIO         string `json:"fio" validate:"required"`

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Подтверждение email</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background-color: #e6f0ee;
+        color: #333333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: linear-gradient(180deg, #ffffff 0%, #f0fafa 100%);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      }
+      .header {
+        background-color: #48c8bc;
+        padding: 30px 20px;
+        text-align: center;
+        position: relative;
+      }
+      .header img {
+        max-width: 150px;
+        height: auto;
+      }
+      .header h1 {
+        margin: 10px 0 0;
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .content {
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .content h2 {
+        font-size: 24px;
+        font-weight: 500;
+        color: #2a7a71;
+        margin-bottom: 15px;
+      }
+      .content p {
+        font-size: 16px;
+        line-height: 1.5;
+        color: #555555;
+        margin: 0 0 20px;
+      }
+      .code-container {
+        background-color: #e6f0ee;
+        border: 2px dashed #48c8bc;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 20px 0;
+        display: inline-block;
+      }
+      .code {
+        font-size: 28px;
+        font-weight: bold;
+        color: #48c8bc;
+        letter-spacing: 4px;
+        text-align: center;
+      }
+      .button {
+        display: inline-block;
+        background-color: #48c8bc;
+        color: #ffffff;
+        padding: 14px 30px;
+        text-decoration: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        transition:
+          background-color 0.3s ease,
+          transform 0.2s ease;
+        box-shadow: 0 4px 10px rgba(72, 200, 188, 0.3);
+      }
+      .button:hover {
+        background-color: #36a99e;
+        transform: translateY(-2px);
+      }
+      .warning {
+        font-size: 14px;
+        color: #777777;
+        margin-top: 20px;
+      }
+      .footer {
+        background-color: #2a7a71;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #ffffff;
+      }
+      .footer a {
+        color: #b0e6de;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+      @media only screen and (max-width: 600px) {
+        .container {
+          margin: 10px;
+          border-radius: 8px;
+        }
+        .header h1 {
+          font-size: 22px;
+        }
+        .content h2 {
+          font-size: 20px;
+        }
+        .code {
+          font-size: 24px;
+          letter-spacing: 3px;
+        }
+        .button {
+          padding: 12px 25px;
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Добро пожаловать!</h1>
+      </div>
+      <div class="content">
+        <h2>Подтвердите ваш email</h2>
+        <p>
+          Спасибо, что выбрали наш магазин медицинских товаров! Чтобы завершить
+          регистрацию, используйте код ниже:
+        </p>
+        <div class="code-container">
+          <div class="code">{{.VerifyCode}}</div>
+        </div>
+        <p>
+          Введите этот код на нашем сайте, чтобы подтвердить ваш email и
+          получить доступ к вашим заказам.
+        </p>
+        <a href="https://yourwebsite.com/verify" class="button"
+          >Подтвердить сейчас</a
+        >
+        <p class="warning">
+          Если вы не регистрировались, просто проигнорируйте это письмо.
+        </p>
+      </div>
+      <div class="footer">
+        <p>
+          © {{.Date}} Ваш медицинский магазин. Все права защищены.<br />
+          <a href="https://yourwebsite.com">Посетите наш сайт</a> |
+          <a href="mailto:support@yourwebsite.com">Связаться с поддержкой</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,4 +1,4 @@
-package user
+package module
 
 import (
 	user_handler "github.com/Fi44er/sdmedik/backend/internal/module/user/delivery/http/user"
@@ -13,7 +13,7 @@ import (
 
 type UserModule struct {
 	userRepository *user_repository.UserRepository
-	userUsecase    *user_usecase.UserUsecase
+	UserUsecase    *user_usecase.UserUsecase
 	userHandler    *user_handler.UserHandler
 
 	logger    *logger.Logger
@@ -35,8 +35,8 @@ func NewUserModule(
 
 func (m *UserModule) Init() {
 	m.userRepository = user_repository.NewUserRepository(m.logger, m.db)
-	m.userUsecase = user_usecase.NewUserUsecase(m.userRepository, m.logger)
-	m.userHandler = user_handler.NewUserHandler(m.userUsecase, m.logger, m.validator)
+	m.UserUsecase = user_usecase.NewUserUsecase(m.userRepository, m.logger)
+	m.userHandler = user_handler.NewUserHandler(m.UserUsecase, m.logger, m.validator)
 }
 
 func (m *UserModule) InitDelivery(router fiber.Router) {

@@ -10,7 +10,7 @@ import (
 )
 
 type FileModule struct {
-	fileRepository *repository.FIleRepository
+	fileRepository *repository.FileRepository
 	fileStorage    *filesystem.LocalFileStorage
 	fileUsecase    *usecase.FileUsecase
 

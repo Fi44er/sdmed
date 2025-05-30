@@ -1,6 +1,7 @@
 package app
 
 import (
+	auth_module "github.com/Fi44er/sdmedik/backend/internal/module/auth"
 	notification_module "github.com/Fi44er/sdmedik/backend/internal/module/notification"
 	user_module "github.com/Fi44er/sdmedik/backend/internal/module/user"
 )
@@ -10,6 +11,7 @@ type moduleProvider struct {
 
 	userModule         *user_module.UserModule
 	notificationModule *notification_module.NotificationModule
+	authModule         *auth_module.AuthModule
 }
 
 func NewModuleProvider(app *App) (*moduleProvider, error) {
@@ -28,6 +30,7 @@ func (p *moduleProvider) initDeps() error {
 	inits := []func() error{
 		p.UserModule,
 		p.NotificationModule,
+		p.AuthModule,
 	}
 	for _, init := range inits {
 		err := init()
@@ -48,5 +51,19 @@ func (p *moduleProvider) UserModule() error {
 func (p *moduleProvider) NotificationModule() error {
 	p.notificationModule = notification_module.NewNotificationModule(p.app.logger, p.app.config)
 	p.notificationModule.Init()
+	return nil
+}
+
+func (p *moduleProvider) AuthModule() error {
+	p.authModule = auth_module.NewAuthModule(
+		p.app.logger,
+		p.app.validator,
+		p.app.db,
+		p.app.redisManager,
+		p.app.config,
+		p.userModule.UserUsecase,
+		p.notificationModule.Service,
+	)
+	p.authModule.Init()
 	return nil
 }

@@ -1,4 +1,4 @@
-package notification
+package module
 
 import (
 	"github.com/Fi44er/sdmedik/backend/internal/config"
@@ -11,7 +11,7 @@ type NotificationModule struct {
 	logger *logger.Logger
 	config *config.Config
 
-	service *service.NotificationService
+	Service *service.NotificationService
 }
 
 func NewNotificationModule(logger *logger.Logger, config *config.Config) *NotificationModule {
@@ -27,7 +27,6 @@ func (m *NotificationModule) Init() error {
 		m.config.SMTPPort,
 		m.config.SMTPFrom,
 		m.config.SMTPPassword,
-		m.config.SMTPTemplatePath+"index.html",
 		5,
 	)
 
@@ -39,7 +38,7 @@ func (m *NotificationModule) Init() error {
 		"smtp": smtp,
 	}
 
-	m.service = service.NewNotificationService(notifiers)
+	m.Service = service.NewNotificationService(notifiers, m.logger)
 
 	return nil
 }
