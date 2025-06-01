@@ -8,7 +8,7 @@ import (
 	"net/smtp"
 	"time"
 
-	"github.com/Fi44er/sdmedik/backend/internal/module/notification/service"
+	"github.com/Fi44er/sdmed/internal/module/notification/service"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/jordan-wright/email"
 )
@@ -42,7 +42,6 @@ func (n *SMTPNotifier) Send(msg *service.Message) {
 			log.Infof("Error sending email to: %v", err)
 		}
 	}()
-
 }
 
 func (n *SMTPNotifier) send(msg *service.Message) error {

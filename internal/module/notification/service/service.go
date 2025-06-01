@@ -1,10 +1,9 @@
 package service
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
 type Message struct {
@@ -32,16 +31,10 @@ func NewNotificationService(notifiers map[string]Notifier, logger *logger.Logger
 	}
 }
 
-func (ns *NotificationService) Send(msg *Message, selectedNotifiers ...string) error {
-	var errors []error
+func (ns *NotificationService) Send(msg *Message, selectedNotifiers ...string) {
 	for _, notifier := range selectedNotifiers {
 		if notifier, ok := ns.notifiers[notifier]; ok {
 			notifier.Send(msg)
 		}
 	}
-	if len(errors) > 0 {
-		ns.logger.Errorf("ошибки при отправке: %v", errors)
-		return fmt.Errorf("ошибки при отправке: %v", errors)
-	}
-	return nil
 }

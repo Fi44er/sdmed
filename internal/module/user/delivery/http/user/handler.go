@@ -3,12 +3,12 @@ package http
 import (
 	"context"
 
-	"github.com/Fi44er/sdmedik/backend/internal/module/user/dto"
-	"github.com/Fi44er/sdmedik/backend/internal/module/user/entity"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
-	_ "github.com/Fi44er/sdmedik/backend/pkg/response"
-	"github.com/Fi44er/sdmedik/backend/pkg/session"
-	"github.com/Fi44er/sdmedik/backend/pkg/utils"
+	"github.com/Fi44er/sdmed/internal/module/user/dto"
+	"github.com/Fi44er/sdmed/internal/module/user/entity"
+	"github.com/Fi44er/sdmed/pkg/logger"
+	_ "github.com/Fi44er/sdmed/pkg/response"
+	"github.com/Fi44er/sdmed/pkg/session"
+	"github.com/Fi44er/sdmed/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"

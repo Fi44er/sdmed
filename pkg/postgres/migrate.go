@@ -1,8 +1,8 @@
 package postgres
 
 import (
-	"github.com/Fi44er/sdmedik/backend/internal/module/user/infrastructure/repository/model"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
+	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
 )
 

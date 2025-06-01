@@ -1,8 +1,8 @@
 package http
 
 import (
-	"github.com/Fi44er/sdmedik/backend/internal/module/user/dto"
-	"github.com/Fi44er/sdmedik/backend/internal/module/user/entity"
+	"github.com/Fi44er/sdmed/internal/module/user/dto"
+	"github.com/Fi44er/sdmed/internal/module/user/entity"
 )
 
 type Converter struct{}

@@ -1,9 +1,9 @@
 package app
 
 import (
-	auth_module "github.com/Fi44er/sdmedik/backend/internal/module/auth"
-	notification_module "github.com/Fi44er/sdmedik/backend/internal/module/notification"
-	user_module "github.com/Fi44er/sdmedik/backend/internal/module/user"
+	auth_module "github.com/Fi44er/sdmed/internal/module/auth"
+	notification_module "github.com/Fi44er/sdmed/internal/module/notification"
+	user_module "github.com/Fi44er/sdmed/internal/module/user"
 )
 
 type moduleProvider struct {

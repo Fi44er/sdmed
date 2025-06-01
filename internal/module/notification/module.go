@@ -1,10 +1,10 @@
 package module
 
 import (
-	"github.com/Fi44er/sdmedik/backend/internal/config"
-	"github.com/Fi44er/sdmedik/backend/internal/module/notification/service"
-	"github.com/Fi44er/sdmedik/backend/internal/module/notification/service/smtp"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/internal/config"
+	"github.com/Fi44er/sdmed/internal/module/notification/service"
+	"github.com/Fi44er/sdmed/internal/module/notification/service/smtp"
+	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
 type NotificationModule struct {

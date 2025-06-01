@@ -1,12 +1,12 @@
 package module
 
 import (
-	user_handler "github.com/Fi44er/sdmedik/backend/internal/module/user/delivery/http/user"
-	user_repository "github.com/Fi44er/sdmedik/backend/internal/module/user/infrastructure/repository/user"
-	user_usecase "github.com/Fi44er/sdmedik/backend/internal/module/user/usecase/user"
+	user_handler "github.com/Fi44er/sdmed/internal/module/user/delivery/http/user"
+	user_repository "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/user"
+	user_usecase "github.com/Fi44er/sdmed/internal/module/user/usecase/user"
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
 )

@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/Fi44er/sdmedik/backend/internal/module/file/entity"
-	"github.com/Fi44er/sdmedik/backend/internal/module/file/infrastucture/repository/model"
+	"github.com/Fi44er/sdmed/internal/module/file/entity"
+	"github.com/Fi44er/sdmed/internal/module/file/infrastucture/repository/model"
 )
 
 type Converter struct{}

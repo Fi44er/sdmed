@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	customa_err "github.com/Fi44er/sdmedik/backend/pkg/customerr"
+	customa_err "github.com/Fi44er/sdmed/pkg/customerr"
 	"github.com/gofiber/fiber/v2"
 )
 

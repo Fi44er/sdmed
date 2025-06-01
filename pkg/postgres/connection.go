@@ -3,7 +3,7 @@ package postgres
 import (
 	"time"
 
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/driver/postgres"
 
 	"gorm.io/gorm"

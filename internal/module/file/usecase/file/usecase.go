@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
-	"github.com/Fi44er/sdmedik/backend/internal/module/file/dto"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/internal/module/file/dto"
+	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
 type IFileRepository interface{}

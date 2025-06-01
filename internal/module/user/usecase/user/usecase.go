@@ -3,9 +3,9 @@ package usecase
 import (
 	"context"
 
-	"github.com/Fi44er/sdmedik/backend/internal/module/user/entity"
-	"github.com/Fi44er/sdmedik/backend/internal/module/user/pkg/constant"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/internal/module/user/entity"
+	"github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
+	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
 type IUserRepository interface {
@@ -32,76 +32,69 @@ func NewUserUsecase(
 	}
 }
 
-// === Query === //
-
-func (s *UserUsecase) GetAll(ctx context.Context, limit, offset int) ([]entity.User, error) {
-	users, err := s.repository.GetAll(ctx, limit, offset)
+func (u *UserUsecase) GetAll(ctx context.Context, limit, offset int) ([]entity.User, error) {
+	users, err := u.repository.GetAll(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(users) == 0 {
-		s.logger.Infof("No users found")
+		u.logger.Infof("No users found")
 		return nil, constant.ErrUserNotFound
 	}
 
 	return users, nil
 }
 
-func (s *UserUsecase) GetByID(ctx context.Context, id string) (*entity.User, error) {
-	user, err := s.repository.GetByID(ctx, id)
+func (u *UserUsecase) GetByID(ctx context.Context, id string) (*entity.User, error) {
+	user, err := u.repository.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
 	if user == nil {
-		s.logger.Infof("User with id %s not found", id)
+		u.logger.Infof("User with id %s not found", id)
 		return nil, constant.ErrUserNotFound
 	}
 
 	return user, nil
 }
 
-func (s *UserUsecase) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
-	user, err := s.repository.GetByEmail(ctx, email)
+func (u *UserUsecase) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
+	user, err := u.repository.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, err
 	}
 
 	if user == nil {
-		s.logger.Infof("User with email %s not found", email)
+		u.logger.Infof("User with email %s not found", email)
 		return nil, constant.ErrUserNotFound
 	}
 
 	return user, nil
 }
 
-// === Mutation === //
-
-func (s *UserUsecase) Create(ctx context.Context, user *entity.User) error {
-	if err := user.Validate(); err != nil {
-		return constant.ErrInvalidUserData
-	}
-	if err := s.repository.Create(ctx, user); err != nil {
+func (u *UserUsecase) Create(ctx context.Context, user *entity.User) error {
+	if err := u.repository.Create(ctx, user); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *UserUsecase) Update(ctx context.Context, user *entity.User) error {
+func (u *UserUsecase) Update(ctx context.Context, user *entity.User) error {
 	if err := user.Validate(); err != nil {
 		return constant.ErrInvalidUserData
 	}
-	if err := s.repository.Update(ctx, user); err != nil {
+	if err := u.repository.Update(ctx, user); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *UserUsecase) Delete(ctx context.Context, id string) error {
-	if err := s.repository.Delete(ctx, id); err != nil {
+func (u *UserUsecase) Delete(ctx context.Context, id string) error {
+	if err := u.repository.Delete(ctx, id); err != nil {
 		return err
 	}
 

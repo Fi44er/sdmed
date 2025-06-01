@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/Fi44er/sdmedik/backend/pkg/session"
+	"github.com/Fi44er/sdmed/pkg/session"
 	"github.com/gofiber/fiber/v2"
 )
 

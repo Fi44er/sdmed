@@ -1,6 +1,8 @@
 package session
 
-import "time"
+import (
+	"time"
+)
 
 type Session struct {
 	ID             string

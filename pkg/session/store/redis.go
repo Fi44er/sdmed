@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Fi44er/sdmedik/backend/pkg/session"
+	"github.com/Fi44er/sdmed/pkg/session"
 	"github.com/redis/go-redis/v9"
 )
 

@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	"github.com/Fi44er/sdmedik/backend/internal/module/file/entity"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
+	"github.com/Fi44er/sdmed/internal/module/file/entity"
+	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
 )
 

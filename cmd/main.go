@@ -1,8 +1,8 @@
 package main
 
 import (
-	_ "github.com/Fi44er/sdmedik/backend/docs"
-	"github.com/Fi44er/sdmedik/backend/internal/app"
+	_ "github.com/Fi44er/sdmed/docs"
+	"github.com/Fi44er/sdmed/internal/app"
 	_ "github.com/lib/pq"
 )
 
