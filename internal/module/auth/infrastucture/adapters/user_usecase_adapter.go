@@ -3,9 +3,9 @@ package adapters
 import (
 	"context"
 
-	authEntity "github.com/Fi44er/sdmedik/backend/internal/module/auth/entity"
-	userEntity "github.com/Fi44er/sdmedik/backend/internal/module/user/entity"
-	userUsecase "github.com/Fi44er/sdmedik/backend/internal/module/user/usecase/user"
+	authEntity "github.com/Fi44er/sdmed/internal/module/auth/entity"
+	userEntity "github.com/Fi44er/sdmed/internal/module/user/entity"
+	userUsecase "github.com/Fi44er/sdmed/internal/module/user/usecase/user"
 )
 
 type UserUsecaseAdapter struct {

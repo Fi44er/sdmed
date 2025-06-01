@@ -1,9 +1,8 @@
 package dto
 
 type SignInDTO struct {
-	Email     string `json:"email" validate:"required"`
-	Password  string `json:"password" validate:"required"`
-	UserAgent string `json:"user_agent"`
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type LogoutDTO struct {
@@ -18,7 +17,6 @@ type VerifyCodeDTO struct {
 
 type RefreshTokenDTO struct {
 	RefreshToken string `json:"refresh_token"`
-	UserAgent    string `json:"user_agent"`
 }
 
 type SignUpDTO struct {

@@ -5,4 +5,7 @@ import "github.com/gofiber/fiber/v2"
 func (h *AuthHandler) RegisterRoutes(router fiber.Router) {
 	auth := router.Group("/auth")
 	auth.Post("/sign-up", h.SignUp)
+	auth.Post("/sign-in", h.SignIn)
+	auth.Post("/verify-code", h.VerifyCode)
+	auth.Post("/sign-out", h.SignOut)
 }

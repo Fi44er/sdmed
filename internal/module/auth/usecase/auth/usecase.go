@@ -5,13 +5,13 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/Fi44er/sdmedik/backend/internal/config"
-	"github.com/Fi44er/sdmedik/backend/internal/module/auth/dto"
-	"github.com/Fi44er/sdmedik/backend/internal/module/auth/entity"
-	"github.com/Fi44er/sdmedik/backend/internal/module/auth/pkg/constant"
-	"github.com/Fi44er/sdmedik/backend/internal/module/notification/service"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
-	"github.com/Fi44er/sdmedik/backend/pkg/utils"
+	"github.com/Fi44er/sdmed/internal/config"
+	"github.com/Fi44er/sdmed/internal/module/auth/dto"
+	"github.com/Fi44er/sdmed/internal/module/auth/entity"
+	"github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
+	"github.com/Fi44er/sdmed/internal/module/auth/pkg/utils"
+	"github.com/Fi44er/sdmed/internal/module/notification/service"
+	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
 type IUserUsecase interface {
@@ -26,12 +26,23 @@ type ICache interface {
 	Del(ctx context.Context, key string) error
 }
 
+type INotificationService interface {
+	Send(msg *service.Message, selectedNotifiers ...string)
+}
+
+type ISessionRepository interface {
+	GetSessionInfo(ctx context.Context) (*entity.UserSesion, error)
+	PutSessionInfo(ctx context.Context, sessionInfo *entity.UserSesion) error
+	DeleteSessionInfo(ctx context.Context) error
+}
+
 type AuthUsecase struct {
-	logger         *logger.Logger
-	cache          ICache
-	config         *config.Config
-	userUsecase    IUserUsecase
-	notifyerServce *service.NotificationService
+	logger            *logger.Logger
+	cache             ICache
+	config            *config.Config
+	userUsecase       IUserUsecase
+	notifyerService   INotificationService
+	sessionRepository ISessionRepository
 }
 
 func NewAuthUsecase(
@@ -39,14 +50,16 @@ func NewAuthUsecase(
 	cache ICache,
 	config *config.Config,
 	userUsecase IUserUsecase,
-	notificationService *service.NotificationService,
+	notificationService INotificationService,
+	sessionRepository ISessionRepository,
 ) *AuthUsecase {
 	return &AuthUsecase{
-		logger:         logger,
-		config:         config,
-		cache:          cache,
-		userUsecase:    userUsecase,
-		notifyerServce: notificationService,
+		logger:            logger,
+		config:            config,
+		cache:             cache,
+		userUsecase:       userUsecase,
+		notifyerService:   notificationService,
+		sessionRepository: sessionRepository,
 	}
 }
 
@@ -55,65 +68,84 @@ const (
 	UserRedisPrefix = "temp_user_"
 )
 
-func (s *AuthUsecase) createAndStoreToken(ctx context.Context, userID string, expiresIn time.Duration, privateKey string, userAgent string) (string, error) {
+func (u *AuthUsecase) createToken(userID string, expiresIn time.Duration, privateKey string) (string, error) {
 	tokenDetails, err := utils.CreateToken(userID, expiresIn, privateKey)
 	if err != nil {
 		return "", constant.ErrUnprocessableEntity
 	}
-	key := userAgent + ":" + tokenDetails.TokenUUID
-	err = s.cache.Set(ctx, key, userID, time.Until(time.Unix(*tokenDetails.ExpiresIn, 0)))
+
 	return *tokenDetails.Token, err
 }
 
-func (s *AuthUsecase) SignIn(ctx context.Context, user *entity.User) (*entity.Tokens, error) {
-	user, err := s.userUsecase.GetByEmail(ctx, user.Email)
-	if err != nil || !utils.ComparePassword(user.Password, user.Password) {
+func (u *AuthUsecase) SignIn(ctx context.Context, user *entity.User) (*entity.Tokens, error) {
+	existingUser, err := u.userUsecase.GetByEmail(ctx, user.Email)
+	if err != nil || !utils.ComparePassword(existingUser.Password, user.Password) {
 		return nil, constant.ErrInvalidEmailOrPassword
 	}
 
-	accessToken, err := s.createAndStoreToken(ctx, user.ID, s.config.AccessTokenExpiresIn, s.config.AccessTokenPrivateKey, user.UserAgent)
+	accessToken, err := u.createToken(user.ID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := s.createAndStoreToken(ctx, user.ID, s.config.RefreshTokenExpiresIn, s.config.RefreshTokenPrivateKey, user.UserAgent)
+	refreshToken, err := u.createToken(user.ID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
 	if err != nil {
+		return nil, err
+	}
+
+	userSession := &entity.UserSesion{
+		UserID:       existingUser.ID,
+		RefreshToken: refreshToken,
+	}
+
+	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {
 		return nil, err
 	}
 
 	return &entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
-func (s *AuthUsecase) VerifyCode(ctx context.Context, data *dto.VerifyCodeDTO) error {
-	hashEmail, err := utils.HashString(data.Email)
+func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *entity.VerifyCode) error {
+	hashEmail, err := utils.HashString(verifyCode.Email)
 	if err != nil {
 		return constant.ErrInternalServerError
 	}
 
 	var code string
-	if err := s.cache.Get(ctx, CodeRedisPrefix+hashEmail, &code); err != nil {
+	if err := u.cache.Get(ctx, CodeRedisPrefix+hashEmail, &code); err != nil {
 		return constant.ErrInternalServerError
 	}
 
-	if err := s.cache.Del(ctx, CodeRedisPrefix+hashEmail); err != nil {
+	if err := u.cache.Del(ctx, CodeRedisPrefix+hashEmail); err != nil {
 		return err
 	}
 
 	var tempUser dto.SignUpDTO
-	if err := s.cache.Get(ctx, UserRedisPrefix+hashEmail, &tempUser); err != nil {
+	if err := u.cache.Get(ctx, UserRedisPrefix+hashEmail, &tempUser); err != nil {
 		return err
 	}
 
-	return s.cache.Del(ctx, UserRedisPrefix+hashEmail)
+	user := &entity.User{
+		PhoneNumber: tempUser.PhoneNumber,
+		Email:       tempUser.Email,
+		Password:    tempUser.Password,
+		FIO:         tempUser.FIO,
+	}
+
+	if err := u.userUsecase.Create(ctx, user); err != nil {
+		return err
+	}
+
+	return u.cache.Del(ctx, UserRedisPrefix+hashEmail)
 }
 
-func (s *AuthUsecase) SignUp(ctx context.Context, entity *entity.User) error {
+func (u *AuthUsecase) SignUp(ctx context.Context, entity *entity.User) error {
 	entity.PhoneNumber = regexp.MustCompile("[^0-9]").ReplaceAllString(entity.PhoneNumber, "")
 	if len(entity.PhoneNumber) != 11 {
 		return constant.ErrInvalidPhoneNumber
 	}
 
-	user, err := s.userUsecase.GetByEmail(ctx, entity.Email)
+	user, err := u.userUsecase.GetByEmail(ctx, entity.Email)
 	if err != nil {
 
 	}
@@ -129,14 +161,14 @@ func (s *AuthUsecase) SignUp(ctx context.Context, entity *entity.User) error {
 		return err
 	}
 
-	if err := s.cache.Set(ctx, UserRedisPrefix+hashEmail, entity, 10*time.Minute); err != nil {
+	if err := u.cache.Set(ctx, UserRedisPrefix+hashEmail, entity, 10*time.Minute); err != nil {
 		return err
 	}
 
-	return s.SendCode(ctx, entity.Email)
+	return u.SendCode(ctx, entity.Email)
 }
 
-func (s *AuthUsecase) SendCode(ctx context.Context, email string) error {
+func (u *AuthUsecase) SendCode(ctx context.Context, email string) error {
 	code := utils.GenerateCode(6)
 	hashEmail, err := utils.HashString(email)
 	if err != nil {
@@ -144,11 +176,11 @@ func (s *AuthUsecase) SendCode(ctx context.Context, email string) error {
 	}
 
 	var tempUser dto.SignUpDTO
-	if err := s.cache.Get(ctx, UserRedisPrefix+hashEmail, &tempUser); err != nil {
+	if err := u.cache.Get(ctx, UserRedisPrefix+hashEmail, &tempUser); err != nil {
 		return constant.ErrUnprocessableEntity
 	}
 
-	if err := s.cache.Set(ctx, CodeRedisPrefix+hashEmail, code, s.config.VerifyCodeExpiredIn); err != nil {
+	if err := u.cache.Set(ctx, CodeRedisPrefix+hashEmail, code, u.config.VerifyCodeExpiredIn); err != nil {
 		return err
 	}
 
@@ -168,46 +200,34 @@ func (s *AuthUsecase) SendCode(ctx context.Context, email string) error {
 		TemplatePath: "./internal/module/auth/pkg/template/verify_code.html",
 	}
 
-	s.notifyerServce.Send(msg, "smtp")
+	u.notifyerService.Send(msg, "smtp")
 
-	s.logger.Info(code)
+	u.logger.Info(code)
 	return nil
 }
 
-func (s *AuthUsecase) RefreshAccessToken(ctx context.Context, data *dto.RefreshTokenDTO) (string, error) {
-	if data.RefreshToken == "" {
-		return "", constant.ErrInvalidToken
+func (u *AuthUsecase) RefreshAccessToken(ctx context.Context) (string, error) {
+
+	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
+	if err != nil {
+		return "", err
 	}
 
-	tokenClaims, err := utils.ValidateToken(data.RefreshToken, s.config.RefreshTokenPublicKey)
+	_, err = utils.ValidateToken(sessionInfo.RefreshToken, u.config.RefreshTokenPublicKey)
 	if err != nil {
 		return "", constant.ErrForbidden
 	}
 
-	var userID string
-	if err := s.cache.Get(ctx, tokenClaims.TokenUUID, &userID); err != nil {
-		return "", constant.ErrCouldNotRefreshToken
-	}
-
-	user, err := s.userUsecase.GetByID(ctx, userID)
+	user, err := u.userUsecase.GetByID(ctx, sessionInfo.UserID)
 	if err != nil || user == nil {
 		return "", err
 	}
 
-	return s.createAndStoreToken(ctx, user.ID, s.config.AccessTokenExpiresIn, s.config.AccessTokenPrivateKey, data.UserAgent)
+	return u.createToken(user.ID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
 }
 
-func (s *AuthUsecase) SignOut(ctx context.Context, data *dto.LogoutDTO) error {
-	if data.RefreshToken == "" {
-		return constant.ErrInvalidToken
-	}
-
-	tokenClaims, err := utils.ValidateToken(data.RefreshToken, s.config.RefreshTokenPublicKey)
-	if err != nil {
-		return constant.ErrAnauthorized
-	}
-
-	if err := s.cache.Del(ctx, tokenClaims.TokenUUID); err != nil {
+func (u *AuthUsecase) SignOut(ctx context.Context) error {
+	if err := u.sessionRepository.DeleteSessionInfo(ctx); err != nil {
 		return err
 	}
 

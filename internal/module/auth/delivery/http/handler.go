@@ -2,28 +2,33 @@ package http
 
 import (
 	"context"
+	"time"
 
-	"github.com/Fi44er/sdmedik/backend/internal/module/auth/dto"
-	"github.com/Fi44er/sdmedik/backend/internal/module/auth/entity"
-	"github.com/Fi44er/sdmedik/backend/pkg/logger"
-	"github.com/Fi44er/sdmedik/backend/pkg/utils"
+	"github.com/Fi44er/sdmed/internal/config"
+	"github.com/Fi44er/sdmed/internal/module/auth/dto"
+	"github.com/Fi44er/sdmed/internal/module/auth/entity"
+	"github.com/Fi44er/sdmed/pkg/logger"
+	_ "github.com/Fi44er/sdmed/pkg/response"
+	"github.com/Fi44er/sdmed/pkg/session"
+	"github.com/Fi44er/sdmed/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
 type IAuthUsecase interface {
-	// SignIn(ctx context.Context, data *dto.SignInDTO) (*dto.LoginResponse, error)
-	// VerifyCode(ctx context.Context, data *dto.VerifyCodeDTO) error
+	SignIn(ctx context.Context, user *entity.User) (*entity.Tokens, error)
+	VerifyCode(ctx context.Context, verifyCode *entity.VerifyCode) error
 	SignUp(ctx context.Context, entity *entity.User) error
 	// SendCode(ctx context.Context, email string) error
 	// RefreshAccessToken(ctx context.Context, data *dto.RefreshTokenDTO) (string, error)
-	// SignOut(ctx context.Context, data *dto.LogoutDTO) error
+	SignOut(ctx context.Context) error
 }
 
 type AuthHandler struct {
 	usecase   IAuthUsecase
 	validator *validator.Validate
 	logger    *logger.Logger
+	config    *config.Config
 
 	converter *Converter
 }
@@ -32,19 +37,29 @@ func NewAuthHandler(
 	usecase IAuthUsecase,
 	logger *logger.Logger,
 	validator *validator.Validate,
+	config *config.Config,
 ) *AuthHandler {
 	return &AuthHandler{
 		usecase:   usecase,
 		logger:    logger,
 		validator: validator,
 		converter: &Converter{},
+		config:    config,
 	}
 }
 
+// @Summary SignUp
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.SignUpDTO true "Sign Up"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/sign-up [post]
 func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
 	dto := new(dto.SignUpDTO)
 
-	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntity, h.logger)
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntitySignUp, h.logger)
 	if err != nil {
 		return err
 	}
@@ -56,6 +71,118 @@ func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
-		"message": "user register successfully",
+		"message": "user sign up successfully",
+	})
+}
+
+// @Summary SignIn
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.SignInDTO true "Sign In"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/sign-in [post]
+func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
+	dto := new(dto.SignInDTO)
+
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntitySignIn, h.logger)
+	if err != nil {
+		return err
+	}
+
+	sess := session.FromFiberContext(ctx)
+	context := context.WithValue(ctx.Context(), "session", *sess)
+
+	accessToken, err := h.usecase.SignIn(context, entity)
+	if err != nil {
+		h.logger.Errorf("error while create user: %s", err)
+		return err
+	}
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    accessToken.AccessToken,
+		Path:     "/",
+		MaxAge:   h.config.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "logged_in",
+		Value:    "true",
+		Path:     "/",
+		MaxAge:   h.config.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+	})
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "user sign in successfully",
+	})
+}
+
+// @Summary VerifyCode
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.VerifyCodeDTO true "Verify Code"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/verify-code [post]
+func (h *AuthHandler) VerifyCode(ctx *fiber.Ctx) error {
+	dto := new(dto.VerifyCodeDTO)
+
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityVerifyCode, h.logger)
+	if err != nil {
+		return err
+	}
+
+	if err := h.usecase.VerifyCode(ctx.Context(), entity); err != nil {
+		h.logger.Errorf("error while create user: %s", err)
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "verify code successfully",
+	})
+}
+
+// @Summary SignOut
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/sign-out [post]
+func (h *AuthHandler) SignOut(ctx *fiber.Ctx) error {
+	sess := session.FromFiberContext(ctx)
+	context := context.WithValue(ctx.Context(), "session", *sess)
+
+	if err := h.usecase.SignOut(context); err != nil {
+		h.logger.Errorf("error while sign out: %s", err)
+		return err
+	}
+
+	expired := time.Now().Add(-time.Hour * 24)
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "access_token",
+		Value:   "",
+		Expires: expired,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "logged_in",
+		Value:   "",
+		Expires: expired,
+	})
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "sign out successfully",
 	})
 }

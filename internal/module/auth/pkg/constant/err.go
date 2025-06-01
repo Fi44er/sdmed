@@ -1,6 +1,6 @@
 package constant
 
-import "github.com/Fi44er/sdmedik/backend/pkg/customerr"
+import "github.com/Fi44er/sdmed/pkg/customerr"
 
 var (
 	ErrInvalidToken           = customerr.NewError(401, "invalid token")
