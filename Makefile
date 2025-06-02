@@ -10,8 +10,8 @@ CYAN=\033[0;36m
 NC=\033[0m # No Color
 
 # Определение переменных для параметров
-MIGRATE_FLAG ?= false
-REDIS_MODE ?= 0
+migrate_flag ?= false
+redis_mode ?= 0
 
 .PHONY: help run run_with_migrate generate_dock start_postgres connect_postgres start_redis connect_redis start_all stop_all view_logs
 
@@ -25,11 +25,13 @@ help:
 	@echo "  make [command] [options]"
 	@echo ""
 	@echo "${YELLOW}App Commands:${NC}"
-	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "run_app" "Start the app with default settings (MIGRATE=${MIGRATE_FLAG}, REDIS=${REDIS_MODE})"
-	@printf "  ${CYAN}%-${WIDTH}s${NC}%s\n" "" "Override example: make run_app REDIS_MODE=2 MIGRATE=true"
+	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "run_app" "Start the app with default settings (migrate_flag=${migrate_flag}, redis_mode=${redis_mode})"
+	@printf "  ${CYAN}%-${WIDTH}s${NC}%s\n" "" "Override example: make run_app redis_mode=2 migrate_flag=true"
+	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "gen_mock" "Generate mock for src"
+	@printf "  ${CYAN}%-${WIDTH}s${NC}%s\n" "" "Override example: make gen_mock src=./cmd/handler/user.go"
 	@echo ""
 	@echo "${YELLOW}Swagger Commands:${NC}"
-	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "generate_dock" "Generate Swagger documentation"
+	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "gen_dock" "Generate Swagger documentation"
 	@echo ""
 	@echo "${YELLOW}Docker Commands:${NC}"
 	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "start_postgres" "Start PostgreSQL container"
@@ -40,7 +42,7 @@ help:
 	@echo ""
 	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "start_all" "Start all services (Postgres, Redis, Backend)"
 	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "stop_all" "Stop all running containers"
-	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "view_logs" "View logs for all services"
+	@printf "  ${GREEN}%-${WIDTH}s${NC}%s\n" "docker_logs" "View docker logs for all services"
 	@echo ""
 	@echo "${YELLOW}Options:${NC}"
 	@printf "  ${CYAN}%-${WIDTH}s${NC}%s\n" "MIGRATE_FLAG" "Enable or disable migrations (true|false, default: ${MIGRATE_FLAG})"
