@@ -6,6 +6,4 @@ type User struct {
 	Password    string
 	PhoneNumber string
 	FIO         string
-
-	UserAgent string
 }

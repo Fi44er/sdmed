@@ -14,4 +14,6 @@ var (
 	ErrInvalidPhoneNumber = customerr.NewError(422, "invalid phone number")
 
 	ErrInternalServerError = customerr.NewError(500, "internal server error")
+
+	ErrSessionInfoNotFound = customerr.NewError(404, "session info not found")
 )

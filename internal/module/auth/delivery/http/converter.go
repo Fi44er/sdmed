@@ -29,3 +29,9 @@ func (c *Converter) ToEntityVerifyCode(dto *dto.VerifyCodeDTO) *entity.VerifyCod
 		Code:  dto.Code,
 	}
 }
+
+func (c *Converter) ToEntitySendCode(dto *dto.SendCodeDTO) *entity.SendCode {
+	return &entity.SendCode{
+		Email: dto.Email,
+	}
+}

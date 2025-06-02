@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	"github.com/Fi44er/sdmed/internal/module/auth/entity"
+	"github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/session"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 type SessionRepository struct {
@@ -19,36 +21,48 @@ func NewSessionRepository(
 	return &SessionRepository{logger: logger}
 }
 
-func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*entity.UserSesion, error) {
+const (
+	sessionInfoKey = "session_info"
+)
+
+func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*entity.UserSession, error) {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
+		r.logger.Error("session not found")
 		return nil, fmt.Errorf("session not found")
 	}
 
-	sessionInfo, ok := session.Get("session_info").(*entity.UserSesion)
+	sessionData, ok := session.Get(sessionInfoKey).(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("session info not found")
+		return nil, constant.ErrSessionInfoNotFound
 	}
 
-	return sessionInfo, nil
+	var userSession entity.UserSession
+	if err := mapstructure.Decode(sessionData, &userSession); err != nil {
+		return nil, fmt.Errorf("failed to decode session data: %v", err)
+	}
+
+	return &userSession, nil
 }
 
-func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *entity.UserSesion) error {
+func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *entity.UserSession) error {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
-		return fmt.Errorf("session not found")
+		r.logger.Error("session not found")
+		return constant.ErrSessionInfoNotFound
 	}
 
-	session.Put("session_info", sessionInfo)
+	session.Put(sessionInfoKey, sessionInfo)
 	return nil
 }
 
 func (r *SessionRepository) DeleteSessionInfo(ctx context.Context) error {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
-		return fmt.Errorf("session not found")
+		r.logger.Error("session not found")
+		return constant.ErrSessionInfoNotFound
 	}
 
-	session.Delete("session_info")
+	session.Delete(sessionInfoKey)
 	return nil
 }

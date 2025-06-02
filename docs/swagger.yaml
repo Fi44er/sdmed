@@ -1,5 +1,12 @@
 basePath: /api/
 definitions:
+  dto.SendCodeDTO:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   dto.SignInDTO:
     properties:
       email:
@@ -99,6 +106,49 @@ info:
   title: sdmedik API
   version: "1.0"
 paths:
+  /auth/refresh-token:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: RefreshToken
+      tags:
+      - Auth
+  /auth/send-code:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Send Code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendCodeDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: SendCode
+      tags:
+      - Auth
   /auth/sign-in:
     post:
       consumes:

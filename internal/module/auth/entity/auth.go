@@ -10,7 +10,12 @@ type Tokens struct {
 	RefreshToken string
 }
 
-type UserSesion struct {
+type UserSession struct {
 	UserID       string
 	RefreshToken string
+}
+
+type SendCode struct {
+	Email string
+	Code  string
 }

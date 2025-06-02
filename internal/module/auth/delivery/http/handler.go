@@ -18,9 +18,9 @@ import (
 type IAuthUsecase interface {
 	SignIn(ctx context.Context, user *entity.User) (*entity.Tokens, error)
 	VerifyCode(ctx context.Context, verifyCode *entity.VerifyCode) error
-	SignUp(ctx context.Context, entity *entity.User) error
-	// SendCode(ctx context.Context, email string) error
-	// RefreshAccessToken(ctx context.Context, data *dto.RefreshTokenDTO) (string, error)
+	SignUp(ctx context.Context, user *entity.User) error
+	SendCode(ctx context.Context, sendCode *entity.SendCode) error
+	RefreshAccessToken(ctx context.Context) (string, error)
 	SignOut(ctx context.Context) error
 }
 
@@ -91,8 +91,7 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	sess := session.FromFiberContext(ctx)
-	context := context.WithValue(ctx.Context(), "session", *sess)
+	context := h.getCtxWithSession(ctx)
 
 	accessToken, err := h.usecase.SignIn(context, entity)
 	if err != nil {
@@ -159,8 +158,7 @@ func (h *AuthHandler) VerifyCode(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/sign-out [post]
 func (h *AuthHandler) SignOut(ctx *fiber.Ctx) error {
-	sess := session.FromFiberContext(ctx)
-	context := context.WithValue(ctx.Context(), "session", *sess)
+	context := h.getCtxWithSession(ctx)
 
 	if err := h.usecase.SignOut(context); err != nil {
 		h.logger.Errorf("error while sign out: %s", err)
@@ -185,4 +183,75 @@ func (h *AuthHandler) SignOut(ctx *fiber.Ctx) error {
 		"status":  "success",
 		"message": "sign out successfully",
 	})
+}
+
+// @Summary RefreshToken
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/refresh-token [post]
+func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
+	context := h.getCtxWithSession(ctx)
+	accessToken, err := h.usecase.RefreshAccessToken(context)
+	if err != nil {
+		return err
+	}
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Path:     "/",
+		MaxAge:   h.config.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "logged_in",
+		Value:    "true",
+		Path:     "/",
+		MaxAge:   h.config.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+	})
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "refresh token successfully",
+	})
+}
+
+// @Summary SendCode
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.SendCodeDTO true "Send Code"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/send-code [post]
+func (h *AuthHandler) SendCode(ctx *fiber.Ctx) error {
+	dto := new(dto.SendCodeDTO)
+
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntitySendCode, h.logger)
+	if err != nil {
+		return err
+	}
+
+	if err := h.usecase.SendCode(ctx.Context(), entity); err != nil {
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "send code successfully",
+	})
+}
+
+func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
+	sess := session.FromFiberContext(ctx)
+	context := context.WithValue(ctx.Context(), "session", *sess)
+
+	return context
 }

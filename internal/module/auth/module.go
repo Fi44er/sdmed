@@ -12,7 +12,6 @@ import (
 	"github.com/Fi44er/sdmed/pkg/redis"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/log"
 	"gorm.io/gorm"
 )
 
@@ -66,6 +65,5 @@ func (m *AuthModule) Init() {
 }
 
 func (m *AuthModule) InitDelivery(router fiber.Router) {
-	log.Warn(m.authAdapters == nil)
 	m.authHandler.RegisterRoutes(router)
 }

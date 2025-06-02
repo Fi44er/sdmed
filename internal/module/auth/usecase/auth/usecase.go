@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"regexp"
 	"time"
 
 	"github.com/Fi44er/sdmed/internal/config"
@@ -11,6 +10,7 @@ import (
 	"github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
 	"github.com/Fi44er/sdmed/internal/module/auth/pkg/utils"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
+	global_const "github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
@@ -31,8 +31,8 @@ type INotificationService interface {
 }
 
 type ISessionRepository interface {
-	GetSessionInfo(ctx context.Context) (*entity.UserSesion, error)
-	PutSessionInfo(ctx context.Context, sessionInfo *entity.UserSesion) error
+	GetSessionInfo(ctx context.Context) (*entity.UserSession, error)
+	PutSessionInfo(ctx context.Context, sessionInfo *entity.UserSession) error
 	DeleteSessionInfo(ctx context.Context) error
 }
 
@@ -93,7 +93,7 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *entity.User) (*entity.To
 		return nil, err
 	}
 
-	userSession := &entity.UserSesion{
+	userSession := &entity.UserSession{
 		UserID:       existingUser.ID,
 		RefreshToken: refreshToken,
 	}
@@ -139,38 +139,44 @@ func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *entity.VerifyC
 	return u.cache.Del(ctx, UserRedisPrefix+hashEmail)
 }
 
-func (u *AuthUsecase) SignUp(ctx context.Context, entity *entity.User) error {
-	entity.PhoneNumber = regexp.MustCompile("[^0-9]").ReplaceAllString(entity.PhoneNumber, "")
-	if len(entity.PhoneNumber) != 11 {
+func (u *AuthUsecase) SignUp(ctx context.Context, user *entity.User) error {
+	// user.PhoneNumber = regexp.MustCompile("[^0-9]").ReplaceAllString(user.PhoneNumber, "")
+	if len(user.PhoneNumber) != 11 {
 		return constant.ErrInvalidPhoneNumber
 	}
 
-	user, err := u.userUsecase.GetByEmail(ctx, entity.Email)
+	existUser, err := u.userUsecase.GetByEmail(ctx, user.Email)
 	if err != nil {
-
+		if err != global_const.ErrUserNotFound {
+			return err
+		}
 	}
 
-	if user != nil {
+	if existUser != nil {
 		return constant.ErrUserAlreadyExists
 	}
 
-	entity.Password = utils.GeneratePassword(entity.Password)
+	user.Password = utils.GeneratePassword(user.Password)
 
-	hashEmail, err := utils.HashString(entity.Email)
+	hashEmail, err := utils.HashString(user.Email)
 	if err != nil {
 		return err
 	}
 
-	if err := u.cache.Set(ctx, UserRedisPrefix+hashEmail, entity, 10*time.Minute); err != nil {
+	if err := u.cache.Set(ctx, UserRedisPrefix+hashEmail, user, 10*time.Minute); err != nil {
 		return err
 	}
 
-	return u.SendCode(ctx, entity.Email)
+	sendCode := &entity.SendCode{
+		Email: user.Email,
+	}
+
+	return u.SendCode(ctx, sendCode)
 }
 
-func (u *AuthUsecase) SendCode(ctx context.Context, email string) error {
+func (u *AuthUsecase) SendCode(ctx context.Context, sendCode *entity.SendCode) error {
 	code := utils.GenerateCode(6)
-	hashEmail, err := utils.HashString(email)
+	hashEmail, err := utils.HashString(sendCode.Email)
 	if err != nil {
 		return err
 	}
@@ -194,7 +200,7 @@ func (u *AuthUsecase) SendCode(ctx context.Context, email string) error {
 	}
 
 	msg := &service.Message{
-		Recipient:    email,
+		Recipient:    sendCode.Email,
 		Subject:      "Код подтверждения регистрации",
 		Data:         templateData,
 		TemplatePath: "./internal/module/auth/pkg/template/verify_code.html",
@@ -207,7 +213,6 @@ func (u *AuthUsecase) SendCode(ctx context.Context, email string) error {
 }
 
 func (u *AuthUsecase) RefreshAccessToken(ctx context.Context) (string, error) {
-
 	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
 	if err != nil {
 		return "", err
