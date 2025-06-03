@@ -10,7 +10,6 @@ import (
 	"github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
 	"github.com/Fi44er/sdmed/internal/module/auth/pkg/utils"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
-	global_const "github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
@@ -147,7 +146,7 @@ func (u *AuthUsecase) SignUp(ctx context.Context, user *entity.User) error {
 
 	existUser, err := u.userUsecase.GetByEmail(ctx, user.Email)
 	if err != nil {
-		if err != global_const.ErrUserNotFound {
+		if err != constant.ErrUserNotFound {
 			return err
 		}
 	}

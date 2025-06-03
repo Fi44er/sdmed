@@ -4,7 +4,9 @@ import (
 	"context"
 
 	authEntity "github.com/Fi44er/sdmed/internal/module/auth/entity"
+	constantAuth "github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
 	userEntity "github.com/Fi44er/sdmed/internal/module/user/entity"
+	constantUser "github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
 	userUsecase "github.com/Fi44er/sdmed/internal/module/user/usecase/user"
 )
 
@@ -21,8 +23,12 @@ func NewUserUsecaseAdapter(userUsecase *userUsecase.UserUsecase) *UserUsecaseAda
 func (a *UserUsecaseAdapter) GetByEmail(ctx context.Context, email string) (*authEntity.User, error) {
 	user, err := a.userUsecase.GetByEmail(ctx, email)
 	if err != nil {
+		if err == constantUser.ErrUserNotFound {
+			return nil, constantAuth.ErrUserNotFound
+		}
 		return nil, err
 	}
+
 	return toAuthUser(user), nil
 }
 

@@ -11,3 +11,5 @@ gen_mock:
 		-source=$(src) \
 		-destination=$(dir $(src))/mock/$(notdir $(basename $(src)))_mock.go \
 		-package=mock
+
+# go test -v -cover ./internal/module/auth/usecase/auth/test/... -coverpkg=./internal/module/auth/usecase/auth

@@ -11,6 +11,7 @@ var (
 	ErrInvalidEmailOrPassword = customerr.NewError(422, "invalid email or password")
 
 	ErrUserAlreadyExists  = customerr.NewError(409, "user already exists")
+	ErrUserNotFound       = customerr.NewError(404, "user not found")
 	ErrInvalidPhoneNumber = customerr.NewError(422, "invalid phone number")
 
 	ErrInternalServerError = customerr.NewError(500, "internal server error")
