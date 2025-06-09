@@ -6,6 +6,7 @@ import (
 	"github.com/Fi44er/sdmed/internal/module/user/entity"
 	"github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type IUserRepository interface {
@@ -99,4 +100,12 @@ func (u *UserUsecase) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (u *UserUsecase) ComparePassword(user *entity.User, password string) bool {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return false
+	}
+	return user.ComparePassword(string(hash))
 }

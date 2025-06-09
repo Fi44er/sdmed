@@ -45,6 +45,11 @@ func (a *UserUsecaseAdapter) Create(ctx context.Context, user *authEntity.User) 
 	return a.userUsecase.Create(ctx, externalUser)
 }
 
+// ComparePassword(user *entity.User, password string) bool
+func (a *UserUsecaseAdapter) ComparePassword(user *authEntity.User, password string) bool {
+	return a.userUsecase.ComparePassword(toUserEntity(user), password)
+}
+
 func toAuthUser(user *userEntity.User) *authEntity.User {
 	if user == nil {
 		return nil

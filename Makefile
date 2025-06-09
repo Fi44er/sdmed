@@ -1,4 +1,3 @@
-include ./scripts/dock.mk
 include ./scripts/server.mk
 include ./scripts/docker.mk
 

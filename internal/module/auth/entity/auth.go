@@ -19,3 +19,10 @@ type SendCode struct {
 	Email string
 	Code  string
 }
+
+type TokenDetails struct {
+	Token     *string
+	TokenUUID string
+	UserID    string
+	ExpiresIn *int64
+}

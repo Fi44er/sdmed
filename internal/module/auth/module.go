@@ -22,6 +22,7 @@ type AuthModule struct {
 	userUsecase        *user_usecase.UserUsecase
 	notificationServce *service.NotificationService
 	sessionRepository  *repository.SessionRepository
+	tokenService       *adapters.TokenService
 
 	logger       *logger.Logger
 	validator    *validator.Validate
@@ -53,6 +54,7 @@ func NewAuthModule(
 func (m *AuthModule) Init() {
 	m.authAdapters = adapters.NewUserUsecaseAdapter(m.userUsecase)
 	m.sessionRepository = repository.NewSessionRepository(m.logger)
+	m.tokenService = adapters.NewTokenService()
 	m.authUsecase = auth_usecase.NewAuthUsecase(
 		m.logger,
 		m.redisManager,
@@ -60,6 +62,7 @@ func (m *AuthModule) Init() {
 		m.authAdapters,
 		m.notificationServce,
 		m.sessionRepository,
+		m.tokenService,
 	)
 	m.authHandler = auth_handler.NewAuthHandler(m.authUsecase, m.logger, m.validator, m.config)
 }
