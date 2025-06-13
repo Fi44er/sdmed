@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Восстановление пароля</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        background-color: #e6f0ee;
+        color: #333333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: linear-gradient(180deg, #ffffff 0%, #f0fafa 100%);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+      }
+      .header {
+        background-color: #48c8bc;
+        padding: 30px 20px;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 28px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .content {
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .content h2 {
+        font-size: 24px;
+        font-weight: 500;
+        color: #2a7a71;
+        margin-bottom: 15px;
+      }
+      .content p {
+        font-size: 16px;
+        line-height: 1.5;
+        color: #555555;
+        margin: 0 0 20px;
+      }
+      .button {
+        display: inline-block;
+        background-color: #48c8bc;
+        color: #ffffff;
+        padding: 14px 30px;
+        text-decoration: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        transition:
+          background-color 0.3s ease,
+          transform 0.2s ease;
+        box-shadow: 0 4px 10px rgba(72, 200, 188, 0.3);
+        margin: 20px 0;
+      }
+      .button:hover {
+        background-color: #36a99e;
+        transform: translateY(-2px);
+      }
+      .warning {
+        font-size: 14px;
+        color: #777777;
+        margin-top: 20px;
+      }
+      .footer {
+        background-color: #2a7a71;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #ffffff;
+      }
+      .footer a {
+        color: #b0e6de;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .footer a:hover {
+        text-decoration: underline;
+      }
+      @media only screen and (max-width: 600px) {
+        .container {
+          margin: 10px;
+          border-radius: 8px;
+        }
+        .header h1 {
+          font-size: 22px;
+        }
+        .content h2 {
+          font-size: 20px;
+        }
+        .button {
+          padding: 12px 25px;
+          font-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Восстановление пароля</h1>
+      </div>
+      <div class="content">
+        <h2>Сброс пароля по ссылке</h2>
+        <p>
+          Мы получили запрос на сброс пароля для вашего аккаунта. Если это были
+          вы — перейдите по ссылке ниже, чтобы установить новый пароль:
+        </p>
+        <a href="{{.ResetLink}}" class="button">Сбросить пароль</a>
+        <p>
+          Ссылка действительна в течение 30 минут. Если вы не запрашивали сброс
+          пароля, просто проигнорируйте это письмо.
+        </p>
+        <p class="warning">
+          Если кнопка не работает, скопируйте и вставьте эту ссылку в
+          браузер:<br />
+          <a href="{{.ResetLink}}">{{.ResetLink}}</a>
+        </p>
+      </div>
+      <div class="footer">
+        <p>
+          © {{.Date}} Ваш медицинский магазин. Все права защищены.<br />
+          <a href="https://yourwebsite.com">Посетите наш сайт</a> |
+          <a href="mailto:support@yourwebsite.com">Связаться с поддержкой</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

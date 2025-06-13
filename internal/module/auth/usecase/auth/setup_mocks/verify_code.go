@@ -30,15 +30,16 @@ var testUser = entity.User{
 
 var VerifyCodeTests = []struct {
 	Name        string
-	Input       *entity.VerifyCode
+	Input       *entity.Code
 	ExpectedErr error
 	SetupMocks  func(ctx context.Context, m *MockVerifyCodeDeps)
 }{
 	{
 		Name: "Success",
-		Input: &entity.VerifyCode{
+		Input: &entity.Code{
 			Code:  "123456",
 			Email: testUser.Email,
+			Type:  entity.CodeTypeVerify,
 		},
 		ExpectedErr: nil,
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
@@ -65,7 +66,7 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "GetCodeError",
-		Input:       &entity.VerifyCode{Code: "123456", Email: testUser.Email},
+		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
 		ExpectedErr: constant.ErrInternalServerError,
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
@@ -76,7 +77,7 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "IncorrectVerificationCode",
-		Input:       &entity.VerifyCode{Code: "wrongcode", Email: testUser.Email},
+		Input:       &entity.Code{Code: "wrongcode", Email: testUser.Email, Type: entity.CodeTypeVerify},
 		ExpectedErr: constant.ErrInternalServerError,
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
@@ -90,7 +91,7 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "DeleteCodeError",
-		Input:       &entity.VerifyCode{Code: "123456", Email: testUser.Email},
+		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
 		ExpectedErr: errors.New("delete code error"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
@@ -109,7 +110,7 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "GetTempUserError",
-		Input:       &entity.VerifyCode{Code: "123456", Email: testUser.Email},
+		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
 		ExpectedErr: errors.New("temp user not found"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
@@ -129,7 +130,7 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "CreateUserError",
-		Input:       &entity.VerifyCode{Code: "123456", Email: testUser.Email},
+		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
 		ExpectedErr: errors.New("create user failed"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
@@ -154,7 +155,7 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "DeleteTempUserError",
-		Input:       &entity.VerifyCode{Code: "123456", Email: testUser.Email},
+		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
 		ExpectedErr: errors.New("cache delete failed"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)

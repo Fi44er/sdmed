@@ -13,6 +13,7 @@ type IUserUsecase interface {
 	GetByID(ctx context.Context, id string) (*entity.User, error)
 	Create(ctx context.Context, user *entity.User) error
 	ComparePassword(user *entity.User, password string) bool
+	Update(ctx context.Context, user *entity.User) error
 }
 
 type ICache interface {

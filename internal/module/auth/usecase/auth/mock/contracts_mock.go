@@ -95,6 +95,20 @@ func (mr *MockIUserUsecaseMockRecorder) GetByID(ctx, id interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockIUserUsecase)(nil).GetByID), ctx, id)
 }
 
+// Update mocks base method.
+func (m *MockIUserUsecase) Update(ctx context.Context, user *entity.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockIUserUsecaseMockRecorder) Update(ctx, user interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockIUserUsecase)(nil).Update), ctx, user)
+}
+
 // MockICache is a mock of ICache interface.
 type MockICache struct {
 	ctrl     *gomock.Controller

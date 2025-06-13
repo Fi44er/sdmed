@@ -189,3 +189,71 @@ func TestAuthUsecase_VerifyCode(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthUsecase_ForgotPassword(t *testing.T) {
+	for _, tt := range setup_mocks.ForgotPasswordTests {
+		t.Run(tt.Name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ctx := context.Background()
+
+			m := &setup_mocks.MockForgotPasswordDeps{
+				User:   mocks.NewMockIUserUsecase(ctrl),
+				Cache:  mocks.NewMockICache(ctrl),
+				Notify: mocks.NewMockINotificationService(ctrl),
+			}
+
+			cfg := &config.Config{
+				ResetPassTokenExpiredIn: 10 * time.Minute,
+			}
+
+			log := logger.NewLogger()
+			authUC := usecase.NewAuthUsecase(log, m.Cache, cfg, m.User, m.Notify, nil, nil)
+
+			if tt.SetupMocks != nil {
+				tt.SetupMocks(ctx, m)
+			}
+
+			err := authUC.ForgotPassword(ctx, tt.Input)
+
+			if tt.ExpectedErr != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.ExpectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestAuthUsecase_ValidateResetPass(t *testing.T) {
+	for _, tt := range setup_mocks.ValidateResetPassTests {
+		t.Run(tt.Name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			ctx := context.Background()
+
+			m := &setup_mocks.MockValidateResetPassDeps{
+				Cache: mocks.NewMockICache(ctrl),
+			}
+
+			log := logger.NewLogger()
+			authUC := usecase.NewAuthUsecase(log, m.Cache, nil, nil, nil, nil, nil)
+
+			if tt.SetupMocks != nil {
+				tt.SetupMocks(ctx, m)
+			}
+
+			_, err := authUC.ValidateResetPassword(ctx, tt.Input)
+
+			if tt.ExpectedErr != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.ExpectedErr.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

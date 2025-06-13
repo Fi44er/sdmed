@@ -1,6 +1,7 @@
 package utils
 
 import (
+	crand "crypto/rand"
 	"encoding/hex"
 	"math/rand"
 	"time"
@@ -40,4 +41,13 @@ func HashString(s string) (string, error) {
 	hashBytes := h.Sum(nil)
 	hashString := hex.EncodeToString(hashBytes)
 	return hashString, nil
+}
+
+func GenerateSecretToken(length int) (string, error) {
+	b := make([]byte, length)
+	if _, err := crand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+
 }
