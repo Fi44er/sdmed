@@ -38,6 +38,10 @@ type Config struct {
 	RefreshTokenExpiresIn  time.Duration `mapstructure:"REFRESH_TOKEN_EXPIRED_IN"`
 	AccessTokenMaxAge      int           `mapstructure:"ACCESS_TOKEN_MAX_AGE"`
 	RefreshTokenMaxAge     int           `mapstructure:"REFRESH_TOKEN_MAX_AGE"`
+
+	ResetPassTokenExpiredIn time.Duration `mapstructure:"RESET_PASS_TOKEN_EXPIRED_IN"`
+	ResetPassURL            string        `mapstructure:"RESET_PASS_URL"`
+	ClienUrl                string        `mapstructure:"CLIENT_URL"`
 }
 
 func validateConfig(config *Config) error {
@@ -70,6 +74,10 @@ func validateConfig(config *Config) error {
 		"REFRESH_TOKEN_EXPIRED_IN":  config.RefreshTokenExpiresIn,
 		"ACCESS_TOKEN_MAX_AGE":      config.AccessTokenMaxAge,
 		"REFRESH_TOKEN_MAX_AGE":     config.RefreshTokenMaxAge,
+
+		"RESET_PASS_TOKEN_EXPIRED_IN": config.ResetPassTokenExpiredIn,
+		"RESET_PASS_URL":              config.ResetPassURL,
+		"CLIENT_URL":                  config.ClienUrl,
 	}
 
 	for key, value := range configMap {

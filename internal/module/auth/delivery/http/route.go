@@ -10,4 +10,7 @@ func (h *AuthHandler) RegisterRoutes(router fiber.Router) {
 	auth.Post("/sign-out", h.SignOut)
 	auth.Post("/refresh-token", h.RefreshToken)
 	auth.Post("/send-code", h.SendCode)
+	auth.Post("/forgot-password", h.ForgotPassword)
+	auth.Get("/validate-reset-password", h.ValidateResetPassword)
+	auth.Post("/reset-password", h.ResetPassword)
 }

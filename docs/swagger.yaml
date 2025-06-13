@@ -1,6 +1,6 @@
 basePath: /api/
 definitions:
-  dto.SendCodeDTO:
+  dto.CodeDTO:
     properties:
       email:
         type: string
@@ -106,6 +106,31 @@ info:
   title: sdmedik API
   version: "1.0"
 paths:
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Forgot Password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CodeDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: ForgotPassword
+      tags:
+      - Auth
   /auth/refresh-token:
     post:
       consumes:
@@ -134,7 +159,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SendCodeDTO'
+          $ref: '#/definitions/dto.CodeDTO'
       produces:
       - application/json
       responses:

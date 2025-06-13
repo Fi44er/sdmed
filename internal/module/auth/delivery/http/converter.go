@@ -23,15 +23,21 @@ func (c *Converter) ToEntitySignIn(dto *dto.SignInDTO) *entity.User {
 	}
 }
 
-func (c *Converter) ToEntityVerifyCode(dto *dto.VerifyCodeDTO) *entity.VerifyCode {
-	return &entity.VerifyCode{
+func (c *Converter) ToEntityVerifyCode(dto *dto.VerifyCodeDTO) *entity.Code {
+	return &entity.Code{
 		Email: dto.Email,
 		Code:  dto.Code,
 	}
 }
 
-func (c *Converter) ToEntitySendCode(dto *dto.SendCodeDTO) *entity.SendCode {
-	return &entity.SendCode{
+func (c *Converter) ToEntityCode(dto *dto.CodeDTO) *entity.Code {
+	return &entity.Code{
 		Email: dto.Email,
+	}
+}
+
+func (c *Converter) ToEntityResetPassword(dto *dto.ResetPasswordDTO) *entity.User {
+	return &entity.User{
+		Password: dto.Password,
 	}
 }

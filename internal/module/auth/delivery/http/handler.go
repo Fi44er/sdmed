@@ -17,11 +17,14 @@ import (
 
 type IAuthUsecase interface {
 	SignIn(ctx context.Context, user *entity.User) (*entity.Tokens, error)
-	VerifyCode(ctx context.Context, verifyCode *entity.VerifyCode) error
+	VerifyCode(ctx context.Context, verifyCode *entity.Code) error
 	SignUp(ctx context.Context, user *entity.User) error
-	SendCode(ctx context.Context, sendCode *entity.SendCode) error
+	SendCode(ctx context.Context, sendCode *entity.Code) error
 	RefreshAccessToken(ctx context.Context) (string, error)
 	SignOut(ctx context.Context) error
+	ForgotPassword(ctx context.Context, code *entity.Code) error
+	ValidateResetPassword(ctx context.Context, token string) (string, error)
+	ResetPassword(ctx context.Context, token string, user *entity.User) error
 }
 
 type AuthHandler struct {
@@ -69,7 +72,7 @@ func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.Status(200).JSON(fiber.Map{
+	return ctx.Status(201).JSON(fiber.Map{
 		"status":  "success",
 		"message": "user sign up successfully",
 	})
@@ -227,14 +230,14 @@ func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param body body dto.SendCodeDTO true "Send Code"
+// @Param body body dto.CodeDTO true "Send Code"
 // @Success 200 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/send-code [post]
 func (h *AuthHandler) SendCode(ctx *fiber.Ctx) error {
-	dto := new(dto.SendCodeDTO)
+	dto := new(dto.CodeDTO)
 
-	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntitySendCode, h.logger)
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityCode, h.logger)
 	if err != nil {
 		return err
 	}
@@ -254,4 +257,69 @@ func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
 	context := context.WithValue(ctx.Context(), "session", *sess)
 
 	return context
+}
+
+// @Summary ForgotPassword
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.CodeDTO true "Forgot Password"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/forgot-password [post]
+func (h *AuthHandler) ForgotPassword(ctx *fiber.Ctx) error {
+	dto := new(dto.CodeDTO)
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityCode, h.logger)
+	if err != nil {
+		return err
+	}
+
+	if err := h.usecase.ForgotPassword(ctx.Context(), entity); err != nil {
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "send resset link successfully",
+	})
+}
+
+// @Summary ValidateResetPassword
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/validate-reset-password [get]
+func (h *AuthHandler) ValidateResetPassword(ctx *fiber.Ctx) error {
+	token := ctx.Query("token")
+
+	_, err := h.usecase.ValidateResetPassword(ctx.Context(), token)
+	if err != nil {
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "validate reset password token successfully",
+	})
+}
+
+func (h *AuthHandler) ResetPassword(ctx *fiber.Ctx) error {
+	token := ctx.Query("token")
+	dto := new(dto.ResetPasswordDTO)
+
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityResetPassword, h.logger)
+	if err != nil {
+		return err
+	}
+
+	if err := h.usecase.ResetPassword(ctx.Context(), token, entity); err != nil {
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "reset password successfully",
+	})
 }

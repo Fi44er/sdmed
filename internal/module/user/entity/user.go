@@ -20,9 +20,9 @@ type User struct {
 
 func (u *User) Validate() error {
 	switch {
-	case u.ValidatePhoneNumber(u.PhoneNumber) != nil:
+	case u.ValidatePhoneNumber() != nil:
 		return fmt.Errorf("Invalid phone number")
-	case u.ValidateEmail(u.Email) != nil:
+	case u.ValidateEmail() != nil:
 		return fmt.Errorf("Invalid email")
 	}
 	return nil
@@ -42,16 +42,16 @@ func (u *User) HasRole(role string) bool {
 	return false
 }
 
-func (u *User) ValidatePhoneNumber(phoneNumber string) error {
-	if len(phoneNumber) != 11 {
+func (u *User) ValidatePhoneNumber() error {
+	if len(u.PhoneNumber) != 11 {
 		return fmt.Errorf("Invalid phone number")
 	}
 	return nil
 }
 
-func (u *User) ValidateEmail(email string) error {
+func (u *User) ValidateEmail() error {
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
-	if !emailRegex.MatchString(email) {
+	if !emailRegex.MatchString(u.Email) {
 		return fmt.Errorf("Invalid email")
 	}
 	return nil

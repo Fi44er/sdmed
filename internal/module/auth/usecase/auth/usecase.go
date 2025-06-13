@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Fi44er/sdmed/internal/config"
@@ -44,8 +45,9 @@ func NewAuthUsecase(
 }
 
 const (
-	CodeRedisPrefix = "verification_codes_"
-	UserRedisPrefix = "temp_user_"
+	CodeRedisPrefix           = "verification_codes_"
+	UserRedisPrefix           = "temp_user_"
+	ForgotPasswordRedisPrefix = "forgot_password_"
 )
 
 func (u *AuthUsecase) createToken(userID string, expiresIn time.Duration, privateKey string) (string, error) {
@@ -89,7 +91,7 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *entity.User) (*entity.To
 	return &entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
-func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *entity.VerifyCode) error {
+func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *entity.Code) error {
 	hashEmail, err := utils.HashString(verifyCode.Email)
 	if err != nil {
 		return constant.ErrInternalServerError
@@ -144,14 +146,15 @@ func (u *AuthUsecase) SignUp(ctx context.Context, user *entity.User) error {
 		return err
 	}
 
-	sendCode := &entity.SendCode{
+	sendCode := &entity.Code{
 		Email: user.Email,
+		Type:  entity.CodeTypeVerify,
 	}
 
 	return u.SendCode(ctx, sendCode)
 }
 
-func (u *AuthUsecase) SendCode(ctx context.Context, sendCode *entity.SendCode) error {
+func (u *AuthUsecase) SendCode(ctx context.Context, sendCode *entity.Code) error {
 	code := utils.GenerateCode(6)
 	hashEmail, err := utils.HashString(sendCode.Email)
 	if err != nil {
@@ -210,6 +213,72 @@ func (u *AuthUsecase) RefreshAccessToken(ctx context.Context) (string, error) {
 
 func (u *AuthUsecase) SignOut(ctx context.Context) error {
 	if err := u.sessionRepository.DeleteSessionInfo(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *AuthUsecase) ForgotPassword(ctx context.Context, code *entity.Code) error {
+	existUser, err := u.userUsecase.GetByEmail(ctx, code.Email)
+	if err != nil {
+		return err
+	}
+
+	token, err := utils.GenerateSecretToken(32)
+	if err != nil {
+		return err
+	}
+
+	if err := u.cache.Set(ctx, ForgotPasswordRedisPrefix+token, existUser.ID, u.config.ResetPassTokenExpiredIn); err != nil {
+		return err
+	}
+
+	resetLink := fmt.Sprintf("%s?token=%s", u.config.ResetPassURL, token)
+	date := time.Now().Format("2006")
+	templateData := struct {
+		ResetLink string
+		Date      string
+	}{
+		ResetLink: resetLink,
+		Date:      date,
+	}
+	msg := &service.Message{
+		Recipient:    code.Email,
+		Subject:      "Сброс пароля",
+		Data:         templateData,
+		TemplatePath: "./internal/module/auth/pkg/template/reset_pass.html",
+	}
+
+	u.notifyerService.Send(msg, "smtp")
+
+	return nil
+}
+
+func (u *AuthUsecase) ValidateResetPassword(ctx context.Context, token string) (string, error) {
+	var userID string
+	if err := u.cache.Get(ctx, ForgotPasswordRedisPrefix+token, &userID); err != nil {
+		return "", err
+	}
+	if userID == "" {
+		return "", constant.ErrUnprocessableEntity
+	}
+	return userID, nil
+}
+
+func (u *AuthUsecase) ResetPassword(ctx context.Context, token string, user *entity.User) error {
+	userID, err := u.ValidateResetPassword(ctx, token)
+	if err != nil {
+		return err
+	}
+	user.Password = utils.GeneratePassword(user.Password)
+	user.ID = userID
+
+	if err := u.userUsecase.Update(ctx, user); err != nil {
+		return err
+	}
+
+	if err := u.cache.Del(ctx, ForgotPasswordRedisPrefix+token); err != nil {
 		return err
 	}
 

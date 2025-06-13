@@ -1,9 +1,11 @@
 package entity
 
-type VerifyCode struct {
-	Email string
-	Code  string
-}
+type CodeType string
+
+const (
+	CodeTypeVerify CodeType = "verify"
+	CodeTypeReset  CodeType = "reset"
+)
 
 type Tokens struct {
 	AccessToken  string
@@ -15,9 +17,10 @@ type UserSession struct {
 	RefreshToken string
 }
 
-type SendCode struct {
+type Code struct {
 	Email string
 	Code  string
+	Type  CodeType
 }
 
 type TokenDetails struct {

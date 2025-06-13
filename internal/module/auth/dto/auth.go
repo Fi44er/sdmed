@@ -26,11 +26,15 @@ type SignUpDTO struct {
 	PhoneNumber string `json:"phone_number" validate:"required"`
 }
 
-type SendCodeDTO struct {
+type CodeDTO struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
 type LoginResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+}
+
+type ResetPasswordDTO struct {
+	Password string
 }

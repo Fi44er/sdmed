@@ -138,7 +138,7 @@ func (h *UserHandler) Create(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.Status(200).JSON(fiber.Map{
+	return ctx.Status(201).JSON(fiber.Map{
 		"status":  "success",
 		"message": "user created successfully",
 	})
@@ -170,7 +170,7 @@ func (h *UserHandler) Update(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	return ctx.Status(200).JSON(fiber.Map{
+	return ctx.Status(204).JSON(fiber.Map{
 		"status":  "success",
 		"message": "user updated successfully",
 	})
