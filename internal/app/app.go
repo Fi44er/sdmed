@@ -10,6 +10,7 @@ import (
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/middleware"
 	"github.com/Fi44er/sdmed/pkg/postgres"
+	"github.com/Fi44er/sdmed/pkg/postgres/uow"
 	redisConnect "github.com/Fi44er/sdmed/pkg/redis"
 	"github.com/Fi44er/sdmed/pkg/session"
 	sessionadapter "github.com/Fi44er/sdmed/pkg/session/adapters"
@@ -35,6 +36,7 @@ type App struct {
 
 	redisManager   redisConnect.IRedisManager
 	sessionManager *session.SessionManager
+	uow            uow.Uow
 
 	moduleProvider *moduleProvider
 
@@ -117,6 +119,7 @@ func (app *App) initDb() error {
 			return err
 		}
 		app.db = db
+		app.uow = uow.New(app.db)
 
 		// Используем значение migrate из структуры App
 		if err := postgres.Migrate(db, app.migrate, app.logger); err != nil {
@@ -164,15 +167,17 @@ func (app *App) initValidator() error {
 }
 
 func (app *App) initSessionManager() error {
-	app.sessionManager = session.NewSessionManager(
-		sessionstore.NewRedisSessionStore(app.redisClient),
-		30*time.Minute,
-		1*time.Hour,
-		12*time.Hour,
-		"session",
-	)
+	if app.sessionManager == nil {
+		app.sessionManager = session.NewSessionManager(
+			sessionstore.NewRedisSessionStore(app.redisClient),
+			30*time.Minute,
+			1*time.Hour,
+			12*time.Hour,
+			"session",
+		)
 
-	app.app.Use(sessionadapter.FiberMiddleware(app.sessionManager))
+		app.app.Use(sessionadapter.FiberMiddleware(app.sessionManager))
+	}
 
 	return nil
 }
@@ -213,5 +218,6 @@ func (app *App) initRouter() error {
 
 	app.moduleProvider.userModule.InitDelivery(api)
 	app.moduleProvider.authModule.InitDelivery(api)
+	app.moduleProvider.fileModule.InitDelivery(api)
 	return nil
 }

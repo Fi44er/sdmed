@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -11,25 +12,29 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Fi44er/sdmed/internal/config"
+	"github.com/Fi44er/sdmed/internal/module/file/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/chai2010/webp"
 )
 
 type LocalFileStorage struct {
-	basePath string
-	logger   *logger.Logger
+	logger *logger.Logger
+	config *config.Config
 }
 
 func NewLocalFileStorage(
-	basePath string,
+	logger *logger.Logger,
+	config *config.Config,
 ) *LocalFileStorage {
 	return &LocalFileStorage{
-		basePath: basePath,
+		logger: logger,
+		config: config,
 	}
 }
 
-func (s *LocalFileStorage) UploadFile(name string, data []byte) error {
-	outputPath := s.basePath + name
+func (s *LocalFileStorage) Upload(name *string, data []byte) error {
+	outputPath := s.config.FileDir + *name
 	reader := bytes.NewReader(data)
 
 	if img, err := webp.Decode(reader); err == nil {
@@ -40,11 +45,12 @@ func (s *LocalFileStorage) UploadFile(name string, data []byte) error {
 	img, _, err := image.Decode(reader)
 	if err == nil {
 		newPath := s.replaceExtToWebP(outputPath)
+		*name = *name + ".webp"
 		return s.saveAsWebP(img, newPath)
 	}
 
-	if err := os.MkdirAll(s.basePath, 0755); err != nil {
-		s.logger.Errorf("failed to create directory: %s", s.basePath)
+	if err := os.MkdirAll(s.config.FileDir, 0755); err != nil {
+		s.logger.Errorf("failed to create directory: %s", s.config.FileDir)
 		return err
 	}
 
@@ -54,6 +60,24 @@ func (s *LocalFileStorage) UploadFile(name string, data []byte) error {
 	}
 
 	return nil
+}
+
+func (s *LocalFileStorage) Delete(name string) error {
+	filePath := s.config.FileDir + name
+	if err := os.Remove(filePath); err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to delete file %s: %w", name, err)
+		}
+	}
+	return nil
+}
+
+func (s *LocalFileStorage) Get(name string) ([]byte, error) {
+	filePath := s.config.FileDir + name
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return nil, constant.ErrFileNotFound
+	}
+	return os.ReadFile(filePath)
 }
 
 func (s *LocalFileStorage) replaceExtToWebP(path string) string {

@@ -15,7 +15,7 @@ type Config struct {
 	PostgresUrl         string        `mapstructure:"POSTGRES_URL"`
 	RedisUrl            string        `mapstructure:"REDIS_URL"`
 	VerifyCodeExpiredIn time.Duration `mapstructure:"VERIFY_CODE_EXPIRED_IN"`
-	ImageDir            string        `mapstructure:"IMAGE_DIR"`
+	FileDir             string        `mapstructure:"FILE_DIR"`
 
 	CorsOrigin string `mapstructure:"CORS_ORIGIN"`
 
@@ -51,7 +51,7 @@ func validateConfig(config *Config) error {
 		"POSTGRES_URL":           config.PostgresUrl,
 		"REDIS_URL":              config.RedisUrl,
 		"VERIFY_CODE_EXPIRED_IN": config.VerifyCodeExpiredIn,
-		"IMAGE_DIR":              config.ImageDir,
+		"FILE_DIR":               config.FileDir,
 
 		"CORS_ORIGIN": config.CorsOrigin,
 
