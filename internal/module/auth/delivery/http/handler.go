@@ -1,4 +1,4 @@
-package http
+package auth_http
 
 import (
 	"context"
@@ -16,15 +16,15 @@ import (
 )
 
 type IAuthUsecase interface {
-	SignIn(ctx context.Context, user *entity.User) (*entity.Tokens, error)
-	VerifyCode(ctx context.Context, verifyCode *entity.Code) error
-	SignUp(ctx context.Context, user *entity.User) error
-	SendCode(ctx context.Context, sendCode *entity.Code) error
+	SignIn(ctx context.Context, user *auth_entity.User) (*auth_entity.Tokens, error)
+	VerifyCode(ctx context.Context, verifyCode *auth_entity.Code) error
+	SignUp(ctx context.Context, user *auth_entity.User) error
+	SendCode(ctx context.Context, sendCode *auth_entity.Code) error
 	RefreshAccessToken(ctx context.Context) (string, error)
 	SignOut(ctx context.Context) error
-	ForgotPassword(ctx context.Context, code *entity.Code) error
+	ForgotPassword(ctx context.Context, code *auth_entity.Code) error
 	ValidateResetPassword(ctx context.Context, token string) (string, error)
-	ResetPassword(ctx context.Context, token string, user *entity.User) error
+	ResetPassword(ctx context.Context, token string, user *auth_entity.User) error
 }
 
 type AuthHandler struct {
@@ -60,7 +60,7 @@ func NewAuthHandler(
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/sign-up [post]
 func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
-	dto := new(dto.SignUpDTO)
+	dto := new(auth_dto.SignUpDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntitySignUp, h.logger)
 	if err != nil {
@@ -87,7 +87,7 @@ func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/sign-in [post]
 func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
-	dto := new(dto.SignInDTO)
+	dto := new(auth_dto.SignInDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntitySignIn, h.logger)
 	if err != nil {
@@ -135,7 +135,7 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/verify-code [post]
 func (h *AuthHandler) VerifyCode(ctx *fiber.Ctx) error {
-	dto := new(dto.VerifyCodeDTO)
+	dto := new(auth_dto.VerifyCodeDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityVerifyCode, h.logger)
 	if err != nil {
@@ -235,7 +235,7 @@ func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/send-code [post]
 func (h *AuthHandler) SendCode(ctx *fiber.Ctx) error {
-	dto := new(dto.CodeDTO)
+	dto := new(auth_dto.CodeDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityCode, h.logger)
 	if err != nil {
@@ -268,7 +268,7 @@ func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/forgot-password [post]
 func (h *AuthHandler) ForgotPassword(ctx *fiber.Ctx) error {
-	dto := new(dto.CodeDTO)
+	dto := new(auth_dto.CodeDTO)
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityCode, h.logger)
 	if err != nil {
 		return err
@@ -307,7 +307,7 @@ func (h *AuthHandler) ValidateResetPassword(ctx *fiber.Ctx) error {
 
 func (h *AuthHandler) ResetPassword(ctx *fiber.Ctx) error {
 	token := ctx.Query("token")
-	dto := new(dto.ResetPasswordDTO)
+	dto := new(auth_dto.ResetPasswordDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityResetPassword, h.logger)
 	if err != nil {

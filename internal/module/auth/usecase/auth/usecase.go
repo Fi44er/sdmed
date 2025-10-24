@@ -53,20 +53,20 @@ const (
 func (u *AuthUsecase) createToken(userID string, expiresIn time.Duration, privateKey string) (string, error) {
 	tokenDetails, err := u.tokenService.CreateToken(userID, expiresIn, privateKey)
 	if err != nil {
-		return "", constant.ErrUnprocessableEntity
+		return "", auth_constant.ErrUnprocessableEntity
 	}
 
 	return *tokenDetails.Token, err
 }
 
-func (u *AuthUsecase) SignIn(ctx context.Context, user *entity.User) (*entity.Tokens, error) {
+func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth_entity.Tokens, error) {
 	existingUser, err := u.userUsecase.GetByEmail(ctx, user.Email)
 	if err != nil {
 		return nil, err
 	}
 
 	if !u.userUsecase.ComparePassword(existingUser, user.Password) {
-		return nil, constant.ErrInvalidEmailOrPassword
+		return nil, auth_constant.ErrInvalidEmailOrPassword
 	}
 
 	accessToken, err := u.createToken(existingUser.ID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
@@ -79,7 +79,7 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *entity.User) (*entity.To
 		return nil, err
 	}
 
-	userSession := &entity.UserSession{
+	userSession := &auth_entity.UserSession{
 		UserID:       existingUser.ID,
 		RefreshToken: refreshToken,
 	}
@@ -88,25 +88,25 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *entity.User) (*entity.To
 		return nil, err
 	}
 
-	return &entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+	return &auth_entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
-func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *entity.Code) error {
-	hashEmail, err := utils.HashString(verifyCode.Email)
+func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *auth_entity.Code) error {
+	hashEmail, err := auth_utils.HashString(verifyCode.Email)
 	if err != nil {
-		return constant.ErrInternalServerError
+		return auth_constant.ErrInternalServerError
 	}
 
 	var code string
 	if err := u.cache.Get(ctx, CodeRedisPrefix+hashEmail, &code); err != nil {
-		return constant.ErrInternalServerError
+		return auth_constant.ErrInternalServerError
 	}
 
 	if err := u.cache.Del(ctx, CodeRedisPrefix+hashEmail); err != nil {
 		return err
 	}
 
-	var user entity.User
+	var user auth_entity.User
 	if err := u.cache.Get(ctx, UserRedisPrefix+hashEmail, &user); err != nil {
 		return err
 	}
@@ -118,26 +118,26 @@ func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *entity.Code) e
 	return u.cache.Del(ctx, UserRedisPrefix+hashEmail)
 }
 
-func (u *AuthUsecase) SignUp(ctx context.Context, user *entity.User) error {
+func (u *AuthUsecase) SignUp(ctx context.Context, user *auth_entity.User) error {
 	// user.PhoneNumber = regexp.MustCompile("[^0-9]").ReplaceAllString(user.PhoneNumber, "")
 	if len(user.PhoneNumber) != 11 {
-		return constant.ErrInvalidPhoneNumber
+		return auth_constant.ErrInvalidPhoneNumber
 	}
 
 	existUser, err := u.userUsecase.GetByEmail(ctx, user.Email)
 	if err != nil {
-		if err != constant.ErrUserNotFound {
+		if err != auth_constant.ErrUserNotFound {
 			return err
 		}
 	}
 
 	if existUser != nil {
-		return constant.ErrUserAlreadyExists
+		return auth_constant.ErrUserAlreadyExists
 	}
 
-	user.Password = utils.GeneratePassword(user.Password)
+	user.Password = auth_utils.GeneratePassword(user.Password)
 
-	hashEmail, err := utils.HashString(user.Email)
+	hashEmail, err := auth_utils.HashString(user.Email)
 	if err != nil {
 		return err
 	}
@@ -146,24 +146,24 @@ func (u *AuthUsecase) SignUp(ctx context.Context, user *entity.User) error {
 		return err
 	}
 
-	sendCode := &entity.Code{
+	sendCode := &auth_entity.Code{
 		Email: user.Email,
-		Type:  entity.CodeTypeVerify,
+		Type:  auth_entity.CodeTypeVerify,
 	}
 
 	return u.SendCode(ctx, sendCode)
 }
 
-func (u *AuthUsecase) SendCode(ctx context.Context, sendCode *entity.Code) error {
-	code := utils.GenerateCode(6)
-	hashEmail, err := utils.HashString(sendCode.Email)
+func (u *AuthUsecase) SendCode(ctx context.Context, sendCode *auth_entity.Code) error {
+	code := auth_utils.GenerateCode(6)
+	hashEmail, err := auth_utils.HashString(sendCode.Email)
 	if err != nil {
 		return err
 	}
 
-	var tempUser entity.User
+	var tempUser auth_entity.User
 	if err := u.cache.Get(ctx, UserRedisPrefix+hashEmail, &tempUser); err != nil {
-		return constant.ErrUnprocessableEntity
+		return auth_constant.ErrUnprocessableEntity
 	}
 
 	if err := u.cache.Set(ctx, CodeRedisPrefix+hashEmail, code, u.config.VerifyCodeExpiredIn); err != nil {
@@ -200,7 +200,7 @@ func (u *AuthUsecase) RefreshAccessToken(ctx context.Context) (string, error) {
 
 	_, err = u.tokenService.ValidateToken(sessionInfo.RefreshToken, u.config.RefreshTokenPublicKey)
 	if err != nil {
-		return "", constant.ErrForbidden
+		return "", auth_constant.ErrForbidden
 	}
 
 	user, err := u.userUsecase.GetByID(ctx, sessionInfo.UserID)
@@ -219,13 +219,13 @@ func (u *AuthUsecase) SignOut(ctx context.Context) error {
 	return nil
 }
 
-func (u *AuthUsecase) ForgotPassword(ctx context.Context, code *entity.Code) error {
+func (u *AuthUsecase) ForgotPassword(ctx context.Context, code *auth_entity.Code) error {
 	existUser, err := u.userUsecase.GetByEmail(ctx, code.Email)
 	if err != nil {
 		return err
 	}
 
-	token, err := utils.GenerateSecretToken(32)
+	token, err := auth_utils.GenerateSecretToken(32)
 	if err != nil {
 		return err
 	}
@@ -261,17 +261,17 @@ func (u *AuthUsecase) ValidateResetPassword(ctx context.Context, token string) (
 		return "", err
 	}
 	if userID == "" {
-		return "", constant.ErrUnprocessableEntity
+		return "", auth_constant.ErrUnprocessableEntity
 	}
 	return userID, nil
 }
 
-func (u *AuthUsecase) ResetPassword(ctx context.Context, token string, user *entity.User) error {
+func (u *AuthUsecase) ResetPassword(ctx context.Context, token string, user *auth_entity.User) error {
 	userID, err := u.ValidateResetPassword(ctx, token)
 	if err != nil {
 		return err
 	}
-	user.Password = utils.GeneratePassword(user.Password)
+	user.Password = auth_utils.GeneratePassword(user.Password)
 	user.ID = userID
 
 	if err := u.userUsecase.Update(ctx, user); err != nil {

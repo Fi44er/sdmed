@@ -9,16 +9,16 @@ import (
 )
 
 type IUserUsecase interface {
-	GetByEmail(ctx context.Context, email string) (*entity.User, error)
-	GetByID(ctx context.Context, id string) (*entity.User, error)
-	Create(ctx context.Context, user *entity.User) error
-	ComparePassword(user *entity.User, password string) bool
-	Update(ctx context.Context, user *entity.User) error
+	GetByEmail(ctx context.Context, email string) (*auth_entity.User, error)
+	GetByID(ctx context.Context, id string) (*auth_entity.User, error)
+	Create(ctx context.Context, user *auth_entity.User) error
+	ComparePassword(user *auth_entity.User, password string) bool
+	Update(ctx context.Context, user *auth_entity.User) error
 }
 
 type ICache interface {
-	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
-	Get(ctx context.Context, key string, dest interface{}) error
+	Set(ctx context.Context, key string, value any, expiration time.Duration) error
+	Get(ctx context.Context, key string, dest any) error
 	Del(ctx context.Context, key string) error
 }
 
@@ -27,12 +27,12 @@ type INotificationService interface {
 }
 
 type ISessionRepository interface {
-	GetSessionInfo(ctx context.Context) (*entity.UserSession, error)
-	PutSessionInfo(ctx context.Context, sessionInfo *entity.UserSession) error
+	GetSessionInfo(ctx context.Context) (*auth_entity.UserSession, error)
+	PutSessionInfo(ctx context.Context, sessionInfo *auth_entity.UserSession) error
 	DeleteSessionInfo(ctx context.Context) error
 }
 
 type ITokenService interface {
-	CreateToken(userID string, ttl time.Duration, privateKey string) (*entity.TokenDetails, error)
-	ValidateToken(token, publicKey string) (*entity.TokenDetails, error)
+	CreateToken(userID string, ttl time.Duration, privateKey string) (*auth_entity.TokenDetails, error)
+	ValidateToken(token, publicKey string) (*auth_entity.TokenDetails, error)
 }

@@ -17,11 +17,11 @@ type MockVerifyCodeDeps struct {
 }
 
 func getHashedEmail(email string) string {
-	hash, _ := utils.HashString(email)
+	hash, _ := auth_utils.HashString(email)
 	return hash
 }
 
-var testUser = entity.User{
+var testUser = auth_entity.User{
 	PhoneNumber: "12345678901",
 	Email:       "user@example.com",
 	Password:    "hashedpassword",
@@ -30,16 +30,16 @@ var testUser = entity.User{
 
 var VerifyCodeTests = []struct {
 	Name        string
-	Input       *entity.Code
+	Input       *auth_entity.Code
 	ExpectedErr error
 	SetupMocks  func(ctx context.Context, m *MockVerifyCodeDeps)
 }{
 	{
 		Name: "Success",
-		Input: &entity.Code{
+		Input: &auth_entity.Code{
 			Code:  "123456",
 			Email: testUser.Email,
-			Type:  entity.CodeTypeVerify,
+			Type:  auth_entity.CodeTypeVerify,
 		},
 		ExpectedErr: nil,
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
@@ -48,15 +48,15 @@ var VerifyCodeTests = []struct {
 			gomock.InOrder(
 				m.Cache.EXPECT().
 					Get(ctx, "verification_codes_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
 						*(dest.(*string)) = "123456"
 						return nil
 					}),
 				m.Cache.EXPECT().Del(ctx, "verification_codes_"+hash).Return(nil),
 				m.Cache.EXPECT().
 					Get(ctx, "temp_user_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
-						*(dest.(*entity.User)) = testUser
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
+						*(dest.(*auth_entity.User)) = testUser
 						return nil
 					}),
 				m.User.EXPECT().Create(ctx, gomock.Any()).Return(nil),
@@ -66,8 +66,8 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "GetCodeError",
-		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
-		ExpectedErr: constant.ErrInternalServerError,
+		Input:       &auth_entity.Code{Code: "123456", Email: testUser.Email, Type: auth_entity.CodeTypeVerify},
+		ExpectedErr: auth_constant.ErrInternalServerError,
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
 			m.Cache.EXPECT().
@@ -77,28 +77,28 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "IncorrectVerificationCode",
-		Input:       &entity.Code{Code: "wrongcode", Email: testUser.Email, Type: entity.CodeTypeVerify},
-		ExpectedErr: constant.ErrInternalServerError,
+		Input:       &auth_entity.Code{Code: "wrongcode", Email: testUser.Email, Type: auth_entity.CodeTypeVerify},
+		ExpectedErr: auth_constant.ErrInternalServerError,
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
 			m.Cache.EXPECT().
 				Get(ctx, "verification_codes_"+hash, gomock.Any()).
-				DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
+				DoAndReturn(func(_ context.Context, _ string, dest any) error {
 					*(dest.(*string)) = "realcode"
-					return constant.ErrInternalServerError
+					return auth_constant.ErrInternalServerError
 				})
 		},
 	},
 	{
 		Name:        "DeleteCodeError",
-		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
+		Input:       &auth_entity.Code{Code: "123456", Email: testUser.Email, Type: auth_entity.CodeTypeVerify},
 		ExpectedErr: errors.New("delete code error"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
 			gomock.InOrder(
 				m.Cache.EXPECT().
 					Get(ctx, "verification_codes_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
 						*(dest.(*string)) = "123456"
 						return nil
 					}),
@@ -110,14 +110,14 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "GetTempUserError",
-		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
+		Input:       &auth_entity.Code{Code: "123456", Email: testUser.Email, Type: auth_entity.CodeTypeVerify},
 		ExpectedErr: errors.New("temp user not found"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
 			gomock.InOrder(
 				m.Cache.EXPECT().
 					Get(ctx, "verification_codes_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
 						*(dest.(*string)) = "123456"
 						return nil
 					}),
@@ -130,22 +130,22 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "CreateUserError",
-		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
+		Input:       &auth_entity.Code{Code: "123456", Email: testUser.Email, Type: auth_entity.CodeTypeVerify},
 		ExpectedErr: errors.New("create user failed"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
 			gomock.InOrder(
 				m.Cache.EXPECT().
 					Get(ctx, "verification_codes_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
 						*(dest.(*string)) = "123456"
 						return nil
 					}),
 				m.Cache.EXPECT().Del(ctx, "verification_codes_"+hash).Return(nil),
 				m.Cache.EXPECT().
 					Get(ctx, "temp_user_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
-						*(dest.(*entity.User)) = testUser
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
+						*(dest.(*auth_entity.User)) = testUser
 						return nil
 					}),
 				m.User.EXPECT().Create(ctx, gomock.Any()).
@@ -155,22 +155,22 @@ var VerifyCodeTests = []struct {
 	},
 	{
 		Name:        "DeleteTempUserError",
-		Input:       &entity.Code{Code: "123456", Email: testUser.Email, Type: entity.CodeTypeVerify},
+		Input:       &auth_entity.Code{Code: "123456", Email: testUser.Email, Type: auth_entity.CodeTypeVerify},
 		ExpectedErr: errors.New("cache delete failed"),
 		SetupMocks: func(ctx context.Context, m *MockVerifyCodeDeps) {
 			hash := getHashedEmail(testUser.Email)
 			gomock.InOrder(
 				m.Cache.EXPECT().
 					Get(ctx, "verification_codes_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
 						*(dest.(*string)) = "123456"
 						return nil
 					}),
 				m.Cache.EXPECT().Del(ctx, "verification_codes_"+hash).Return(nil),
 				m.Cache.EXPECT().
 					Get(ctx, "temp_user_"+hash, gomock.Any()).
-					DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
-						*(dest.(*entity.User)) = testUser
+					DoAndReturn(func(_ context.Context, _ string, dest any) error {
+						*(dest.(*auth_entity.User)) = testUser
 						return nil
 					}),
 				m.User.EXPECT().Create(ctx, gomock.Any()).Return(nil),

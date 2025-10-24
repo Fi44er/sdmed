@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/Fi44er/sdmed/internal/module/file/dto"
 	"github.com/Fi44er/sdmed/internal/module/file/entity"
 	"github.com/Fi44er/sdmed/internal/module/file/pkg/utils"
 	"github.com/Fi44er/sdmed/pkg/logger"
@@ -13,7 +12,7 @@ import (
 )
 
 type IFileUsecase interface {
-	Upload(ctx context.Context, dto *dto.UploadFiles) error
+	Upload(ctx context.Context, file *entity.File) error
 	Get(ctx context.Context, name string) (*entity.File, error)
 }
 
@@ -73,12 +72,10 @@ func (h *FileHandler) Upload(ctx *fiber.Ctx) error {
 		})
 	}
 
-	uploadDTO := &dto.UploadFiles{
-		File: entity.File{
-			OwnerID:   ctx.FormValue("owner_id"),
-			OwnerType: ctx.FormValue("owner_type"),
-		},
-		Data: fileData,
+	uploadDTO := &entity.File{
+		OwnerID:   ctx.FormValue("owner_id"),
+		OwnerType: ctx.FormValue("owner_type"),
+		Data:      fileData,
 	}
 
 	if err := h.usecase.Upload(ctx.Context(), uploadDTO); err != nil {

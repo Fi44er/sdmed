@@ -1,4 +1,4 @@
-package adapters
+package auth_adapters
 
 import (
 	"encoding/base64"
@@ -16,9 +16,9 @@ func NewTokenService() *TokenService {
 	return &TokenService{}
 }
 
-func (s *TokenService) CreateToken(userID string, ttl time.Duration, privateKey string) (*entity.TokenDetails, error) {
+func (s *TokenService) CreateToken(userID string, ttl time.Duration, privateKey string) (*auth_entity.TokenDetails, error) {
 	now := time.Now().UTC()
-	td := &entity.TokenDetails{
+	td := &auth_entity.TokenDetails{
 		ExpiresIn: new(int64),
 		Token:     new(string),
 	}
@@ -49,7 +49,7 @@ func (s *TokenService) CreateToken(userID string, ttl time.Duration, privateKey 
 	return td, nil
 }
 
-func (s *TokenService) ValidateToken(token string, publicKey string) (*entity.TokenDetails, error) {
+func (s *TokenService) ValidateToken(token string, publicKey string) (*auth_entity.TokenDetails, error) {
 	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode public key: %w", err)
@@ -59,7 +59,7 @@ func (s *TokenService) ValidateToken(token string, publicKey string) (*entity.To
 		return nil, fmt.Errorf("parse public key: %w", err)
 	}
 
-	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %s", t.Header["alg"])
 		}
@@ -74,7 +74,7 @@ func (s *TokenService) ValidateToken(token string, publicKey string) (*entity.To
 		return nil, fmt.Errorf("invalid token")
 	}
 
-	return &entity.TokenDetails{
+	return &auth_entity.TokenDetails{
 		TokenUUID: fmt.Sprint(claims["token_uuid"]),
 		UserID:    fmt.Sprint(claims["sub"]),
 	}, nil

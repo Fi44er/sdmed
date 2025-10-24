@@ -13,10 +13,10 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 
 	if trigger {
 		log.Info("📦 Migrating database...")
-		models := []interface{}{
-			model.Permission{},
-			model.Role{},
-			model.User{},
+		models := []any{
+			user_model.Permission{},
+			user_model.Role{},
+			user_model.User{},
 			file_model.File{},
 		}
 		schemas := []string{"user_module", "file_module"}

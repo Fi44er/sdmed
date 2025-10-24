@@ -22,13 +22,13 @@ type MockSignUpDeps struct {
 
 var SignUpTests = []struct {
 	Name        string
-	Input       *entity.User
+	Input       *auth_entity.User
 	ExpectedErr error
 	SetupMocks  func(ctx context.Context, m *MockSignUpDeps)
 }{
 	{
 		Name: "Success",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:       "new@example.com",
 			PhoneNumber: "79998887766",
 			Password:    "pass123",
@@ -37,7 +37,7 @@ var SignUpTests = []struct {
 			gomock.InOrder(
 				m.User.EXPECT().
 					GetByEmail(ctx, "new@example.com").
-					Return(nil, constant.ErrUserNotFound),
+					Return(nil, auth_constant.ErrUserNotFound),
 
 				m.Cache.EXPECT().
 					Set(ctx, gomock.Any(), gomock.Any(), tmpCodeTTL).
@@ -45,9 +45,9 @@ var SignUpTests = []struct {
 
 				m.Cache.EXPECT().
 					Get(ctx, gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, key string, dest interface{}) error {
-						if userPtr, ok := dest.(*entity.User); ok {
-							*userPtr = entity.User{
+					DoAndReturn(func(ctx context.Context, key string, dest any) error {
+						if userPtr, ok := dest.(*auth_entity.User); ok {
+							*userPtr = auth_entity.User{
 								Email:       "new@example.com",
 								PhoneNumber: "79998887766",
 								Password:    "hashed_pass",
@@ -67,30 +67,30 @@ var SignUpTests = []struct {
 	},
 	{
 		Name: "InvalidPhone",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:       "bad@example.com",
 			PhoneNumber: "123",
 			Password:    "pass",
 		},
-		ExpectedErr: constant.ErrInvalidPhoneNumber,
+		ExpectedErr: auth_constant.ErrInvalidPhoneNumber,
 	},
 	{
 		Name: "UserExists",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:       "exists@example.com",
 			PhoneNumber: "79998887766",
 			Password:    "pass",
 		},
-		ExpectedErr: constant.ErrUserAlreadyExists,
+		ExpectedErr: auth_constant.ErrUserAlreadyExists,
 		SetupMocks: func(ctx context.Context, m *MockSignUpDeps) {
 			m.User.EXPECT().
 				GetByEmail(ctx, "exists@example.com").
-				Return(&entity.User{}, nil)
+				Return(&auth_entity.User{}, nil)
 		},
 	},
 	{
 		Name: "CacheSetError",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:       "cachefail@example.com",
 			PhoneNumber: "79998887766",
 			Password:    "pass",
@@ -99,7 +99,7 @@ var SignUpTests = []struct {
 		SetupMocks: func(ctx context.Context, m *MockSignUpDeps) {
 			m.User.EXPECT().
 				GetByEmail(ctx, "cachefail@example.com").
-				Return(nil, constant.ErrUserNotFound)
+				Return(nil, auth_constant.ErrUserNotFound)
 
 			m.Cache.EXPECT().
 				Set(ctx, gomock.Any(), gomock.Any(), tmpCodeTTL).

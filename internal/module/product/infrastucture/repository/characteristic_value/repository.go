@@ -1,0 +1,1 @@
+package characteristic_value_repository

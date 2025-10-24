@@ -1,4 +1,4 @@
-package module
+package auth_module
 
 import (
 	"github.com/Fi44er/sdmed/internal/config"
@@ -16,13 +16,13 @@ import (
 )
 
 type AuthModule struct {
-	authAdapters       *adapters.UserUsecaseAdapter
+	authauth_adapters  *auth_adapters.UserUsecaseAdapter
 	authUsecase        *auth_usecase.AuthUsecase
 	authHandler        *auth_handler.AuthHandler
 	userUsecase        *user_usecase.UserUsecase
 	notificationServce *service.NotificationService
 	sessionRepository  *repository.SessionRepository
-	tokenService       *adapters.TokenService
+	tokenService       *auth_adapters.TokenService
 
 	logger       *logger.Logger
 	validator    *validator.Validate
@@ -52,14 +52,14 @@ func NewAuthModule(
 }
 
 func (m *AuthModule) Init() {
-	m.authAdapters = adapters.NewUserUsecaseAdapter(m.userUsecase)
+	m.authauth_adapters = auth_adapters.NewUserUsecaseAdapter(m.userUsecase)
 	m.sessionRepository = repository.NewSessionRepository(m.logger)
-	m.tokenService = adapters.NewTokenService()
+	m.tokenService = auth_adapters.NewTokenService()
 	m.authUsecase = auth_usecase.NewAuthUsecase(
 		m.logger,
 		m.redisManager,
 		m.config,
-		m.authAdapters,
+		m.authauth_adapters,
 		m.notificationServce,
 		m.sessionRepository,
 		m.tokenService,

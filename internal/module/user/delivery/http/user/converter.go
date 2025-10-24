@@ -1,4 +1,4 @@
-package http
+package user_http
 
 import (
 	"github.com/Fi44er/sdmed/internal/module/user/dto"
@@ -7,8 +7,8 @@ import (
 
 type Converter struct{}
 
-func (c *Converter) ToEntity(dto *dto.UserDTO) *entity.User {
-	return &entity.User{
+func (c *Converter) ToEntity(dto *user_dto.UserDTO) *user_entity.User {
+	return &user_entity.User{
 		Name:         dto.Name,
 		Surname:      dto.Surname,
 		Patronymic:   dto.Patronymic,
@@ -18,12 +18,12 @@ func (c *Converter) ToEntity(dto *dto.UserDTO) *entity.User {
 	}
 }
 
-func (c *Converter) ToResponse(entity *entity.User) *dto.UserResponse {
+func (c *Converter) ToResponse(entity *user_entity.User) *user_dto.UserResponse {
 	roles := make([]string, len(entity.Roles))
 	for i, r := range entity.Roles {
 		roles[i] = r.Name
 	}
-	return &dto.UserResponse{
+	return &user_dto.UserResponse{
 		ID:          entity.ID,
 		Name:        entity.Name,
 		Surname:     entity.Surname,
@@ -34,8 +34,8 @@ func (c *Converter) ToResponse(entity *entity.User) *dto.UserResponse {
 	}
 }
 
-func (c *Converter) ToResponseSlice(entities []entity.User) []dto.UserResponse {
-	res := make([]dto.UserResponse, len(entities))
+func (c *Converter) ToResponseSlice(entities []user_entity.User) []user_dto.UserResponse {
+	res := make([]user_dto.UserResponse, len(entities))
 	for i, e := range entities {
 		res[i] = *c.ToResponse(&e)
 	}

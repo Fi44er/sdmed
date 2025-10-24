@@ -3,6 +3,7 @@ package filesystem
 import (
 	"bytes"
 	"fmt"
+	"github.com/h2non/filetype"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -54,7 +55,8 @@ func (s *LocalFileStorage) Upload(name *string, data []byte) error {
 		return err
 	}
 
-	if os.WriteFile(outputPath, data, 0644) != nil {
+	kind, _ := filetype.Match(data)
+	if os.WriteFile(outputPath+"."+kind.Extension, data, 0644) != nil {
 		s.logger.Errorf("failed to write file: %s", outputPath)
 		return err
 	}

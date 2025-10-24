@@ -1,8 +1,8 @@
-package entity
+package product_entity
 
 type CharacteristicValue struct {
 	ID               string
-	Value            string
 	CharacteristicID string
+	Value            string
 	ProductID        string
 }

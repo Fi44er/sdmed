@@ -1,8 +1,10 @@
-package entity
+package user_entity
 
 import (
 	"fmt"
 	"regexp"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -57,9 +59,7 @@ func (u *User) ValidateEmail() error {
 	return nil
 }
 
-func (u *User) ComparePassword(passwordHash string) bool {
-	if u.PasswordHash != passwordHash {
-		return false
-	}
-	return true
+func (u *User) ComparePassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
+	return err == nil
 }

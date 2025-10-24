@@ -20,18 +20,18 @@ type MockSignInDeps struct {
 
 var SignInTests = []struct {
 	Name        string
-	Input       *entity.User
+	Input       *auth_entity.User
 	ExpectedErr error
 	SetupMocks  func(ctx context.Context, m *MockSignInDeps)
 }{
 	{
 		Name: "Success",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:    "user@example.com",
 			Password: "pass123",
 		},
 		SetupMocks: func(ctx context.Context, m *MockSignInDeps) {
-			userFromDB := &entity.User{
+			userFromDB := &auth_entity.User{
 				ID:       "user-id",
 				Email:    "user@example.com",
 				Password: "hashed123",
@@ -52,7 +52,7 @@ var SignInTests = []struct {
 
 				m.TokenService.EXPECT().
 					CreateToken(userFromDB.ID, gomock.Any(), gomock.Any()).
-					Return(&entity.TokenDetails{
+					Return(&auth_entity.TokenDetails{
 						Token:     &accessToken,
 						TokenUUID: "uuid-1",
 						UserID:    userFromDB.ID,
@@ -61,7 +61,7 @@ var SignInTests = []struct {
 
 				m.TokenService.EXPECT().
 					CreateToken(userFromDB.ID, gomock.Any(), gomock.Any()).
-					Return(&entity.TokenDetails{
+					Return(&auth_entity.TokenDetails{
 						Token:     &refreshToken,
 						TokenUUID: "uuid-2",
 						UserID:    userFromDB.ID,
@@ -76,13 +76,13 @@ var SignInTests = []struct {
 	},
 	{
 		Name: "InvalidPassword",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:    "user@example.com",
 			Password: "wrongpass",
 		},
-		ExpectedErr: constant.ErrInvalidEmailOrPassword,
+		ExpectedErr: auth_constant.ErrInvalidEmailOrPassword,
 		SetupMocks: func(ctx context.Context, m *MockSignInDeps) {
-			user := &entity.User{
+			user := &auth_entity.User{
 				Email:    "user@example.com",
 				Password: "hashed",
 			}
@@ -98,7 +98,7 @@ var SignInTests = []struct {
 	},
 	{
 		Name: "UserNotFound",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:    "notfound@example.com",
 			Password: "somepass",
 		},
@@ -111,13 +111,13 @@ var SignInTests = []struct {
 	},
 	{
 		Name: "AccessTokenCreationFailed",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:    "user@example.com",
 			Password: "pass123",
 		},
-		ExpectedErr: constant.ErrUnprocessableEntity,
+		ExpectedErr: auth_constant.ErrUnprocessableEntity,
 		SetupMocks: func(ctx context.Context, m *MockSignInDeps) {
-			user := &entity.User{
+			user := &auth_entity.User{
 				ID:       "user-id",
 				Email:    "user@example.com",
 				Password: "hashed",
@@ -138,13 +138,13 @@ var SignInTests = []struct {
 	},
 	{
 		Name: "RefreshTokenCreationFailed",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:    "user@example.com",
 			Password: "pass123",
 		},
-		ExpectedErr: constant.ErrUnprocessableEntity,
+		ExpectedErr: auth_constant.ErrUnprocessableEntity,
 		SetupMocks: func(ctx context.Context, m *MockSignInDeps) {
-			user := &entity.User{
+			user := &auth_entity.User{
 				ID:       "user-id",
 				Email:    "user@example.com",
 				Password: "hashed",
@@ -162,7 +162,7 @@ var SignInTests = []struct {
 
 			m.TokenService.EXPECT().
 				CreateToken(user.ID, gomock.Any(), gomock.Any()).
-				Return(&entity.TokenDetails{
+				Return(&auth_entity.TokenDetails{
 					Token:     &token,
 					TokenUUID: "uuid-access",
 					UserID:    user.ID,
@@ -176,13 +176,13 @@ var SignInTests = []struct {
 	},
 	{
 		Name: "SessionSaveFailed",
-		Input: &entity.User{
+		Input: &auth_entity.User{
 			Email:    "user@example.com",
 			Password: "pass123",
 		},
 		ExpectedErr: errors.New("session error"),
 		SetupMocks: func(ctx context.Context, m *MockSignInDeps) {
-			user := &entity.User{
+			user := &auth_entity.User{
 				ID:       "user-id",
 				Email:    "user@example.com",
 				Password: "hashed",
@@ -200,7 +200,7 @@ var SignInTests = []struct {
 
 			m.TokenService.EXPECT().
 				CreateToken(user.ID, gomock.Any(), gomock.Any()).
-				Return(&entity.TokenDetails{
+				Return(&auth_entity.TokenDetails{
 					Token:     &token,
 					TokenUUID: "uuid-access",
 					UserID:    user.ID,
@@ -209,7 +209,7 @@ var SignInTests = []struct {
 
 			m.TokenService.EXPECT().
 				CreateToken(user.ID, gomock.Any(), gomock.Any()).
-				Return(&entity.TokenDetails{
+				Return(&auth_entity.TokenDetails{
 					Token:     &token,
 					TokenUUID: "uuid-refresh",
 					UserID:    user.ID,

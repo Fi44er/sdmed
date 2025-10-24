@@ -1,7 +1,8 @@
-package adapters
+package auth_adapters
 
 import (
 	"context"
+	"strings"
 
 	authEntity "github.com/Fi44er/sdmed/internal/module/auth/entity"
 	constantAuth "github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
@@ -70,10 +71,30 @@ func toUserEntity(user *authEntity.User) *userEntity.User {
 	if user == nil {
 		return nil
 	}
+
+	name, surname, patronymic := splitFIO(user.FIO)
 	return &userEntity.User{
 		ID:           user.ID,
 		Email:        user.Email,
+		Name:         name,
+		Surname:      surname,
+		Patronymic:   patronymic,
 		PasswordHash: user.Password,
 		PhoneNumber:  user.PhoneNumber,
+	}
+}
+
+func splitFIO(fio string) (name, surname, patronymic string) {
+	parts := strings.Fields(fio)
+
+	switch len(parts) {
+	case 0:
+		return "", "", ""
+	case 1:
+		return parts[0], "", ""
+	case 2:
+		return parts[0], parts[1], ""
+	default:
+		return parts[0], parts[1], strings.Join(parts[2:], " ")
 	}
 }

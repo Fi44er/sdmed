@@ -1,4 +1,4 @@
-package entity
+package auth_entity
 
 type CodeType string
 

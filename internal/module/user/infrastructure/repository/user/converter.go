@@ -1,4 +1,4 @@
-package repository
+package user_repository
 
 import (
 	"github.com/Fi44er/sdmed/internal/module/user/entity"
@@ -7,12 +7,12 @@ import (
 
 type Converter struct{}
 
-func (c *Converter) ToModel(entity *entity.User) *model.User {
-	roles := make([]model.Role, len(entity.Roles))
+func (c *Converter) ToModel(entity *user_entity.User) *user_model.User {
+	roles := make([]user_model.Role, len(entity.Roles))
 	for i, r := range entity.Roles {
-		roles[i] = model.Role{ID: r.ID, Name: r.Name}
+		roles[i] = user_model.Role{ID: r.ID, Name: r.Name}
 	}
-	return &model.User{
+	return &user_model.User{
 		ID:           entity.ID,
 		Email:        entity.Email,
 		PasswordHash: entity.PasswordHash,
@@ -24,12 +24,12 @@ func (c *Converter) ToModel(entity *entity.User) *model.User {
 	}
 }
 
-func (c *Converter) ToEntity(model *model.User) *entity.User {
-	roles := make([]entity.Role, len(model.Roles))
+func (c *Converter) ToEntity(model *user_model.User) *user_entity.User {
+	roles := make([]user_entity.Role, len(model.Roles))
 	for i, r := range model.Roles {
-		roles[i] = entity.Role{ID: r.ID, Name: r.Name}
+		roles[i] = user_entity.Role{ID: r.ID, Name: r.Name}
 	}
-	return &entity.User{
+	return &user_entity.User{
 		ID:           model.ID,
 		Email:        model.Email,
 		PasswordHash: model.PasswordHash,

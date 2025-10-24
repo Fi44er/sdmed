@@ -19,13 +19,13 @@ type MockForgotPasswordDeps struct {
 
 var ForgotPasswordTests = []struct {
 	Name        string
-	Input       *entity.Code
+	Input       *auth_entity.Code
 	ExpectedErr error
 	SetupMocks  func(ctx context.Context, m *MockForgotPasswordDeps)
 }{
 	{
 		Name: "Success",
-		Input: &entity.Code{
+		Input: &auth_entity.Code{
 			Code:  "123456",
 			Email: "user@example.com",
 		},
@@ -33,7 +33,7 @@ var ForgotPasswordTests = []struct {
 		SetupMocks: func(ctx context.Context, m *MockForgotPasswordDeps) {
 			m.User.EXPECT().
 				GetByEmail(ctx, "user@example.com").
-				Return(&entity.User{Email: "user@example.com"}, nil)
+				Return(&auth_entity.User{Email: "user@example.com"}, nil)
 
 			m.Cache.EXPECT().
 				Set(ctx, gomock.Any(), gomock.Any(), 10*time.Minute).
@@ -46,20 +46,20 @@ var ForgotPasswordTests = []struct {
 	},
 	{
 		Name: "UserNotFound",
-		Input: &entity.Code{
+		Input: &auth_entity.Code{
 			Code:  "123456",
 			Email: "user@example.com",
 		},
-		ExpectedErr: constant.ErrUserNotFound,
+		ExpectedErr: auth_constant.ErrUserNotFound,
 		SetupMocks: func(ctx context.Context, m *MockForgotPasswordDeps) {
 			m.User.EXPECT().
 				GetByEmail(ctx, "user@example.com").
-				Return(nil, constant.ErrUserNotFound)
+				Return(nil, auth_constant.ErrUserNotFound)
 		},
 	},
 	{
 		Name: "CacheSetError",
-		Input: &entity.Code{
+		Input: &auth_entity.Code{
 			Code:  "123456",
 			Email: "user@example.com",
 		},
@@ -67,7 +67,7 @@ var ForgotPasswordTests = []struct {
 		SetupMocks: func(ctx context.Context, m *MockForgotPasswordDeps) {
 			m.User.EXPECT().
 				GetByEmail(ctx, "user@example.com").
-				Return(&entity.User{Email: "user@example.com"}, nil)
+				Return(&auth_entity.User{Email: "user@example.com"}, nil)
 
 			m.Cache.EXPECT().
 				Set(ctx, gomock.Any(), gomock.Any(), 10*time.Minute).

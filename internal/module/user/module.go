@@ -1,4 +1,4 @@
-package module
+package user_module
 
 import (
 	user_handler "github.com/Fi44er/sdmed/internal/module/user/delivery/http/user"

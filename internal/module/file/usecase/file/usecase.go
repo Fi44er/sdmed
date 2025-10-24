@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 
-	"github.com/Fi44er/sdmed/internal/module/file/dto"
 	"github.com/Fi44er/sdmed/internal/module/file/entity"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
@@ -41,9 +40,9 @@ func NewFileUsecase(
 	}
 }
 
-func (u *FileUsecase) Upload(ctx context.Context, dto *dto.UploadFiles) error {
+func (u *FileUsecase) Upload(ctx context.Context, file *entity.File) error {
 	return u.uow.Do(ctx, func(ctx context.Context) error {
-		if err := dto.File.GenerateName(); err != nil {
+		if err := file.GenerateName(); err != nil {
 			u.logger.Errorf("failed to generate file name: %s", err)
 			return err
 		}
@@ -51,13 +50,13 @@ func (u *FileUsecase) Upload(ctx context.Context, dto *dto.UploadFiles) error {
 		needCleanup := true
 		defer func() {
 			if needCleanup {
-				if err := u.fileStorage.Delete(dto.File.Name); err != nil {
-					u.logger.Errorf("failed to cleanup file %s: %v", dto.File.Name, err)
+				if err := u.fileStorage.Delete(file.Name); err != nil {
+					u.logger.Errorf("failed to cleanup file %s: %v", file.Name, err)
 				}
 			}
 		}()
 
-		if err := u.fileStorage.Upload(&dto.File.Name, dto.Data); err != nil {
+		if err := u.fileStorage.Upload(&file.Name, file.Data); err != nil {
 			return err
 		}
 
@@ -68,7 +67,7 @@ func (u *FileUsecase) Upload(ctx context.Context, dto *dto.UploadFiles) error {
 		}
 		fileRepo := repo.(IFileRepository)
 
-		if err := fileRepo.Create(ctx, &dto.File); err != nil {
+		if err := fileRepo.Create(ctx, file); err != nil {
 			return err
 		}
 

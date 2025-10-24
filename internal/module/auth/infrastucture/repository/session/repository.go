@@ -1,4 +1,4 @@
-package repository
+package auth_repository
 
 import (
 	"context"
@@ -25,19 +25,19 @@ const (
 	sessionInfoKey = "session_info"
 )
 
-func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*entity.UserSession, error) {
+func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*auth_entity.UserSession, error) {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
 		r.logger.Error("session not found")
 		return nil, fmt.Errorf("session not found")
 	}
 
-	sessionData, ok := session.Get(sessionInfoKey).(map[string]interface{})
+	sessionData, ok := session.Get(sessionInfoKey).(map[string]any)
 	if !ok {
-		return nil, constant.ErrSessionInfoNotFound
+		return nil, auth_constant.ErrSessionInfoNotFound
 	}
 
-	var userSession entity.UserSession
+	var userSession auth_entity.UserSession
 	if err := mapstructure.Decode(sessionData, &userSession); err != nil {
 		return nil, fmt.Errorf("failed to decode session data: %v", err)
 	}
@@ -45,11 +45,11 @@ func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*entity.UserSes
 	return &userSession, nil
 }
 
-func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *entity.UserSession) error {
+func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *auth_entity.UserSession) error {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
 		r.logger.Error("session not found")
-		return constant.ErrSessionInfoNotFound
+		return auth_constant.ErrSessionInfoNotFound
 	}
 
 	session.Put(sessionInfoKey, sessionInfo)
@@ -60,7 +60,7 @@ func (r *SessionRepository) DeleteSessionInfo(ctx context.Context) error {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
 		r.logger.Error("session not found")
-		return constant.ErrSessionInfoNotFound
+		return auth_constant.ErrSessionInfoNotFound
 	}
 
 	session.Delete(sessionInfoKey)

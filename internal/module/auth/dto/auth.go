@@ -1,4 +1,4 @@
-package dto
+package auth_dto
 
 type SignInDTO struct {
 	Email    string `json:"email" validate:"required"`

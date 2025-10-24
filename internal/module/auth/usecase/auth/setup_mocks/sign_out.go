@@ -26,11 +26,11 @@ var SignOutTests = []struct {
 	},
 	{
 		Name:        "SessionDeleteError",
-		ExpectedErr: constant.ErrSessionInfoNotFound,
+		ExpectedErr: auth_constant.ErrSessionInfoNotFound,
 		SetupMocks: func(ctx context.Context, m *SignOutDeps) {
 			m.Session.EXPECT().
 				DeleteSessionInfo(ctx).
-				Return(constant.ErrSessionInfoNotFound)
+				Return(auth_constant.ErrSessionInfoNotFound)
 		},
 	},
 }

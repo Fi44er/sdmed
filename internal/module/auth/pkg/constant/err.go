@@ -1,4 +1,4 @@
-package constant
+package auth_constant
 
 import "github.com/Fi44er/sdmed/pkg/customerr"
 

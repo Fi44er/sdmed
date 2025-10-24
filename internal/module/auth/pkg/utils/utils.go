@@ -1,4 +1,4 @@
-package utils
+package auth_utils
 
 import (
 	crand "crypto/rand"
@@ -49,5 +49,4 @@ func GenerateSecretToken(length int) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(b), nil
-
 }

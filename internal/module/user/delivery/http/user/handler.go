@@ -1,4 +1,4 @@
-package http
+package user_http
 
 import (
 	"context"
@@ -15,10 +15,10 @@ import (
 )
 
 type IUserUsecase interface {
-	GetByID(ctx context.Context, id string) (*entity.User, error)
-	GetAll(ctx context.Context, limit, offset int) ([]entity.User, error)
-	Create(ctx context.Context, entity *entity.User) error
-	Update(ctx context.Context, entity *entity.User) error
+	GetByID(ctx context.Context, id string) (*user_entity.User, error)
+	GetAll(ctx context.Context, limit, offset int) ([]user_entity.User, error)
+	Create(ctx context.Context, entity *user_entity.User) error
+	Update(ctx context.Context, entity *user_entity.User) error
 	Delete(ctx context.Context, id string) error
 }
 
@@ -126,7 +126,7 @@ func (h *UserHandler) GetAll(ctx *fiber.Ctx) error {
 // @Failure      500      {object}  response.Response "Error"
 // @Router /users [post]
 func (h *UserHandler) Create(ctx *fiber.Ctx) error {
-	dto := new(dto.UserDTO)
+	dto := new(user_dto.UserDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntity, h.logger)
 	if err != nil {
@@ -157,7 +157,7 @@ func (h *UserHandler) Create(ctx *fiber.Ctx) error {
 // @Router /users/{id} [put]
 func (h *UserHandler) Update(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
-	dto := new(dto.UserDTO)
+	dto := new(user_dto.UserDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntity, h.logger)
 	if err != nil {

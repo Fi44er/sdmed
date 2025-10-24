@@ -24,7 +24,7 @@ var RefreshTokenTests = []struct {
 	{
 		Name: "Success",
 		SetupMocks: func(ctx context.Context, m *MockRefreshTokenDeps) {
-			userFromDB := &entity.User{
+			userFromDB := &auth_entity.User{
 				ID:       "user-id",
 				Email:    "user@example.com",
 				Password: "hashed123",
@@ -35,11 +35,11 @@ var RefreshTokenTests = []struct {
 			gomock.InOrder(
 				m.Session.EXPECT().
 					GetSessionInfo(ctx).
-					Return(&entity.UserSession{UserID: "test"}, nil),
+					Return(&auth_entity.UserSession{UserID: "test"}, nil),
 
 				m.TokenService.EXPECT().
 					ValidateToken(gomock.Any(), gomock.Any()).
-					Return(&entity.TokenDetails{UserID: "test"}, nil),
+					Return(&auth_entity.TokenDetails{UserID: "test"}, nil),
 
 				m.User.EXPECT().
 					GetByID(ctx, "test").
@@ -47,7 +47,7 @@ var RefreshTokenTests = []struct {
 
 				m.TokenService.EXPECT().
 					CreateToken(userFromDB.ID, gomock.Any(), gomock.Any()).
-					Return(&entity.TokenDetails{
+					Return(&auth_entity.TokenDetails{
 						Token:     &accessToken,
 						TokenUUID: "uuid-1",
 						UserID:    userFromDB.ID,
@@ -58,49 +58,49 @@ var RefreshTokenTests = []struct {
 	},
 	{
 		Name:        "SessionInfoNotFound",
-		ExpectedErr: constant.ErrSessionInfoNotFound,
+		ExpectedErr: auth_constant.ErrSessionInfoNotFound,
 		SetupMocks: func(ctx context.Context, m *MockRefreshTokenDeps) {
 			m.Session.EXPECT().
 				GetSessionInfo(ctx).
-				Return(nil, constant.ErrSessionInfoNotFound)
+				Return(nil, auth_constant.ErrSessionInfoNotFound)
 		},
 	},
 	{
 		Name:        "ValidateTokenError",
-		ExpectedErr: constant.ErrForbidden,
+		ExpectedErr: auth_constant.ErrForbidden,
 		SetupMocks: func(ctx context.Context, m *MockRefreshTokenDeps) {
 			m.Session.EXPECT().
 				GetSessionInfo(ctx).
-				Return(&entity.UserSession{UserID: "test"}, nil)
+				Return(&auth_entity.UserSession{UserID: "test"}, nil)
 
 			m.TokenService.EXPECT().
 				ValidateToken(gomock.Any(), gomock.Any()).
-				Return(nil, constant.ErrForbidden)
+				Return(nil, auth_constant.ErrForbidden)
 		},
 	},
 	{
 		Name:        "UserNotFound",
-		ExpectedErr: constant.ErrUserNotFound,
+		ExpectedErr: auth_constant.ErrUserNotFound,
 		SetupMocks: func(ctx context.Context, m *MockRefreshTokenDeps) {
 			m.Session.EXPECT().
 				GetSessionInfo(ctx).
-				Return(&entity.UserSession{UserID: "test"}, nil)
+				Return(&auth_entity.UserSession{UserID: "test"}, nil)
 
 			m.TokenService.EXPECT().
 				ValidateToken(gomock.Any(), gomock.Any()).
-				Return(&entity.TokenDetails{UserID: "test"}, nil)
+				Return(&auth_entity.TokenDetails{UserID: "test"}, nil)
 
 			m.User.EXPECT().
 				GetByID(ctx, "test").
-				Return(nil, constant.ErrUserNotFound)
+				Return(nil, auth_constant.ErrUserNotFound)
 
 		},
 	},
 	{
 		Name:        "AccessTokenCreationFailed",
-		ExpectedErr: constant.ErrUnprocessableEntity,
+		ExpectedErr: auth_constant.ErrUnprocessableEntity,
 		SetupMocks: func(ctx context.Context, m *MockRefreshTokenDeps) {
-			userFromDB := &entity.User{
+			userFromDB := &auth_entity.User{
 				ID:       "user-id",
 				Email:    "user@example.com",
 				Password: "hashed123",
@@ -108,11 +108,11 @@ var RefreshTokenTests = []struct {
 
 			m.Session.EXPECT().
 				GetSessionInfo(ctx).
-				Return(&entity.UserSession{UserID: "test"}, nil)
+				Return(&auth_entity.UserSession{UserID: "test"}, nil)
 
 			m.TokenService.EXPECT().
 				ValidateToken(gomock.Any(), gomock.Any()).
-				Return(&entity.TokenDetails{UserID: "test"}, nil)
+				Return(&auth_entity.TokenDetails{UserID: "test"}, nil)
 
 			m.User.EXPECT().
 				GetByID(ctx, "test").
@@ -120,7 +120,7 @@ var RefreshTokenTests = []struct {
 
 			m.TokenService.EXPECT().
 				CreateToken(userFromDB.ID, gomock.Any(), gomock.Any()).
-				Return(nil, constant.ErrUnprocessableEntity)
+				Return(nil, auth_constant.ErrUnprocessableEntity)
 		},
 	},
 }

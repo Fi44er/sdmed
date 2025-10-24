@@ -45,7 +45,7 @@ type Config struct {
 }
 
 func validateConfig(config *Config) error {
-	configMap := map[string]interface{}{
+	configMap := map[string]any{
 		"HTTP_HOST":              config.HTTPHost,
 		"HTTP_PORT":              config.HTTPPort,
 		"POSTGRES_URL":           config.PostgresUrl,
@@ -124,7 +124,7 @@ func Load(path string) error {
 	return nil
 }
 
-func isEmptyValue(value interface{}) bool {
+func isEmptyValue(value any) bool {
 	switch v := value.(type) {
 	case string:
 		return strings.TrimSpace(v) == ""

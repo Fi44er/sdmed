@@ -1,4 +1,4 @@
-package utils
+package auth_utils
 
 import (
 	"encoding/base64"
@@ -63,7 +63,7 @@ func ValidateToken(token string, publicKey string) (*TokenDetails, error) {
 		return nil, fmt.Errorf("Validate: parse key: %w", err)
 	}
 
-	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("Unexpected method: %s", t.Header["alg"])
 		}

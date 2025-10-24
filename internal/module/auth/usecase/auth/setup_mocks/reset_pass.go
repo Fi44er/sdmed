@@ -26,7 +26,7 @@ var ResetPassword = []struct {
 		SetupMocks: func(ctx context.Context, m *MockResetPassDeps) {
 			m.Cache.EXPECT().
 				Get(ctx, "forgot_password_123456", gomock.Any()).
-				DoAndReturn(func(_ context.Context, _ string, dest interface{}) error {
+				DoAndReturn(func(_ context.Context, _ string, dest any) error {
 					*(dest.(*string)) = "123456"
 					return nil
 				})
