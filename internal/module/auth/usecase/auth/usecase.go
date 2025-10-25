@@ -252,6 +252,8 @@ func (u *AuthUsecase) ForgotPassword(ctx context.Context, code *auth_entity.Code
 
 	u.notifyerService.Send(msg, "smtp")
 
+	u.logger.Debug(resetLink)
+
 	return nil
 }
 

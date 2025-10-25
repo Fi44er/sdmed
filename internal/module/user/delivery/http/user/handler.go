@@ -50,7 +50,7 @@ func NewUserHandler(
 // @Tags users
 // @Accept json
 // @Produce json
-// @Success 200 {object} response.ResponseData{data=dto.UserResponse} "OK"
+// @Success 200 {object} response.ResponseData{data=user_dto.UserResponse} "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /users/me [get]
 func (h *UserHandler) GetMy(ctx *fiber.Ctx) error {
@@ -73,7 +73,7 @@ func (h *UserHandler) GetMy(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
-// @Success 200 {object} response.ResponseData{data=dto.UserResponse} "OK"
+// @Success 200 {object} response.ResponseData{data=user_dto.UserResponse} "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /users/{id} [get]
 func (h *UserHandler) GetByID(ctx *fiber.Ctx) error {
@@ -97,7 +97,7 @@ func (h *UserHandler) GetByID(ctx *fiber.Ctx) error {
 // @Produce json
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
-// @Success 200 {object} response.ResponseListData{data=[]dto.UserResponse} "OK"
+// @Success 200 {object} response.ResponseListData{data=[]user_dto.UserResponse} "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /users [get]
 func (h *UserHandler) GetAll(ctx *fiber.Ctx) error {
@@ -121,7 +121,7 @@ func (h *UserHandler) GetAll(ctx *fiber.Ctx) error {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body dto.UserDTO true "User"
+// @Param user body user_dto.UserDTO true "User"
 // @Success      200      {object}  response.Response "OK"
 // @Failure      500      {object}  response.Response "Error"
 // @Router /users [post]
@@ -130,7 +130,10 @@ func (h *UserHandler) Create(ctx *fiber.Ctx) error {
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntity, h.logger)
 	if err != nil {
-		return err
+		return ctx.Status(400).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
 	}
 
 	if err := h.usecase.Create(ctx.Context(), entity); err != nil {
@@ -151,7 +154,7 @@ func (h *UserHandler) Create(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
-// @Param user body dto.UserDTO true "User"
+// @Param user body user_dto.UserDTO true "User"
 // @Success      200      {object}  response.Response "OK"
 // @Failure      500      {object}  response.Response "Error"
 // @Router /users/{id} [put]
@@ -161,7 +164,10 @@ func (h *UserHandler) Update(ctx *fiber.Ctx) error {
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntity, h.logger)
 	if err != nil {
-		return err
+		return ctx.Status(400).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
 	}
 	entity.ID = id
 

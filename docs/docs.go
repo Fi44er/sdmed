@@ -34,7 +34,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CodeDTO"
+                            "$ref": "#/definitions/auth_dto.CodeDTO"
                         }
                     }
                 ],
@@ -82,6 +82,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/reset-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "ResetPassword",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Reset password token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Reset Password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth_dto.ResetPasswordDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/send-code": {
             "post": {
                 "consumes": [
@@ -101,7 +147,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CodeDTO"
+                            "$ref": "#/definitions/auth_dto.CodeDTO"
                         }
                     }
                 ],
@@ -140,7 +186,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SignInDTO"
+                            "$ref": "#/definitions/auth_dto.SignInDTO"
                         }
                     }
                 ],
@@ -207,8 +253,45 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SignUpDTO"
+                            "$ref": "#/definitions/auth_dto.SignUpDTO"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/validate-reset-password": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "ValidateResetPassword",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Validate Reset password token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -246,7 +329,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.VerifyCodeDTO"
+                            "$ref": "#/definitions/auth_dto.VerifyCodeDTO"
                         }
                     }
                 ],
@@ -307,7 +390,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/dto.UserResponse"
+                                                "$ref": "#/definitions/user_dto.UserResponse"
                                             }
                                         }
                                     }
@@ -342,7 +425,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UserDTO"
+                            "$ref": "#/definitions/user_dto.UserDTO"
                         }
                     }
                 ],
@@ -387,7 +470,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
+                                            "$ref": "#/definitions/user_dto.UserResponse"
                                         }
                                     }
                                 }
@@ -437,7 +520,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
+                                            "$ref": "#/definitions/user_dto.UserResponse"
                                         }
                                     }
                                 }
@@ -478,7 +561,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UserDTO"
+                            "$ref": "#/definitions/user_dto.UserDTO"
                         }
                     }
                 ],
@@ -536,7 +619,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dto.CodeDTO": {
+        "auth_dto.CodeDTO": {
             "type": "object",
             "required": [
                 "email"
@@ -547,7 +630,15 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.SignInDTO": {
+        "auth_dto.ResetPasswordDTO": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth_dto.SignInDTO": {
             "type": "object",
             "required": [
                 "email",
@@ -562,7 +653,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.SignUpDTO": {
+        "auth_dto.SignUpDTO": {
             "type": "object",
             "required": [
                 "email",
@@ -585,59 +676,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UserDTO": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "patronymic": {
-                    "type": "string"
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "surname": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.UserResponse": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "patronymic": {
-                    "type": "string"
-                },
-                "phone_number": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "surname": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.VerifyCodeDTO": {
+        "auth_dto.VerifyCodeDTO": {
             "type": "object",
             "required": [
                 "code",
@@ -681,6 +720,58 @@ const docTemplate = `{
                     "items": {}
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "user_dto.UserDTO": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "patronymic": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "surname": {
+                    "type": "string"
+                }
+            }
+        },
+        "user_dto.UserResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "patronymic": {
+                    "type": "string"
+                },
+                "phone_number": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "surname": {
                     "type": "string"
                 }
             }

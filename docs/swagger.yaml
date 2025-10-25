@@ -1,13 +1,18 @@
 basePath: /api/
 definitions:
-  dto.CodeDTO:
+  auth_dto.CodeDTO:
     properties:
       email:
         type: string
     required:
     - email
     type: object
-  dto.SignInDTO:
+  auth_dto.ResetPasswordDTO:
+    properties:
+      password:
+        type: string
+    type: object
+  auth_dto.SignInDTO:
     properties:
       email:
         type: string
@@ -17,7 +22,7 @@ definitions:
     - email
     - password
     type: object
-  dto.SignUpDTO:
+  auth_dto.SignUpDTO:
     properties:
       email:
         type: string
@@ -33,41 +38,7 @@ definitions:
     - password
     - phone_number
     type: object
-  dto.UserDTO:
-    properties:
-      email:
-        type: string
-      name:
-        type: string
-      password:
-        type: string
-      patronymic:
-        type: string
-      phone_number:
-        type: string
-      surname:
-        type: string
-    type: object
-  dto.UserResponse:
-    properties:
-      email:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      patronymic:
-        type: string
-      phone_number:
-        type: string
-      role:
-        items:
-          type: string
-        type: array
-      surname:
-        type: string
-    type: object
-  dto.VerifyCodeDTO:
+  auth_dto.VerifyCodeDTO:
     properties:
       code:
         type: string
@@ -99,6 +70,40 @@ definitions:
       status:
         type: string
     type: object
+  user_dto.UserDTO:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      patronymic:
+        type: string
+      phone_number:
+        type: string
+      surname:
+        type: string
+    type: object
+  user_dto.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      patronymic:
+        type: string
+      phone_number:
+        type: string
+      role:
+        items:
+          type: string
+        type: array
+      surname:
+        type: string
+    type: object
 host: 127.0.0.1:8080
 info:
   contact: {}
@@ -116,7 +121,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.CodeDTO'
+          $ref: '#/definitions/auth_dto.CodeDTO'
       produces:
       - application/json
       responses:
@@ -149,6 +154,36 @@ paths:
       summary: RefreshToken
       tags:
       - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Reset password token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: Reset Password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/auth_dto.ResetPasswordDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: ResetPassword
+      tags:
+      - Auth
   /auth/send-code:
     post:
       consumes:
@@ -159,7 +194,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.CodeDTO'
+          $ref: '#/definitions/auth_dto.CodeDTO'
       produces:
       - application/json
       responses:
@@ -184,7 +219,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SignInDTO'
+          $ref: '#/definitions/auth_dto.SignInDTO'
       produces:
       - application/json
       responses:
@@ -227,7 +262,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.SignUpDTO'
+          $ref: '#/definitions/auth_dto.SignUpDTO'
       produces:
       - application/json
       responses:
@@ -242,6 +277,30 @@ paths:
       summary: SignUp
       tags:
       - Auth
+  /auth/validate-reset-password:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Validate Reset password token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: ValidateResetPassword
+      tags:
+      - Auth
   /auth/verify-code:
     post:
       consumes:
@@ -252,7 +311,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.VerifyCodeDTO'
+          $ref: '#/definitions/auth_dto.VerifyCodeDTO'
       produces:
       - application/json
       responses:
@@ -292,7 +351,7 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/dto.UserResponse'
+                    $ref: '#/definitions/user_dto.UserResponse'
                   type: array
               type: object
         "500":
@@ -312,7 +371,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/dto.UserDTO'
+          $ref: '#/definitions/user_dto.UserDTO'
       produces:
       - application/json
       responses:
@@ -372,7 +431,7 @@ paths:
             - $ref: '#/definitions/response.ResponseData'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.UserResponse'
+                  $ref: '#/definitions/user_dto.UserResponse'
               type: object
         "500":
           description: Error
@@ -396,7 +455,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/dto.UserDTO'
+          $ref: '#/definitions/user_dto.UserDTO'
       produces:
       - application/json
       responses:
@@ -426,7 +485,7 @@ paths:
             - $ref: '#/definitions/response.ResponseData'
             - properties:
                 data:
-                  $ref: '#/definitions/dto.UserResponse'
+                  $ref: '#/definitions/user_dto.UserResponse'
               type: object
         "500":
           description: Error

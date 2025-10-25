@@ -55,7 +55,7 @@ func NewAuthHandler(
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param body body dto.SignUpDTO true "Sign Up"
+// @Param body body auth_dto.SignUpDTO true "Sign Up"
 // @Success 200 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/sign-up [post]
@@ -82,7 +82,7 @@ func (h *AuthHandler) SignUp(ctx *fiber.Ctx) error {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param body body dto.SignInDTO true "Sign In"
+// @Param body body auth_dto.SignInDTO true "Sign In"
 // @Success 200 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/sign-in [post]
@@ -130,7 +130,7 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param body body dto.VerifyCodeDTO true "Verify Code"
+// @Param body body auth_dto.VerifyCodeDTO true "Verify Code"
 // @Success 200 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/verify-code [post]
@@ -230,7 +230,7 @@ func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param body body dto.CodeDTO true "Send Code"
+// @Param body body auth_dto.CodeDTO true "Send Code"
 // @Success 200 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/send-code [post]
@@ -252,18 +252,11 @@ func (h *AuthHandler) SendCode(ctx *fiber.Ctx) error {
 	})
 }
 
-func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
-	sess := session.FromFiberContext(ctx)
-	context := context.WithValue(ctx.Context(), "session", *sess)
-
-	return context
-}
-
 // @Summary ForgotPassword
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param body body dto.CodeDTO true "Forgot Password"
+// @Param body body auth_dto.CodeDTO true "Forgot Password"
 // @Success 200 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/forgot-password [post]
@@ -271,7 +264,10 @@ func (h *AuthHandler) ForgotPassword(ctx *fiber.Ctx) error {
 	dto := new(auth_dto.CodeDTO)
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityCode, h.logger)
 	if err != nil {
-		return err
+		return ctx.Status(400).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
 	}
 
 	if err := h.usecase.ForgotPassword(ctx.Context(), entity); err != nil {
@@ -288,6 +284,7 @@ func (h *AuthHandler) ForgotPassword(ctx *fiber.Ctx) error {
 // @Tags Auth
 // @Accept json
 // @Produce json
+// @Param token query string true "Validate Reset password token"
 // @Success 200 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/validate-reset-password [get]
@@ -296,7 +293,10 @@ func (h *AuthHandler) ValidateResetPassword(ctx *fiber.Ctx) error {
 
 	_, err := h.usecase.ValidateResetPassword(ctx.Context(), token)
 	if err != nil {
-		return err
+		return ctx.Status(400).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
 	}
 
 	return ctx.Status(200).JSON(fiber.Map{
@@ -305,13 +305,25 @@ func (h *AuthHandler) ValidateResetPassword(ctx *fiber.Ctx) error {
 	})
 }
 
+// @Summary ResetPassword
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param token query string true "Reset password token"
+// @Param body body auth_dto.ResetPasswordDTO true "Reset Password"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/reset-password [post]
 func (h *AuthHandler) ResetPassword(ctx *fiber.Ctx) error {
 	token := ctx.Query("token")
 	dto := new(auth_dto.ResetPasswordDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityResetPassword, h.logger)
 	if err != nil {
-		return err
+		return ctx.Status(400).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
 	}
 
 	if err := h.usecase.ResetPassword(ctx.Context(), token, entity); err != nil {
@@ -322,4 +334,12 @@ func (h *AuthHandler) ResetPassword(ctx *fiber.Ctx) error {
 		"status":  "success",
 		"message": "reset password successfully",
 	})
+}
+
+func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
+	sess := session.FromFiberContext(ctx)
+
+	context := context.WithValue(ctx.Context(), "session", *sess)
+
+	return context
 }
