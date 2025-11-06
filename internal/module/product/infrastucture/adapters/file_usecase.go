@@ -5,7 +5,7 @@ import (
 
 	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
 	file_usecase "github.com/Fi44er/sdmed/internal/module/file/usecase/file"
-	"github.com/Fi44er/sdmed/internal/module/product/entity"
+	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
 )
 
 type IFileUsecaseAdapter interface {
@@ -14,10 +14,10 @@ type IFileUsecaseAdapter interface {
 }
 
 type FileUsecaseAdapter struct {
-	fileUsecase *file_usecase.FileUsecase
+	fileUsecase file_usecase.IFileUsecase
 }
 
-func NewFileUsecaseAdapter(fileUsecase *file_usecase.FileUsecase) IFileUsecaseAdapter {
+func NewFileUsecaseAdapter(fileUsecase file_usecase.IFileUsecase) IFileUsecaseAdapter {
 	return &FileUsecaseAdapter{
 		fileUsecase: fileUsecase,
 	}

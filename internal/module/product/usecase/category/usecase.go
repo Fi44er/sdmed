@@ -3,7 +3,7 @@ package category_usecase
 import (
 	"context"
 
-	"github.com/Fi44er/sdmed/internal/module/product/entity"
+	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
 	product_constant "github.com/Fi44er/sdmed/internal/module/product/pkg"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
@@ -60,8 +60,8 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			return err
 		}
 
-		if existCategory == nil {
-			return product_constant.ErrCategoryNotFound
+		if existCategory != nil {
+			return product_constant.ErrCategoryAlreadyExist
 		}
 
 		if err := u.repository.Create(ctx, category); err != nil {
