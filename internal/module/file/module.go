@@ -39,7 +39,7 @@ func NewFileModule(
 }
 
 func (m *FileModule) Init() {
-	m.uow.RegisterRepository("file", func(tx *gorm.DB) (interface{}, error) {
+	m.uow.RegisterRepository("file", func(tx *gorm.DB) (any, error) {
 		return repository.NewFileRepository(m.logger, tx), nil
 	})
 

@@ -9,17 +9,26 @@ import (
 	"gorm.io/gorm"
 )
 
+type ICategoryRepository interface {
+	Create(ctx context.Context, category *product_entity.Category) error
+	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
+	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
+	Update(ctx context.Context, category *product_entity.Category) error
+	Delete(ctx context.Context, id string) error
+	GetByName(ctx context.Context, name string) (*product_entity.Category, error)
+}
+
 type CategoryRepository struct {
 	logger    *logger.Logger
 	db        *gorm.DB
 	converter *Converter
 }
 
-func NewCategoryRepository(logger *logger.Logger, db *gorm.DB, converter *Converter) *CategoryRepository {
+func NewCategoryRepository(logger *logger.Logger, db *gorm.DB) ICategoryRepository {
 	return &CategoryRepository{
 		logger:    logger,
 		db:        db,
-		converter: converter,
+		converter: &Converter{},
 	}
 }
 
@@ -91,4 +100,20 @@ func (r *CategoryRepository) Delete(ctx context.Context, id string) error {
 	}
 	r.logger.Info("Category deleted successfully")
 	return nil
+}
+
+func (r *CategoryRepository) GetByName(ctx context.Context, name string) (*product_entity.Category, error) {
+	r.logger.Infof("Getting category: %s", name)
+	var categoryModel product_model.Category
+	if err := r.db.WithContext(ctx).First(&categoryModel, "name = ?", name).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Warnf("Category not found: %s", name)
+			return nil, nil
+		}
+		r.logger.Errorf("Failed to get category: %v", err)
+		return nil, err
+	}
+	category := r.converter.Toproduct_entity(&categoryModel)
+	r.logger.Info("Category got successfully")
+	return category, nil
 }

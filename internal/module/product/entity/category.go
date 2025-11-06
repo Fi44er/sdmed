@@ -1,6 +1,7 @@
 package product_entity
 
 type Category struct {
-	ID   string
-	Name string
+	ID     string
+	Name   string
+	Images []File
 }

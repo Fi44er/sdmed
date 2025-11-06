@@ -14,11 +14,11 @@ var (
 	ErrRepositoryNotFound = errors.New("repository not registered")
 )
 
-type RepositoryFactory func(tx *gorm.DB) (interface{}, error)
+type RepositoryFactory func(tx *gorm.DB) (any, error)
 
 type Uow interface {
 	RegisterRepository(name string, factory RepositoryFactory)
-	GetRepository(ctx context.Context, name string) (interface{}, error)
+	GetRepository(ctx context.Context, name string) (any, error)
 	Do(ctx context.Context, fn func(ctx context.Context) error) error
 	Begin(ctx context.Context) error
 	Commit() error
@@ -45,7 +45,7 @@ func (u *uow) RegisterRepository(name string, factory RepositoryFactory) {
 	u.repositories[name] = factory
 }
 
-func (u *uow) GetRepository(ctx context.Context, name string) (interface{}, error) {
+func (u *uow) GetRepository(ctx context.Context, name string) (any, error) {
 	u.mu.RLock()
 	factory, exists := u.repositories[name]
 	u.mu.RUnlock()

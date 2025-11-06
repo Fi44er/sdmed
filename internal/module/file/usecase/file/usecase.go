@@ -1,4 +1,4 @@
-package usecase
+package file_usecase
 
 import (
 	"context"
@@ -62,7 +62,6 @@ func (u *FileUsecase) Upload(ctx context.Context, file *entity.File) error {
 
 		repo, err := u.uow.GetRepository(ctx, "file")
 		if err != nil {
-
 			return err
 		}
 		fileRepo := repo.(IFileRepository)
