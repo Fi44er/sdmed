@@ -16,7 +16,7 @@ type IFileRepository interface {
 	Create(ctx context.Context, file *file_entity.File) error
 
 	GetByName(ctx context.Context, name string) (*file_entity.File, error)
-	GetExpiredTemporaryFiles(ctx context.Context, before time.Time) ([]*file_entity.File, error)
+	GetExpiredTemporaryFiles(ctx context.Context) ([]*file_entity.File, error)
 	GetByID(ctx context.Context, id string) (*file_entity.File, error)
 }
 
@@ -98,12 +98,21 @@ func (r *FileRepository) GetByOwner(ctx context.Context, ownerID, ownerType stri
 	return file, nil
 }
 
-func (r *FileRepository) GetExpiredTemporaryFiles(ctx context.Context, before time.Time) ([]*file_entity.File, error) {
+func (r *FileRepository) GetExpiredTemporaryFiles(ctx context.Context) ([]*file_entity.File, error) {
 	r.logger.Info("getting expired temporary files...")
 	var fileModels []model.File
-	if err := r.db.WithContext(ctx).Where("status = ? AND created_at < ?", file_entity.FileStatusTemporary, before).Find(&fileModels).Error; err != nil {
+
+	// Используем текущее время для сравнения
+	now := time.Now()
+
+	if err := r.db.WithContext(ctx).
+		Where("status = ? AND expires_at IS NOT NULL AND expires_at < ?",
+			file_entity.FileStatusTemporary, now).
+		Find(&fileModels).Error; err != nil {
 		return nil, err
 	}
+
+	r.logger.Debug("repo fileModels: ", fileModels)
 
 	files := make([]*file_entity.File, len(fileModels))
 	for i, fileModel := range fileModels {
@@ -112,7 +121,6 @@ func (r *FileRepository) GetExpiredTemporaryFiles(ctx context.Context, before ti
 
 	return files, nil
 }
-
 func (r *FileRepository) Update(ctx context.Context, file *file_entity.File) error {
 	r.logger.Info("updating file...")
 	fileModel := r.converter.ToModel(file)

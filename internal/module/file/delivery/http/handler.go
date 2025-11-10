@@ -75,7 +75,7 @@ func (h *FileHandler) UploadTemporary(ctx *fiber.Ctx) error {
 		Data: fileData,
 	}
 
-	if err := h.usecase.UploadTemporary(ctx.Context(), &entity, 1*time.Minute); err != nil {
+	if err := h.usecase.UploadTemporary(ctx.Context(), &entity, 5*time.Second); err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})

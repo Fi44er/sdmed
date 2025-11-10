@@ -13,6 +13,8 @@ func (c *Converter) ToModel(entity *file_entity.File) *model.File {
 		Name:      entity.Name,
 		OwnerID:   entity.OwnerID,
 		OwnerType: entity.OwnerType,
+		ExpiresAt: entity.ExpiresAt,
+		Status:    string(entity.Status),
 	}
 }
 
@@ -22,5 +24,7 @@ func (c *Converter) ToEntity(model *model.File) *file_entity.File {
 		Name:      model.Name,
 		OwnerID:   model.OwnerID,
 		OwnerType: model.OwnerType,
+		ExpiresAt: model.ExpiresAt,
+		Status:    file_entity.FileStatus(model.Status),
 	}
 }

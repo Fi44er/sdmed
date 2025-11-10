@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	file_model "github.com/Fi44er/sdmed/internal/module/file/infrastucture/repository/model"
-	"github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
+	user_model "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
 )
@@ -23,6 +23,7 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 
 		log.Info("📦 Creating types...")
 
+		db.Exec("CREATE TYPE file_status AS ENUM ('temporary', 'permanent')")
 		db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 		for _, schema := range schemas {
 			if err := db.Exec(fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %q", schema)).Error; err != nil {

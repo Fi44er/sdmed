@@ -3,6 +3,7 @@ package file_usecase
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/Fi44er/sdmed/pkg/logger"
@@ -15,6 +16,12 @@ type FileCleaner struct {
 	interval    time.Duration
 	ttl         time.Duration
 	stopCh      chan struct{}
+	running     bool
+	mutex       sync.RWMutex
+}
+
+func (fc *FileCleaner) Name() string {
+	return "file_cleaner"
 }
 
 func NewFileCleaner(
@@ -35,17 +42,32 @@ func NewFileCleaner(
 }
 
 func (fc *FileCleaner) Start() {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
+
+	if fc.running {
+		fc.logger.Warn("File cleaner is already running")
+		return
+	}
+
+	fc.stopCh = make(chan struct{})
+	fc.running = true
+
 	ticker := time.NewTicker(fc.interval)
 
 	go func() {
 		fc.logger.Infof("File cleaner started with interval: %v", fc.interval)
 
+		fc.cleanupExpiredFiles()
 		for {
 			select {
 			case <-ticker.C:
 				fc.cleanupExpiredFiles()
 			case <-fc.stopCh:
 				ticker.Stop()
+				fc.mutex.Lock()
+				fc.running = false
+				fc.mutex.Unlock()
 				fc.logger.Info("File cleaner stopped")
 				return
 			}
@@ -53,19 +75,40 @@ func (fc *FileCleaner) Start() {
 	}()
 }
 
-func (fc *FileCleaner) Stop() {
+func (fc *FileCleaner) Stop(ctx context.Context) error {
+	fc.mutex.Lock()
+	defer fc.mutex.Unlock()
+
+	if !fc.running {
+		return nil
+	}
+
 	close(fc.stopCh)
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(100 * time.Millisecond):
+		return nil
+	}
+}
+
+func (fc *FileCleaner) IsRunning() bool {
+	fc.mutex.RLock()
+	defer fc.mutex.RUnlock()
+	return fc.running
 }
 
 func (fc *FileCleaner) cleanupExpiredFiles() {
 	ctx := context.Background()
-	expirationTime := time.Now().Add(-fc.ttl)
 
-	expiredFiles, err := fc.repository.GetExpiredTemporaryFiles(ctx, expirationTime)
+	expiredFiles, err := fc.repository.GetExpiredTemporaryFiles(ctx)
 	if err != nil {
 		fc.logger.Errorf("Failed to get expired files: %v", err)
 		return
 	}
+
+	fc.logger.Debug("len expired files", len(expiredFiles))
 
 	if len(expiredFiles) > 0 {
 		fc.logger.Infof("Cleaning up %d expired temporary files", len(expiredFiles))

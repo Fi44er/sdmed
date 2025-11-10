@@ -11,7 +11,7 @@ import (
 
 type IFileRepository interface {
 	GetByName(ctx context.Context, name string) (*file_entity.File, error)
-	GetExpiredTemporaryFiles(ctx context.Context, before time.Time) ([]*file_entity.File, error)
+	GetExpiredTemporaryFiles(ctx context.Context) ([]*file_entity.File, error)
 
 	Create(ctx context.Context, file *file_entity.File) error
 	Delete(ctx context.Context, id string) error
@@ -35,9 +35,6 @@ type IFileUsecase interface {
 	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) error
 	UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) error
 	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
-
-	// Upload(ctx context.Context, file *entity.File) error
-	// Get(ctx context.Context, name string) (*entity.File, error)
 }
 
 func NewFileUsecase(

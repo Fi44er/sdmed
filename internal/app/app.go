@@ -1,9 +1,12 @@
 package app
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/Fi44er/sdmed/internal/config"
@@ -11,6 +14,7 @@ import (
 	"github.com/Fi44er/sdmed/pkg/middleware"
 	"github.com/Fi44er/sdmed/pkg/postgres"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
+	"github.com/Fi44er/sdmed/pkg/process_manager"
 	redisConnect "github.com/Fi44er/sdmed/pkg/redis"
 	"github.com/Fi44er/sdmed/pkg/session"
 	sessionadapter "github.com/Fi44er/sdmed/pkg/session/adapters"
@@ -36,12 +40,13 @@ type App struct {
 
 	redisManager   redisConnect.IRedisManager
 	sessionManager *session.SessionManager
+	processManager process_manager.IProcessManager
 	uow            uow.Uow
 
 	moduleProvider *moduleProvider
 
-	migrate   bool // Флаг для миграции
-	redisMode int  // Флаг для режима Redis
+	migrate   bool
+	redisMode int
 }
 
 func NewApp() *App {
@@ -55,8 +60,6 @@ func NewApp() *App {
 		redisMode: *redisMode,
 	}
 }
-
-var wg sync.WaitGroup
 
 func (app *App) Run() error {
 	app.app.Use(cors.New(cors.Config{
@@ -72,7 +75,13 @@ func (app *App) Run() error {
 		return err
 	}
 
-	return app.runHttpServer()
+	if err := app.registerBackgroundProcesses(); err != nil {
+		app.logger.Errorf("Failed to register background processes: %v", err)
+	}
+
+	app.processManager.StartAll()
+
+	return app.runHttpServerWithShutdown()
 }
 
 func (app *App) initDeps() error {
@@ -83,6 +92,7 @@ func (app *App) initDeps() error {
 		app.initRedis,
 		app.initSessionManager,
 		app.initValidator,
+		app.initProcessManager,
 		app.initModuleProvider,
 		app.initRouter,
 	}
@@ -121,7 +131,6 @@ func (app *App) initDb() error {
 		app.db = db
 		app.uow = uow.New(app.db)
 
-		// Используем значение migrate из структуры App
 		if err := postgres.Migrate(db, app.migrate, app.logger); err != nil {
 			return fmt.Errorf("✖ Failed to migrate database: %s", err.Error())
 		}
@@ -141,7 +150,6 @@ func (app *App) initRedis() error {
 		app.redisManager = redisConnect.NewRedisManger(client)
 		app.redisClient = client
 
-		// Используем значение redisMode из структуры App
 		if err := redisConnect.FlushRedisCache(client, app.redisMode, app.logger); err != nil {
 			err = fmt.Errorf("✖ Failed to flush redis cache: %v", err)
 			app.logger.Errorf("%s", err.Error())
@@ -151,7 +159,6 @@ func (app *App) initRedis() error {
 	return nil
 }
 
-// Остальные методы остаются без изменений
 func (app *App) initLogger() error {
 	if app.logger == nil {
 		app.logger = logger.NewLogger()
@@ -207,6 +214,76 @@ func (app *App) runHttpServer() error {
 	if err := app.app.Listen(app.httpConfig.Address()); err != nil {
 		app.logger.Errorf("✖ Failed to start server: %s", err.Error())
 		return fmt.Errorf("✖ Failed to start server: %v", err)
+	}
+
+	return nil
+}
+
+func (app *App) runHttpServerWithShutdown() error {
+	if app.httpConfig == nil {
+		cfg, err := config.NewHTTPConfig()
+		if err != nil {
+			app.logger.Errorf("✖ Failed to load config: %s", err.Error())
+			return fmt.Errorf("✖ Failed to load config: %v", err)
+		}
+		app.httpConfig = cfg
+	}
+
+	serverErr := make(chan error, 1)
+
+	go func() {
+		app.logger.Infof("🌐 Server is running on %s", app.httpConfig.Address())
+		app.logger.Info("✅ Server started successfully")
+		if err := app.app.Listen(app.httpConfig.Address()); err != nil {
+			serverErr <- err
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case err := <-serverErr:
+		app.logger.Errorf("✖ Server error: %s", err.Error())
+		app.stopBackgroundProcesses()
+		return err
+	case sig := <-quit:
+		app.logger.Infof("Received signal: %v. Shutting down...", sig)
+		app.stopBackgroundProcesses()
+		app.logger.Info("✅ Application stopped gracefully")
+		return nil
+	}
+}
+
+func (app *App) stopBackgroundProcesses() {
+	if app.processManager != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		if err := app.processManager.StopAll(ctx); err != nil {
+			app.logger.Errorf("Error stopping background processes: %v", err)
+		}
+	}
+}
+
+func (app *App) initProcessManager() error {
+	if app.processManager == nil {
+		app.processManager = process_manager.NewProcessManager(app.logger)
+	}
+	return nil
+}
+
+func (app *App) registerBackgroundProcesses() error {
+	if app.processManager == nil {
+		return fmt.Errorf("process manager is not initialized")
+	}
+
+	if app.moduleProvider != nil && app.moduleProvider.fileModule != nil {
+		fileCleaner := app.moduleProvider.fileModule.GetFileCleaner()
+		if fileCleaner != nil {
+			app.processManager.Register(fileCleaner)
+			app.logger.Info("✅ FileCleaner registered in process manager")
+		}
 	}
 
 	return nil
