@@ -11,7 +11,7 @@ type NotificationModule struct {
 	logger *logger.Logger
 	config *config.Config
 
-	Service *service.NotificationService
+	service *service.NotificationService
 }
 
 func NewNotificationModule(logger *logger.Logger, config *config.Config) *NotificationModule {
@@ -38,7 +38,11 @@ func (m *NotificationModule) Init() error {
 		"smtp": smtp,
 	}
 
-	m.Service = service.NewNotificationService(notifiers, m.logger)
+	m.service = service.NewNotificationService(notifiers, m.logger)
 
 	return nil
+}
+
+func (m *NotificationModule) GetNotificationService() *service.NotificationService {
+	return m.service
 }

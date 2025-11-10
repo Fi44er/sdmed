@@ -10,8 +10,7 @@ import (
 )
 
 type IFileUsecaseAdapter interface {
-	// UploadFile(ctx context.Context, file *product_entity.File) error
-	// GetFile(ctx context.Context, name string) (*product_entity.File, error)
+	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
 }
 
 type ICategoryUsecase interface {

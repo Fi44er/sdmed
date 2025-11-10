@@ -16,6 +16,8 @@ type Config struct {
 	RedisUrl            string        `mapstructure:"REDIS_URL"`
 	VerifyCodeExpiredIn time.Duration `mapstructure:"VERIFY_CODE_EXPIRED_IN"`
 	FileDir             string        `mapstructure:"FILE_DIR"`
+	ApiUrl              string        `mapstructure:"API_URL"`
+	FileLink            string        `mapstructure:"FILE_LINK"`
 
 	CorsOrigin string `mapstructure:"CORS_ORIGIN"`
 

@@ -13,7 +13,7 @@ import (
 
 type UserModule struct {
 	userRepository *user_repository.UserRepository
-	UserUsecase    *user_usecase.UserUsecase
+	userUsecase    *user_usecase.UserUsecase
 	userHandler    *user_handler.UserHandler
 
 	logger    *logger.Logger
@@ -35,10 +35,14 @@ func NewUserModule(
 
 func (m *UserModule) Init() {
 	m.userRepository = user_repository.NewUserRepository(m.logger, m.db)
-	m.UserUsecase = user_usecase.NewUserUsecase(m.userRepository, m.logger)
-	m.userHandler = user_handler.NewUserHandler(m.UserUsecase, m.logger, m.validator)
+	m.userUsecase = user_usecase.NewUserUsecase(m.userRepository, m.logger)
+	m.userHandler = user_handler.NewUserHandler(m.userUsecase, m.logger, m.validator)
 }
 
 func (m *UserModule) InitDelivery(router fiber.Router) {
 	m.userHandler.RegisterRoutes(router)
+}
+
+func (m *UserModule) GetUserUsecase() *user_usecase.UserUsecase {
+	return m.userUsecase
 }

@@ -326,6 +326,44 @@ paths:
       summary: VerifyCode
       tags:
       - Auth
+  /files/{name}:
+    get:
+      consumes:
+      - application/json
+      description: Download a file by its name. Returns file content as attachment.
+      parameters:
+      - description: File name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      - image/jpeg
+      - image/png
+      - application/pdf
+      - text/plain
+      responses:
+        "200":
+          description: File content
+          headers:
+            Content-Disposition:
+              description: attachment; filename=example.jpg
+              type: string
+            Content-Type:
+              description: MIME type of the file
+              type: string
+          schema:
+            type: file
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Download file by name
+      tags:
+      - files
   /files/upload-temporary:
     post:
       consumes:

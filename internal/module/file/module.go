@@ -52,9 +52,9 @@ func (m *FileModule) Init() {
 
 	m.fileRepository = repository.NewFileRepository(m.logger, m.db)
 	m.fileStorage = filesystem.NewLocalFileStorage(m.logger, m.config)
-	m.fileUsecase = file_usecase.NewFileUsecase(m.fileRepository, m.uow, m.fileStorage, m.logger)
+	m.fileUsecase = file_usecase.NewFileUsecase(m.fileRepository, m.uow, m.fileStorage, m.logger, m.config)
 	m.fileHandler = file_http.NewFileHandler(m.fileUsecase, m.validator, m.logger)
-	m.fileCleaner = file_usecase.NewFileCleaner(m.fileRepository, m.fileStorage, m.logger, 10*time.Second, 10*time.Second)
+	m.fileCleaner = file_usecase.NewFileCleaner(m.fileRepository, m.fileStorage, m.logger, 20*time.Minute)
 }
 
 func (m *FileModule) InitDelivery(router fiber.Router) {

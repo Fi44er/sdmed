@@ -64,8 +64,8 @@ func (p *moduleProvider) AuthModule() error {
 		p.app.db,
 		p.app.redisManager,
 		p.app.config,
-		p.userModule.UserUsecase,
-		p.notificationModule.Service,
+		p.userModule.GetUserUsecase(),
+		p.notificationModule.GetNotificationService(),
 	)
 	p.authModule.Init()
 	return nil

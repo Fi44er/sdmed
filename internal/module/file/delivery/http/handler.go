@@ -6,6 +6,7 @@ import (
 	"time"
 
 	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
+	"github.com/Fi44er/sdmed/internal/module/file/pkg/utils"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	_ "github.com/Fi44er/sdmed/pkg/response"
 	"github.com/go-playground/validator/v10"
@@ -13,7 +14,8 @@ import (
 )
 
 type IFileUsecase interface {
-	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) error
+	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) (string, error)
+	Get(ctx context.Context, name string) (*file_entity.File, error)
 }
 
 type FileHandler struct {
@@ -75,7 +77,8 @@ func (h *FileHandler) UploadTemporary(ctx *fiber.Ctx) error {
 		Data: fileData,
 	}
 
-	if err := h.usecase.UploadTemporary(ctx.Context(), &entity, 5*time.Second); err != nil {
+	link, err := h.usecase.UploadTemporary(ctx.Context(), &entity, 10*time.Minute)
+	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})
@@ -83,5 +86,40 @@ func (h *FileHandler) UploadTemporary(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "File uploaded successfully",
+		"url":     link,
 	})
+}
+
+// Get download file by name
+// @Summary Download file by name
+// @Description Download a file by its name. Returns file content as attachment.
+// @Tags files
+// @Accept json
+// @Produce application/octet-stream
+// @Produce image/jpeg
+// @Produce image/png
+// @Produce application/pdf
+// @Produce text/plain
+// @Param name path string true "File name"
+// @Success 200 {file} byte "File content"
+// @Header 200 {string} Content-Disposition "attachment; filename=example.jpg"
+// @Header 200 {string} Content-Type "MIME type of the file"
+// @Failure 500 {object} map[string]string "Internal server error"
+// @Router /files/{name} [get]
+func (h *FileHandler) Get(ctx *fiber.Ctx) error {
+	name := ctx.Params("name")
+
+	file, err := h.usecase.Get(ctx.Context(), name)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+	ctx.Set("Content-Disposition", "inline; filename="+file.Name)
+	ctx.Set("Content-Type", "application/octet-stream")
+
+	contentType := utils.GetContentType(file.Name)
+	ctx.Set("Content-Type", contentType)
+
+	return ctx.Send(file.Data)
 }

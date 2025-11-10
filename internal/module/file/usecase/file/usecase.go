@@ -2,8 +2,10 @@ package file_usecase
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/Fi44er/sdmed/internal/config"
 	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
@@ -29,12 +31,14 @@ type FileUsecase struct {
 	uow         uow.Uow
 	fileStorage IFileStorage
 	logger      *logger.Logger
+	config      *config.Config
 }
 
 type IFileUsecase interface {
-	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) error
-	UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) error
+	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) (string, error)
+	UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) (string, error)
 	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
+	Get(ctx context.Context, name string) (*file_entity.File, error)
 }
 
 func NewFileUsecase(
@@ -42,26 +46,28 @@ func NewFileUsecase(
 	uow uow.Uow,
 	fileStorage IFileStorage,
 	logger *logger.Logger,
+	config *config.Config,
 ) IFileUsecase {
 	return &FileUsecase{
 		repository:  repository,
 		uow:         uow,
 		fileStorage: fileStorage,
 		logger:      logger,
+		config:      config,
 	}
 }
 
-func (u *FileUsecase) UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) error {
+func (u *FileUsecase) UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) (string, error) {
 	return u.uploadWithStatus(ctx, file, file_entity.FileStatusTemporary, ttl)
 }
 
-func (u *FileUsecase) UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) error {
-	if err := u.uploadWithStatus(ctx, file, file_entity.FileStatusPermanent, 0); err != nil {
-		return err
+func (u *FileUsecase) UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) (string, error) {
+	url, err := u.uploadWithStatus(ctx, file, file_entity.FileStatusPermanent, 0)
+	if err != nil {
+		return "", err
 	}
 
-	// Обновляем файл как постоянный
-	return u.uow.Do(ctx, func(ctx context.Context) error {
+	err = u.uow.Do(ctx, func(ctx context.Context) error {
 		repo, err := u.uow.GetRepository(ctx, "file")
 		if err != nil {
 			return err
@@ -71,6 +77,8 @@ func (u *FileUsecase) UploadPermanent(ctx context.Context, file *file_entity.Fil
 		file.MarkAsPermanent(ownerID, ownerType)
 		return fileRepo.Update(ctx, file)
 	})
+
+	return url, err
 }
 
 func (u *FileUsecase) MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error {
@@ -96,14 +104,14 @@ func (u *FileUsecase) MakeFilesPermanent(ctx context.Context, fileIDs []string, 
 	})
 }
 
-func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *file_entity.File, status file_entity.FileStatus, ttl time.Duration) error {
-	return u.uow.Do(ctx, func(ctx context.Context) error {
+func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *file_entity.File, status file_entity.FileStatus, ttl time.Duration) (string, error) {
+	var fileName string
+	err := u.uow.Do(ctx, func(ctx context.Context) error {
 		if err := file.GenerateName(); err != nil {
 			u.logger.Errorf("failed to generate file name: %s", err)
 			return err
 		}
 
-		// Устанавливаем статус и TTL
 		file.Status = status
 		if status == file_entity.FileStatusTemporary && ttl > 0 {
 			expiresAt := time.Now().Add(ttl)
@@ -123,6 +131,8 @@ func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *file_entity.Fi
 			return err
 		}
 
+		fileName = file.Name
+
 		repo, err := u.uow.GetRepository(ctx, "file")
 		if err != nil {
 			return err
@@ -136,4 +146,22 @@ func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *file_entity.Fi
 		needCleanup = false
 		return nil
 	})
+
+	link := fmt.Sprintf("%s/%s/%s", u.config.ApiUrl, u.config.FileLink, fileName)
+
+	return link, err
+}
+
+func (u *FileUsecase) Get(ctx context.Context, name string) (*file_entity.File, error) {
+	file, err := u.repository.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := u.fileStorage.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	file.Data = data
+	return file, nil
 }

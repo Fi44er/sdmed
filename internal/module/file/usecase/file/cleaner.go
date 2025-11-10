@@ -14,7 +14,6 @@ type FileCleaner struct {
 	fileStorage IFileStorage
 	logger      *logger.Logger
 	interval    time.Duration
-	ttl         time.Duration
 	stopCh      chan struct{}
 	running     bool
 	mutex       sync.RWMutex
@@ -29,14 +28,12 @@ func NewFileCleaner(
 	fileStorage IFileStorage,
 	logger *logger.Logger,
 	interval time.Duration,
-	ttl time.Duration,
 ) *FileCleaner {
 	return &FileCleaner{
 		repository:  repository,
 		fileStorage: fileStorage,
 		logger:      logger,
 		interval:    interval,
-		ttl:         ttl,
 		stopCh:      make(chan struct{}),
 	}
 }

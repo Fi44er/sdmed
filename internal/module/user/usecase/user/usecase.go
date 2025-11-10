@@ -3,8 +3,8 @@ package user_usecase
 import (
 	"context"
 
-	"github.com/Fi44er/sdmed/internal/module/user/entity"
-	"github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
+	user_entity "github.com/Fi44er/sdmed/internal/module/user/entity"
+	user_constant "github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 )
 
