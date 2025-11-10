@@ -1,13 +1,13 @@
 package repository
 
 import (
-	"github.com/Fi44er/sdmed/internal/module/file/entity"
+	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
 	"github.com/Fi44er/sdmed/internal/module/file/infrastucture/repository/model"
 )
 
 type Converter struct{}
 
-func (c *Converter) ToModel(entity *entity.File) *model.File {
+func (c *Converter) ToModel(entity *file_entity.File) *model.File {
 	return &model.File{
 		ID:        entity.ID,
 		Name:      entity.Name,
@@ -16,8 +16,8 @@ func (c *Converter) ToModel(entity *entity.File) *model.File {
 	}
 }
 
-func (c *Converter) ToEntity(model *model.File) *entity.File {
-	return &entity.File{
+func (c *Converter) ToEntity(model *model.File) *file_entity.File {
+	return &file_entity.File{
 		ID:        model.ID,
 		Name:      model.Name,
 		OwnerID:   model.OwnerID,

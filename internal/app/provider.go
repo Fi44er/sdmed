@@ -74,6 +74,7 @@ func (p *moduleProvider) AuthModule() error {
 func (p *moduleProvider) FileModule() error {
 	p.fileModule = file_module.NewFileModule(
 		p.app.logger,
+		p.app.validator,
 		p.app.db,
 		p.app.config,
 		p.app.uow,

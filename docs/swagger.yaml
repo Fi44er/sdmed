@@ -326,6 +326,32 @@ paths:
       summary: VerifyCode
       tags:
       - Auth
+  /files/upload-temporary:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a temporary file to the storage with a specified time-to-live
+        (24 hours)
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: File successfully uploaded
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error reading file or uploading to storage
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Upload Temporary File
+      tags:
+      - files
   /users:
     get:
       consumes:

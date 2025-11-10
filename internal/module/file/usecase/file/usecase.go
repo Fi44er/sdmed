@@ -4,18 +4,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fi44er/sdmed/internal/module/file/entity"
+	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
 )
 
 type IFileRepository interface {
-	GetByName(ctx context.Context, name string) (*entity.File, error)
-	GetExpiredTemporaryFiles(ctx context.Context, before time.Time) ([]*entity.File, error)
+	GetByName(ctx context.Context, name string) (*file_entity.File, error)
+	GetExpiredTemporaryFiles(ctx context.Context, before time.Time) ([]*file_entity.File, error)
 
-	Create(ctx context.Context, file *entity.File) error
+	Create(ctx context.Context, file *file_entity.File) error
 	Delete(ctx context.Context, id string) error
-	Update(ctx context.Context, file *entity.File) error
+	Update(ctx context.Context, file *file_entity.File) error
 }
 
 type IFileStorage interface {
@@ -32,8 +32,12 @@ type FileUsecase struct {
 }
 
 type IFileUsecase interface {
-	Upload(ctx context.Context, file *entity.File) error
-	Get(ctx context.Context, name string) (*entity.File, error)
+	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) error
+	UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) error
+	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
+
+	// Upload(ctx context.Context, file *entity.File) error
+	// Get(ctx context.Context, name string) (*entity.File, error)
 }
 
 func NewFileUsecase(
@@ -41,7 +45,7 @@ func NewFileUsecase(
 	uow uow.Uow,
 	fileStorage IFileStorage,
 	logger *logger.Logger,
-) *FileUsecase {
+) IFileUsecase {
 	return &FileUsecase{
 		repository:  repository,
 		uow:         uow,
@@ -50,12 +54,12 @@ func NewFileUsecase(
 	}
 }
 
-func (u *FileUsecase) UploadTemporary(ctx context.Context, file *entity.File, ttl time.Duration) error {
-	return u.uploadWithStatus(ctx, file, entity.FileStatusTemporary, ttl)
+func (u *FileUsecase) UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) error {
+	return u.uploadWithStatus(ctx, file, file_entity.FileStatusTemporary, ttl)
 }
 
-func (u *FileUsecase) UploadPermanent(ctx context.Context, file *entity.File, ownerID, ownerType string) error {
-	if err := u.uploadWithStatus(ctx, file, entity.FileStatusPermanent, 0); err != nil {
+func (u *FileUsecase) UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) error {
+	if err := u.uploadWithStatus(ctx, file, file_entity.FileStatusPermanent, 0); err != nil {
 		return err
 	}
 
@@ -72,7 +76,30 @@ func (u *FileUsecase) UploadPermanent(ctx context.Context, file *entity.File, ow
 	})
 }
 
-func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *entity.File, status entity.FileStatus, ttl time.Duration) error {
+func (u *FileUsecase) MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error {
+	return u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, "file")
+		if err != nil {
+			return err
+		}
+		fileRepo := repo.(IFileRepository)
+
+		for _, fileID := range fileIDs {
+			file, err := fileRepo.GetByName(ctx, fileID)
+			if err != nil {
+				return err
+			}
+
+			file.MarkAsPermanent(ownerID, ownerType)
+			if err := fileRepo.Update(ctx, file); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *file_entity.File, status file_entity.FileStatus, ttl time.Duration) error {
 	return u.uow.Do(ctx, func(ctx context.Context) error {
 		if err := file.GenerateName(); err != nil {
 			u.logger.Errorf("failed to generate file name: %s", err)
@@ -81,7 +108,7 @@ func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *entity.File, s
 
 		// Устанавливаем статус и TTL
 		file.Status = status
-		if status == entity.FileStatusTemporary && ttl > 0 {
+		if status == file_entity.FileStatusTemporary && ttl > 0 {
 			expiresAt := time.Now().Add(ttl)
 			file.ExpiresAt = &expiresAt
 		}
@@ -110,29 +137,6 @@ func (u *FileUsecase) uploadWithStatus(ctx context.Context, file *entity.File, s
 		}
 
 		needCleanup = false
-		return nil
-	})
-}
-
-func (u *FileUsecase) MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error {
-	return u.uow.Do(ctx, func(ctx context.Context) error {
-		repo, err := u.uow.GetRepository(ctx, "file")
-		if err != nil {
-			return err
-		}
-		fileRepo := repo.(IFileRepository)
-
-		for _, fileID := range fileIDs {
-			file, err := fileRepo.GetByName(ctx, fileID)
-			if err != nil {
-				return err
-			}
-
-			file.MarkAsPermanent(ownerID, ownerType)
-			if err := fileRepo.Update(ctx, file); err != nil {
-				return err
-			}
-		}
 		return nil
 	})
 }

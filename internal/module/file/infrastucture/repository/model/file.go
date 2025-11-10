@@ -9,6 +9,7 @@ type File struct {
 	OwnerType *string    `json:"owner_type"`
 	ExpiresAt *time.Time `json:"expires_at"`
 	CreatedAt time.Time  `json:"created_at"`
+	Status    string     `json:"status"`
 }
 
 func (File) TableName() string {

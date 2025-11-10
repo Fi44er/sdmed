@@ -10,8 +10,8 @@ import (
 )
 
 type IFileUsecaseAdapter interface {
-	UploadFile(ctx context.Context, file *product_entity.File) error
-	GetFile(ctx context.Context, name string) (*product_entity.File, error)
+	// UploadFile(ctx context.Context, file *product_entity.File) error
+	// GetFile(ctx context.Context, name string) (*product_entity.File, error)
 }
 
 type ICategoryUsecase interface {
@@ -68,11 +68,11 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			return err
 		}
 
-		for _, image := range category.Images {
-			if err := u.fileUsecase.UploadFile(ctx, &image); err != nil {
-				return err
-			}
-		}
+		// for _, image := range category.Images {
+		// 	if err := u.fileUsecase.UploadFile(ctx, &image); err != nil {
+		// 		return err
+		// 	}
+		// }
 
 		needCleanup = false
 		return nil

@@ -23,7 +23,6 @@ import (
 	"gorm.io/gorm"
 )
 
-
 type App struct {
 	app *fiber.App
 
@@ -220,5 +219,6 @@ func (app *App) initRouter() error {
 	app.moduleProvider.userModule.InitDelivery(api)
 	app.moduleProvider.authModule.InitDelivery(api)
 	app.moduleProvider.fileModule.InitDelivery(api)
+
 	return nil
 }

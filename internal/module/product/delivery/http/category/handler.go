@@ -35,5 +35,5 @@ func NewCategoryHandler(
 }
 
 func (h *CategoryHandler) Create(ctx *fiber.Ctx) error {
-
+	return nil
 }
