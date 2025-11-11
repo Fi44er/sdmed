@@ -5,6 +5,6 @@ type CategoryDTO struct {
 }
 
 type CreateCategoryDTO struct {
-	Name   string `json:"name"`
-	Images []File
+	Name   string   `json:"name"`
+	Images []string `json:"images"`
 }

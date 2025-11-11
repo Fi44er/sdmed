@@ -5,7 +5,7 @@ import (
 	"time"
 
 	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
-	"github.com/Fi44er/sdmed/internal/module/file/infrastucture/repository/model"
+	"github.com/Fi44er/sdmed/internal/module/file/infrastructure/repository/model"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
 )
@@ -111,8 +111,6 @@ func (r *FileRepository) GetExpiredTemporaryFiles(ctx context.Context) ([]*file_
 		Find(&fileModels).Error; err != nil {
 		return nil, err
 	}
-
-	r.logger.Debug("repo fileModels: ", fileModels)
 
 	files := make([]*file_entity.File, len(fileModels))
 	for i, fileModel := range fileModels {

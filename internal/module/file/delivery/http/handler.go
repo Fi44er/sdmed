@@ -50,7 +50,6 @@ func NewFileHandler(
 // @Failure 500 {object} response.Response "Error reading file or uploading to storage"
 // @Router /files/upload-temporary [post]
 func (h *FileHandler) UploadTemporary(ctx *fiber.Ctx) error {
-	h.logger.Debug("Pidor")
 	fileHeader, err := ctx.FormFile("file")
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{

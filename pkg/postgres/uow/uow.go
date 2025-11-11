@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"sync"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -102,7 +103,7 @@ func (u *uow) Rollback() error {
 
 func (u *uow) Do(ctx context.Context, fn func(ctx context.Context) error) error {
 	if u.tx != nil {
-		return ErrTxAlreadyStarted
+		return fn(ctx)
 	}
 
 	if err := u.Begin(ctx); err != nil {

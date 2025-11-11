@@ -1,8 +1,8 @@
 package category_repository
 
 import (
-	"github.com/Fi44er/sdmed/internal/module/product/entity"
-	"github.com/Fi44er/sdmed/internal/module/product/infrastucture/repository/model"
+	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
+	product_model "github.com/Fi44er/sdmed/internal/module/product/infrastructure/repository/model"
 )
 
 type Converter struct{}

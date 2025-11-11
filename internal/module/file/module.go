@@ -5,8 +5,8 @@ import (
 
 	"github.com/Fi44er/sdmed/internal/config"
 	file_http "github.com/Fi44er/sdmed/internal/module/file/delivery/http"
-	"github.com/Fi44er/sdmed/internal/module/file/infrastucture/filesystem"
-	repository "github.com/Fi44er/sdmed/internal/module/file/infrastucture/repository/file"
+	"github.com/Fi44er/sdmed/internal/module/file/infrastructure/filesystem"
+	repository "github.com/Fi44er/sdmed/internal/module/file/infrastructure/repository/file"
 	file_usecase "github.com/Fi44er/sdmed/internal/module/file/usecase/file"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
@@ -63,4 +63,8 @@ func (m *FileModule) InitDelivery(router fiber.Router) {
 
 func (m *FileModule) GetFileCleaner() *file_usecase.FileCleaner {
 	return m.fileCleaner
+}
+
+func (m *FileModule) GetFileService() file_usecase.IFileUsecase {
+	return m.fileUsecase
 }

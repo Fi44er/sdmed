@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/Fi44er/sdmed/internal/config"
-	"github.com/Fi44er/sdmed/internal/module/auth/entity"
-	"github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
-	"github.com/Fi44er/sdmed/internal/module/auth/pkg/utils"
+	auth_entity "github.com/Fi44er/sdmed/internal/module/auth/entity"
+	auth_constant "github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
+	auth_utils "github.com/Fi44er/sdmed/internal/module/auth/pkg/utils"
 	"github.com/Fi44er/sdmed/internal/module/auth/usecase/auth/contracts"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
 	"github.com/Fi44er/sdmed/pkg/logger"
@@ -251,8 +251,6 @@ func (u *AuthUsecase) ForgotPassword(ctx context.Context, code *auth_entity.Code
 	}
 
 	u.notifyerService.Send(msg, "smtp")
-
-	u.logger.Debug(resetLink)
 
 	return nil
 }

@@ -35,11 +35,13 @@ func NewCategoryUsecase(
 	logger *logger.Logger,
 	repository ICategoryRepository,
 	fileUsease IFileUsecaseAdapter,
+	uow uow.Uow,
 ) ICategoryUsecase {
 	return &CategoryUsecase{
 		logger:      logger,
 		repository:  repository,
 		fileUsecase: fileUsease,
+		uow:         uow,
 	}
 }
 
@@ -67,11 +69,14 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			return err
 		}
 
-		// for _, image := range category.Images {
-		// 	if err := u.fileUsecase.UploadFile(ctx, &image); err != nil {
-		// 		return err
-		// 	}
-		// }
+		imagesNames := make([]string, 0)
+		for _, image := range category.Images {
+			imagesNames = append(imagesNames, image.Name)
+		}
+
+		if err := u.fileUsecase.MakeFilesPermanent(ctx, imagesNames, category.ID, "category"); err != nil {
+			return err
+		}
 
 		needCleanup = false
 		return nil

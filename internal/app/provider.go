@@ -4,6 +4,7 @@ import (
 	auth_module "github.com/Fi44er/sdmed/internal/module/auth"
 	file_module "github.com/Fi44er/sdmed/internal/module/file"
 	notification_module "github.com/Fi44er/sdmed/internal/module/notification"
+	product_module "github.com/Fi44er/sdmed/internal/module/product"
 	user_module "github.com/Fi44er/sdmed/internal/module/user"
 )
 
@@ -14,6 +15,7 @@ type moduleProvider struct {
 	notificationModule *notification_module.NotificationModule
 	authModule         *auth_module.AuthModule
 	fileModule         *file_module.FileModule
+	productModule      *product_module.ProductModule
 }
 
 func NewModuleProvider(app *App) (*moduleProvider, error) {
@@ -34,6 +36,7 @@ func (p *moduleProvider) initDeps() error {
 		p.NotificationModule,
 		p.AuthModule,
 		p.FileModule,
+		p.ProductModule,
 	}
 	for _, init := range inits {
 		err := init()
@@ -80,5 +83,17 @@ func (p *moduleProvider) FileModule() error {
 		p.app.uow,
 	)
 	p.fileModule.Init()
+	return nil
+}
+
+func (p *moduleProvider) ProductModule() error {
+	p.productModule = product_module.NewProductModule(
+		p.app.logger,
+		p.app.validator,
+		p.app.db,
+		p.app.uow,
+		p.fileModule.GetFileService(),
+	)
+	p.productModule.Init()
 	return nil
 }

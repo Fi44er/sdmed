@@ -9,3 +9,7 @@ type Product struct {
 	CategoryID      string           `gorm:"type:varchar(255);not null"`
 	Characteristics []Characteristic `gorm:"many2many:product_characteristics;"`
 }
+
+func (Product) TableName() string {
+	return "product_module.products"
+}

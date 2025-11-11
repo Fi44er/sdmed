@@ -6,3 +6,7 @@ type Characteristic struct {
 	CategoryID string  `gorm:"type:varchar(255);not null"`
 	Unit       *string `gorm:"type:varchar(255);"`
 }
+
+func (Characteristic) TableName() string {
+	return "product_module.characteristics"
+}

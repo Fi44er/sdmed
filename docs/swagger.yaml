@@ -48,6 +48,18 @@ definitions:
     - code
     - email
     type: object
+  fiber.Map:
+    additionalProperties: true
+    type: object
+  product_dto.CreateCategoryDTO:
+    properties:
+      images:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+    type: object
   response.Response:
     properties:
       message:
@@ -326,6 +338,32 @@ paths:
       summary: VerifyCode
       tags:
       - Auth
+  /categories:
+    post:
+      consumes:
+      - application/json
+      description: Create a new category
+      parameters:
+      - description: Category
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/product_dto.CreateCategoryDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/fiber.Map'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/fiber.Map'
+      summary: Create a new category
+      tags:
+      - Category
   /files/{name}:
     get:
       consumes:

@@ -105,8 +105,6 @@ func (fc *FileCleaner) cleanupExpiredFiles() {
 		return
 	}
 
-	fc.logger.Debug("len expired files", len(expiredFiles))
-
 	if len(expiredFiles) > 0 {
 		fc.logger.Infof("Cleaning up %d expired temporary files", len(expiredFiles))
 	}

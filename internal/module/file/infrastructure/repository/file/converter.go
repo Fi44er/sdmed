@@ -2,7 +2,7 @@ package repository
 
 import (
 	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
-	"github.com/Fi44er/sdmed/internal/module/file/infrastucture/repository/model"
+	"github.com/Fi44er/sdmed/internal/module/file/infrastructure/repository/model"
 )
 
 type Converter struct{}
