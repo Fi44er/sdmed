@@ -339,6 +339,37 @@ paths:
       tags:
       - Auth
   /categories:
+    get:
+      consumes:
+      - application/json
+      description: Get list of categories with pagination
+      parameters:
+      - default: 0
+        description: Offset for pagination
+        in: path
+        name: offset
+        type: integer
+      - default: 10
+        description: Limit for pagination
+        in: path
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all categories
+      tags:
+      - categories
     post:
       consumes:
       - application/json
@@ -364,6 +395,43 @@ paths:
       summary: Create a new category
       tags:
       - Category
+  /categories/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a single category by its ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: bad request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: not found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get category by ID
+      tags:
+      - categories
   /files/{name}:
     get:
       consumes:

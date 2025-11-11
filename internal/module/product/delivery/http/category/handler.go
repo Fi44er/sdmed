@@ -3,6 +3,7 @@ package category_http
 import (
 	"context"
 
+	"github.com/Fi44er/sdmed/internal/config"
 	product_dto "github.com/Fi44er/sdmed/internal/module/product/dto"
 	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
 	"github.com/Fi44er/sdmed/pkg/logger"
@@ -13,6 +14,8 @@ import (
 
 type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
+	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
+	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
 }
 
 type CategoryHandler struct {
@@ -21,18 +24,21 @@ type CategoryHandler struct {
 	validator *validator.Validate
 	logger    *logger.Logger
 	converter *Converter
+	config    *config.Config
 }
 
 func NewCategoryHandler(
 	usecase ICategoryUsecase,
 	logger *logger.Logger,
 	validator *validator.Validate,
+	config *config.Config,
 ) *CategoryHandler {
 	return &CategoryHandler{
 		usecase:   usecase,
 		logger:    logger,
 		validator: validator,
-		converter: &Converter{},
+		config:    config,
+		converter: NewConverter(config),
 	}
 }
 
@@ -58,12 +64,64 @@ func (h *CategoryHandler) Create(ctx *fiber.Ctx) error {
 	}
 
 	if err := h.usecase.Create(ctx.Context(), entity); err != nil {
-		h.logger.Errorf("error creating category: %v", err)
 		return err
 	}
 
 	return ctx.Status(201).JSON(fiber.Map{
 		"status":  "success",
 		"message": "category created successfully",
+	})
+}
+
+// GetByID godoc
+// @Summary Get category by ID
+// @Description Get a single category by its ID
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Param id path string true "Category ID"
+// @Success 200 {object} map[string]interface{} "success"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /categories/{id} [get]
+func (h *CategoryHandler) GetByID(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+
+	category, err := h.usecase.GetByID(ctx.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	categoryRes := h.converter.toCategoryResponse(category)
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"data":   categoryRes,
+	})
+}
+
+// GetAll godoc
+// @Summary Get all categories
+// @Description Get list of categories with pagination
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Param offset path int false "Offset for pagination" default(0)
+// @Param limit path int false "Limit for pagination" default(10)
+// @Success 200 {object} map[string]interface{} "success"
+// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Router /categories [get]
+func (h *CategoryHandler) GetAll(ctx *fiber.Ctx) error {
+	offset := ctx.QueryInt("offset")
+	limit := ctx.QueryInt("limit")
+
+	categories, err := h.usecase.GetAll(ctx.Context(), offset, limit)
+	if err != nil {
+		return err
+	}
+	categoriesRes := h.converter.toCategoryResponses(categories)
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"data":   categoriesRes,
 	})
 }

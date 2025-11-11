@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
@@ -18,6 +19,8 @@ type IFileRepository interface {
 	GetByName(ctx context.Context, name string) (*file_entity.File, error)
 	GetExpiredTemporaryFiles(ctx context.Context) ([]*file_entity.File, error)
 	GetByID(ctx context.Context, id string) (*file_entity.File, error)
+	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]file_entity.File, error)
+	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) ([]file_entity.File, error)
 }
 
 type FileRepository struct {
@@ -82,27 +85,53 @@ func (r *FileRepository) GetByName(ctx context.Context, name string) (*file_enti
 	return file, nil
 }
 
-func (r *FileRepository) GetByOwner(ctx context.Context, ownerID, ownerType string) (*file_entity.File, error) {
-	r.logger.Info("getting file by owner...")
-	var fileModel model.File
-	if err := r.db.WithContext(ctx).Where("owner_id = ? AND owner_type = ?", ownerID, ownerType).First(&fileModel).Error; err != nil {
+func (r *FileRepository) GetByOwner(ctx context.Context, ownerID, ownerType string) ([]file_entity.File, error) {
+	r.logger.Info("getting files by owner...")
+	filesModels := make([]model.File, 0)
+	if err := r.db.WithContext(ctx).Where("owner_id = ? AND owner_type = ?", ownerID, ownerType).Find(&filesModels).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			r.logger.Warnf("File not found: %s", ownerID)
+			r.logger.Warnf("Files not found: %s", ownerID)
 			return nil, nil
 		}
 		return nil, err
 	}
 
-	file := r.converter.ToEntity(&fileModel)
+	filesEntity := make([]file_entity.File, 0)
+	for _, model := range filesModels {
+		file := r.converter.ToEntity(&model)
+		filesEntity = append(filesEntity, *file)
+	}
 
-	return file, nil
+	return filesEntity, nil
+}
+
+func (r *FileRepository) GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) ([]file_entity.File, error) {
+	r.logger.Infof("getting files by multiple owners... owner_count: %v; owner_type: %s", len(ownerIDs), ownerType)
+
+	if len(ownerIDs) == 0 {
+		return make([]file_entity.File, 0), nil
+	}
+
+	var filesModels []model.File
+	if err := r.db.WithContext(ctx).
+		Where("owner_id IN (?) AND owner_type = ?", ownerIDs, ownerType).
+		Find(&filesModels).Error; err != nil {
+		return nil, fmt.Errorf("database query failed: %w", err)
+	}
+
+	filesEntity := make([]file_entity.File, 0)
+	for _, model := range filesModels {
+		file := r.converter.ToEntity(&model)
+		filesEntity = append(filesEntity, *file)
+	}
+
+	return filesEntity, nil
 }
 
 func (r *FileRepository) GetExpiredTemporaryFiles(ctx context.Context) ([]*file_entity.File, error) {
 	r.logger.Info("getting expired temporary files...")
 	var fileModels []model.File
 
-	// Используем текущее время для сравнения
 	now := time.Now()
 
 	if err := r.db.WithContext(ctx).

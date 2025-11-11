@@ -3,8 +3,8 @@ package product_repository
 import (
 	"context"
 
-	"github.com/Fi44er/sdmed/internal/module/product/entity"
-	"github.com/Fi44er/sdmed/internal/module/product/infrastucture/repository/model"
+	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
+	product_model "github.com/Fi44er/sdmed/internal/module/product/infrastructure/repository/model"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
 )

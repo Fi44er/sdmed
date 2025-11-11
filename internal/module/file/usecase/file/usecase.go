@@ -14,6 +14,8 @@ import (
 type IFileRepository interface {
 	GetByName(ctx context.Context, name string) (*file_entity.File, error)
 	GetExpiredTemporaryFiles(ctx context.Context) ([]*file_entity.File, error)
+	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]file_entity.File, error)
+	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) ([]file_entity.File, error)
 
 	Create(ctx context.Context, file *file_entity.File) error
 	Delete(ctx context.Context, id string) error
@@ -26,19 +28,21 @@ type IFileStorage interface {
 	Get(name string) ([]byte, error)
 }
 
+type IFileUsecase interface {
+	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) (string, error)
+	UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) (string, error)
+	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
+	Get(ctx context.Context, name string) (*file_entity.File, error)
+	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]file_entity.File, error)
+	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) (map[string][]file_entity.File, error)
+}
+
 type FileUsecase struct {
 	repository  IFileRepository
 	uow         uow.Uow
 	fileStorage IFileStorage
 	logger      *logger.Logger
 	config      *config.Config
-}
-
-type IFileUsecase interface {
-	UploadTemporary(ctx context.Context, file *file_entity.File, ttl time.Duration) (string, error)
-	UploadPermanent(ctx context.Context, file *file_entity.File, ownerID, ownerType string) (string, error)
-	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
-	Get(ctx context.Context, name string) (*file_entity.File, error)
 }
 
 func NewFileUsecase(
@@ -164,4 +168,40 @@ func (u *FileUsecase) Get(ctx context.Context, name string) (*file_entity.File, 
 	}
 	file.Data = data
 	return file, nil
+}
+
+func (u *FileUsecase) GetByOwner(ctx context.Context, ownerID, ownerType string) ([]file_entity.File, error) {
+	files, err := u.repository.GetByOwner(ctx, ownerID, ownerType)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
+func (u *FileUsecase) GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) (map[string][]file_entity.File, error) {
+	files, err := u.repository.GetByOwners(ctx, ownerIDs, ownerType)
+	if err != nil {
+		return nil, err
+	}
+
+	filesByOwner := make(map[string][]file_entity.File)
+
+	for _, file := range files {
+		if _, exists := filesByOwner[*file.OwnerID]; !exists {
+			filesByOwner[*file.OwnerID] = make([]file_entity.File, 0)
+		}
+
+		filesByOwner[*file.OwnerID] = append(filesByOwner[*file.OwnerID], file)
+	}
+
+	for _, ownerID := range ownerIDs {
+		if _, exists := filesByOwner[ownerID]; !exists {
+			filesByOwner[ownerID] = make([]file_entity.File, 0)
+		}
+	}
+
+	u.logger.Infof("files loaded successfully total_files: %v", len(files))
+
+	return filesByOwner, nil
 }

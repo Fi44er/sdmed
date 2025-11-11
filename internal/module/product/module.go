@@ -1,6 +1,7 @@
 package product_module
 
 import (
+	"github.com/Fi44er/sdmed/internal/config"
 	file_usecase "github.com/Fi44er/sdmed/internal/module/file/usecase/file"
 	category_http "github.com/Fi44er/sdmed/internal/module/product/delivery/http/category"
 	product_adapters "github.com/Fi44er/sdmed/internal/module/product/infrastructure/adapters"
@@ -25,6 +26,7 @@ type ProductModule struct {
 	validator *validator.Validate
 	db        *gorm.DB
 	uow       uow.Uow
+	config    *config.Config
 }
 
 func NewProductModule(
@@ -33,6 +35,7 @@ func NewProductModule(
 	db *gorm.DB,
 	uow uow.Uow,
 	fileUsecase file_usecase.IFileUsecase,
+	config *config.Config,
 ) *ProductModule {
 	return &ProductModule{
 		logger:      logger,
@@ -40,6 +43,7 @@ func NewProductModule(
 		db:          db,
 		uow:         uow,
 		fileUsecase: fileUsecase,
+		config:      config,
 	}
 }
 
@@ -51,7 +55,7 @@ func (m *ProductModule) Init() {
 	m.fileUsecaseAdapter = product_adapters.NewFileUsecaseAdapter(m.fileUsecase)
 	m.categoryRepository = category_repository.NewCategoryRepository(m.logger, m.db)
 	m.categoryUsecase = category_usecase.NewCategoryUsecase(m.logger, m.categoryRepository, m.fileUsecaseAdapter, m.uow)
-	m.categoryHandler = category_http.NewCategoryHandler(m.categoryUsecase, m.logger, m.validator)
+	m.categoryHandler = category_http.NewCategoryHandler(m.categoryUsecase, m.logger, m.validator, m.config)
 
 }
 

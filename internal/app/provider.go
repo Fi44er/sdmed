@@ -93,6 +93,7 @@ func (p *moduleProvider) ProductModule() error {
 		p.app.db,
 		p.app.uow,
 		p.fileModule.GetFileService(),
+		p.app.config,
 	)
 	p.productModule.Init()
 	return nil
