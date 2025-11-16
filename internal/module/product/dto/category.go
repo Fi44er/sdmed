@@ -4,18 +4,24 @@ type CategoryDTO struct {
 	Name string `json:"name"`
 }
 
+type UpdateCatgoryDTO struct {
+	Name            string   `json:"name" validate:"required,min=1,max=255"`
+	DeleteImagesIDs []string `json:"delete_images_ids" validate:"dive,uuid4"`
+	Images          []string `json:"images" validate:"dive,url"`
+}
+
 type CreateCategoryDTO struct {
-	Name   string   `json:"name"`
-	Images []string `json:"images"`
+	Name   string   `json:"name" validate:"required,min=1,max=255"`
+	Images []string `json:"images" validate:"dive,url"`
 }
 
-type CategoryRes struct {
-	ID     string    `json:"id"`
-	Name   string    `json:"name"`
-	Images []FileRes `json:"images"`
+type CategoryResponse struct {
+	ID     string         `json:"id"`
+	Name   string         `json:"name"`
+	Images []FileResponse `json:"images"`
 }
 
-type FileRes struct {
+type FileResponse struct {
 	ID  string `json:"id"`
 	URL string `json:"url"`
 }

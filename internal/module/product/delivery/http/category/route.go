@@ -7,4 +7,5 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories.Post("/", h.Create)
 	categories.Get("/:id", h.GetByID)
 	categories.Get("/", h.GetAll)
+	categories.Delete("/:id", h.Delete)
 }

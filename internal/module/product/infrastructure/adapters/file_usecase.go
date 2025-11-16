@@ -13,6 +13,8 @@ type IFileUsecaseAdapter interface {
 	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
 	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]product_entity.File, error)
 	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) (map[string][]product_entity.File, error)
+	DeleteByOwner(ctx context.Context, ownerID, ownerType string) error
+	DeleteByID(ctx context.Context, id string) error
 }
 
 type FileUsecaseAdapter struct {
@@ -23,6 +25,14 @@ func NewFileUsecaseAdapter(fileUsecase file_usecase.IFileUsecase) IFileUsecaseAd
 	return &FileUsecaseAdapter{
 		fileUsecase: fileUsecase,
 	}
+}
+
+func (a *FileUsecaseAdapter) DeleteByID(ctx context.Context, id string) error {
+	return a.fileUsecase.DeleteByID(ctx, id)
+}
+
+func (a *FileUsecaseAdapter) DeleteByOwner(ctx context.Context, ownerID, ownerType string) error {
+	return a.fileUsecase.DeleteByOwner(ctx, ownerID, ownerType)
 }
 
 func (a *FileUsecaseAdapter) MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error {

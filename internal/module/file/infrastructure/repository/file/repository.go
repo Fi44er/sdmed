@@ -13,6 +13,7 @@ import (
 
 type IFileRepository interface {
 	Delete(ctx context.Context, id string) error
+	DeleteByOwner(ctx context.Context, ownerID, ownerType string) error
 	Update(ctx context.Context, file *file_entity.File) error
 	Create(ctx context.Context, file *file_entity.File) error
 
@@ -60,14 +61,6 @@ func (r *FileRepository) GetByID(ctx context.Context, id string) (*file_entity.F
 
 	file := r.converter.ToEntity(&fileModel)
 	return file, nil
-}
-
-func (r *FileRepository) Delete(ctx context.Context, id string) error {
-	r.logger.Info("deleting file by id...")
-	if err := r.db.WithContext(ctx).Delete(&model.File{}, "id = ?", id).Error; err != nil {
-		return err
-	}
-	return nil
 }
 
 func (r *FileRepository) GetByName(ctx context.Context, name string) (*file_entity.File, error) {
@@ -152,6 +145,22 @@ func (r *FileRepository) Update(ctx context.Context, file *file_entity.File) err
 	r.logger.Info("updating file...")
 	fileModel := r.converter.ToModel(file)
 	if err := r.db.WithContext(ctx).Model(&fileModel).Updates(fileModel).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *FileRepository) Delete(ctx context.Context, id string) error {
+	r.logger.Info("deleting file by id...")
+	if err := r.db.WithContext(ctx).Delete(&model.File{}, "id = ?", id).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *FileRepository) DeleteByOwner(ctx context.Context, ownerID, ownerType string) error {
+	r.logger.Infof("deleting files by owner; ownerID: %s; ownerType: %s", ownerID, ownerType)
+	if err := r.db.WithContext(ctx).Delete(&model.File{}, "owner_id = ? AND owner_type = ?", ownerID, ownerType).Error; err != nil {
 		return err
 	}
 	return nil

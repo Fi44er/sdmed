@@ -48,8 +48,16 @@ definitions:
     - code
     - email
     type: object
-  fiber.Map:
-    additionalProperties: true
+  product_dto.CategoryResponse:
+    properties:
+      id:
+        type: string
+      images:
+        items:
+          $ref: '#/definitions/product_dto.FileResponse'
+        type: array
+      name:
+        type: string
     type: object
   product_dto.CreateCategoryDTO:
     properties:
@@ -58,6 +66,13 @@ definitions:
           type: string
         type: array
       name:
+        type: string
+    type: object
+  product_dto.FileResponse:
+    properties:
+      id:
+        type: string
+      url:
         type: string
     type: object
   response.Response:
@@ -358,15 +373,20 @@ paths:
       - application/json
       responses:
         "200":
-          description: success
+          description: OK
           schema:
-            additionalProperties: true
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.ResponseData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/product_dto.CategoryResponse'
+                  type: array
+              type: object
         "500":
-          description: internal server error
+          description: Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.Response'
       summary: Get all categories
       tags:
       - categories
@@ -385,17 +405,41 @@ paths:
       - application/json
       responses:
         "201":
-          description: Created
+          description: OK
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/response.Response'
         "500":
-          description: Internal Server Error
+          description: Error
           schema:
-            $ref: '#/definitions/fiber.Map'
+            $ref: '#/definitions/response.Response'
       summary: Create a new category
       tags:
-      - Category
+      - categories
   /categories/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a category by ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Delete category
+      tags:
+      - categories
     get:
       consumes:
       - application/json
@@ -410,25 +454,18 @@ paths:
       - application/json
       responses:
         "200":
-          description: success
+          description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: bad request
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: not found
-          schema:
-            additionalProperties: true
-            type: object
+            allOf:
+            - $ref: '#/definitions/response.ResponseData'
+            - properties:
+                data:
+                  $ref: '#/definitions/product_dto.CategoryResponse'
+              type: object
         "500":
-          description: internal server error
+          description: Error
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.Response'
       summary: Get category by ID
       tags:
       - categories

@@ -2,6 +2,7 @@ package category_http
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/Fi44er/sdmed/internal/config"
 	product_dto "github.com/Fi44er/sdmed/internal/module/product/dto"
@@ -20,9 +21,10 @@ func NewConverter(config *config.Config) *Converter {
 
 func (c *Converter) ToEntity(dto *product_dto.CreateCategoryDTO) *product_entity.Category {
 	imageEntity := make([]product_entity.File, 0)
-	for _, imageName := range dto.Images {
+	for _, fileURL := range dto.Images {
+		fileName := path.Base(fileURL)
 		imageEntity = append(imageEntity, product_entity.File{
-			Name: imageName,
+			Name: fileName,
 		})
 	}
 	return &product_entity.Category{
@@ -31,44 +33,44 @@ func (c *Converter) ToEntity(dto *product_dto.CreateCategoryDTO) *product_entity
 	}
 }
 
-func (c *Converter) toCategoryResponses(categories []product_entity.Category) []product_dto.CategoryRes {
+func (c *Converter) toCategoryResponses(categories []product_entity.Category) []product_dto.CategoryResponse {
 	if len(categories) == 0 {
-		return []product_dto.CategoryRes{}
+		return []product_dto.CategoryResponse{}
 	}
 
-	result := make([]product_dto.CategoryRes, len(categories))
+	result := make([]product_dto.CategoryResponse, len(categories))
 	for i, category := range categories {
 		result[i] = *c.toCategoryResponse(&category)
 	}
 	return result
 }
 
-func (c *Converter) toCategoryResponse(category *product_entity.Category) *product_dto.CategoryRes {
+func (c *Converter) toCategoryResponse(category *product_entity.Category) *product_dto.CategoryResponse {
 	if category == nil {
 		return nil
 	}
 
-	return &product_dto.CategoryRes{
+	return &product_dto.CategoryResponse{
 		ID:     category.ID,
 		Name:   category.Name,
 		Images: c.toFileResponses(category.Images),
 	}
 }
 
-func (c *Converter) toFileResponses(files []product_entity.File) []product_dto.FileRes {
+func (c *Converter) toFileResponses(files []product_entity.File) []product_dto.FileResponse {
 	if len(files) == 0 {
-		return []product_dto.FileRes{}
+		return []product_dto.FileResponse{}
 	}
 
-	fileResponses := make([]product_dto.FileRes, len(files))
+	fileResponses := make([]product_dto.FileResponse, len(files))
 	for i, file := range files {
 		fileResponses[i] = c.toFileResponse(file)
 	}
 	return fileResponses
 }
 
-func (c *Converter) toFileResponse(file product_entity.File) product_dto.FileRes {
-	return product_dto.FileRes{
+func (c *Converter) toFileResponse(file product_entity.File) product_dto.FileResponse {
+	return product_dto.FileResponse{
 		ID:  file.ID,
 		URL: c.generateFileURL(file),
 	}

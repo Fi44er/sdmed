@@ -13,11 +13,13 @@ import (
 
 type IFileRepository interface {
 	GetByName(ctx context.Context, name string) (*file_entity.File, error)
+	GetByID(ctx context.Context, id string) (*file_entity.File, error)
 	GetExpiredTemporaryFiles(ctx context.Context) ([]*file_entity.File, error)
 	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]file_entity.File, error)
 	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) ([]file_entity.File, error)
 
 	Create(ctx context.Context, file *file_entity.File) error
+	DeleteByOwner(ctx context.Context, ownerID, ownerType string) error
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, file *file_entity.File) error
 }
@@ -35,6 +37,8 @@ type IFileUsecase interface {
 	Get(ctx context.Context, name string) (*file_entity.File, error)
 	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]file_entity.File, error)
 	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) (map[string][]file_entity.File, error)
+	DeleteByOwner(ctx context.Context, ownerID, ownerType string) error
+	DeleteByID(ctx context.Context, id string) error
 }
 
 type FileUsecase struct {
@@ -204,4 +208,71 @@ func (u *FileUsecase) GetByOwners(ctx context.Context, ownerIDs []string, ownerT
 	u.logger.Infof("files loaded successfully total_files: %v", len(files))
 
 	return filesByOwner, nil
+}
+
+func (u *FileUsecase) DeleteByID(ctx context.Context, id string) error {
+	file := new(file_entity.File)
+	err := u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, "file")
+		if err != nil {
+			return err
+		}
+		fileRepo := repo.(IFileRepository)
+
+		file, err = u.repository.GetByID(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if err := fileRepo.Delete(ctx, id); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if err := u.fileStorage.Delete(file.Name); err != nil {
+		u.logger.Errorf("storage delete failed, manual cleanup required. file_name: %s; error: %v", file.Name, err)
+	}
+
+	return nil
+}
+
+func (u *FileUsecase) DeleteByOwner(ctx context.Context, ownerID, ownerType string) error {
+	files := make([]file_entity.File, 0)
+	var err error
+	err = u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, "file")
+		if err != nil {
+			return err
+		}
+		fileRepo := repo.(IFileRepository)
+
+		files, err = fileRepo.GetByOwner(ctx, ownerID, ownerType)
+		if err != nil {
+			return err
+		}
+
+		if err := u.repository.DeleteByOwner(ctx, ownerID, ownerType); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		if err := u.fileStorage.Delete(file.Name); err != nil {
+			u.logger.Errorf("storage delete failed, manual cleanup required. file_name: %s; error: %v", file.Name, err)
+		}
+	}
+
+	return nil
 }

@@ -16,12 +16,16 @@ type IFileUsecaseAdapter interface {
 	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
 	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]product_entity.File, error)
 	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) (map[string][]product_entity.File, error)
+
+	DeleteByOwner(ctx context.Context, ownerID, ownerType string) error
+	DeleteByID(ctx context.Context, id string) error
 }
 
 type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type ICategoryRepository interface {
@@ -53,27 +57,50 @@ func NewCategoryUsecase(
 	}
 }
 
-func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.Category) error {
+func (u *CategoryUsecase) Update(ctx context.Context, category *product_entity.Category) error {
+	u.logger.Infof("Updating category: %s", category.Name)
+
 	return u.uow.Do(ctx, func(ctx context.Context) error {
+
+		return nil
+	})
+
+}
+
+func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.Category) error {
+	u.logger.Infof("Creating category: %s", category.Name)
+
+	return u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, ownerType)
+		if err != nil {
+			u.logger.Errorf("Failed to get repository: %v", err)
+			return err
+		}
+		categoryRepo := repo.(ICategoryRepository)
+
 		needCleanup := true
 		defer func() {
 			if needCleanup {
-				if err := u.repository.Delete(ctx, category.ID); err != nil {
-					u.logger.Errorf("failed to cleanup file %s: %v", category.ID, err)
+				u.logger.Warnf("Cleaning up category due to failed creation: %s", category.ID)
+				if err := categoryRepo.Delete(ctx, category.ID); err != nil {
+					u.logger.Errorf("Failed to cleanup category %s: %v", category.ID, err)
 				}
 			}
 		}()
 
-		existCategory, err := u.repository.GetByName(ctx, category.Name)
+		existCategory, err := categoryRepo.GetByName(ctx, category.Name)
 		if err != nil {
+			u.logger.Errorf("Failed to check category existence by name %s: %v", category.Name, err)
 			return err
 		}
 
 		if existCategory != nil {
+			u.logger.Warnf("Category already exists: %s", category.Name)
 			return product_constant.ErrCategoryAlreadyExist
 		}
 
-		if err := u.repository.Create(ctx, category); err != nil {
+		if err := categoryRepo.Create(ctx, category); err != nil {
+			u.logger.Errorf("Failed to create category in repository: %v", err)
 			return err
 		}
 
@@ -82,60 +109,98 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			imagesNames = append(imagesNames, image.Name)
 		}
 
-		if err := u.fileUsecase.MakeFilesPermanent(ctx, imagesNames, category.ID, ownerType); err != nil {
-			return err
+		if len(imagesNames) > 0 {
+			u.logger.Infof("Making %d files permanent for category %s", len(imagesNames), category.ID)
+			if err := u.fileUsecase.MakeFilesPermanent(ctx, imagesNames, category.ID, ownerType); err != nil {
+				u.logger.Errorf("Failed to make files permanent for category %s: %v", category.ID, err)
+				return err
+			}
 		}
-
 		needCleanup = false
+		u.logger.Infof("Category created successfully: %s (ID: %s)", category.Name, category.ID)
 		return nil
 	})
 }
 
 func (u *CategoryUsecase) GetByID(ctx context.Context, id string) (*product_entity.Category, error) {
+	u.logger.Debugf("Getting category by ID: %s", id)
+
 	category, err := u.repository.GetByID(ctx, id)
 	if err != nil {
+		u.logger.Errorf("Failed to get category by ID %s: %v", id, err)
 		return nil, err
 	}
 
 	if category == nil {
+		u.logger.Debugf("Category not found: %s", id)
 		return nil, product_constant.ErrCategoryNotFound
 	}
 
 	files, err := u.fileUsecase.GetByOwner(ctx, id, ownerType)
 	if err != nil {
-		u.logger.Warnf("failed to enrich category with images category_id: %v; error: %v", id, err)
+		u.logger.Warnf("Failed to get files for category %s: %v", id, err)
+	} else {
+		u.logger.Debugf("Found %d files for category %s", len(files), id)
 	}
 
 	category.Images = files
-
+	u.logger.Debugf("Category retrieved successfully: %s", id)
 	return category, nil
 }
 
 func (u *CategoryUsecase) GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error) {
+	u.logger.Debugf("Getting all categories (offset: %d, limit: %d)", offset, limit)
+
 	categories, err := u.repository.GetAll(ctx, offset, limit)
 	if err != nil {
+		u.logger.Errorf("Failed to get categories: %v", err)
 		return nil, err
 	}
+
+	u.logger.Debugf("Found %d categories", len(categories))
 
 	if len(categories) == 0 {
 		return categories, nil
 	}
 
 	if err := u.enrichWithBatch(ctx, categories); err != nil {
-		u.logger.Warnf("failed to enrich categories with images category_count: %v; error: %v", len(categories), err)
+		u.logger.Warnf("Failed to enrich categories with images (count: %d): %v", len(categories), err)
+	} else {
+		u.logger.Debugf("Successfully enriched %d categories with images", len(categories))
 	}
 
 	return categories, nil
 }
 
 func (u *CategoryUsecase) Delete(ctx context.Context, id string) error {
-	return nil
+	u.logger.Infof("Deleting category: %s", id)
+
+	return u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, ownerType)
+		if err != nil {
+			u.logger.Errorf("Failed to get repository for deletion: %v", err)
+			return err
+		}
+		categoryRepo := repo.(ICategoryRepository)
+
+		if err := categoryRepo.Delete(ctx, id); err != nil {
+			u.logger.Errorf("Failed to delete category %s: %v", id, err)
+			return err
+		}
+
+		if err := u.fileUsecase.DeleteByOwner(ctx, id, ownerType); err != nil {
+			u.logger.Errorf("Failed to delete files for category %s: %v", id, err)
+			return err
+		}
+
+		u.logger.Infof("Category deleted successfully: %s", id)
+		return nil
+	})
 }
 
-func (u *CategoryUsecase) enrichWithBatch(
-	ctx context.Context,
-	categories []product_entity.Category,
-) error {
+func (u *CategoryUsecase) enrichWithBatch(ctx context.Context, categories []product_entity.Category) error {
+	u.logger.Debugf("Enriching %d categories with files", len(categories))
+
 	categoryIDs := make([]string, len(categories))
 	for i, category := range categories {
 		categoryIDs[i] = category.ID
@@ -146,11 +211,14 @@ func (u *CategoryUsecase) enrichWithBatch(
 		return fmt.Errorf("batch get files by owners: %w", err)
 	}
 
+	enrichedCount := 0
 	for i := range categories {
 		if files, exists := filesByOwner[categories[i].ID]; exists {
 			categories[i].Images = files
+			enrichedCount++
 		}
 	}
 
+	u.logger.Debugf("Enriched %d out of %d categories with files", enrichedCount, len(categories))
 	return nil
 }

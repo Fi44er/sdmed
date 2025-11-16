@@ -56,7 +56,6 @@ func (m *ProductModule) Init() {
 	m.categoryRepository = category_repository.NewCategoryRepository(m.logger, m.db)
 	m.categoryUsecase = category_usecase.NewCategoryUsecase(m.logger, m.categoryRepository, m.fileUsecaseAdapter, m.uow)
 	m.categoryHandler = category_http.NewCategoryHandler(m.categoryUsecase, m.logger, m.validator, m.config)
-
 }
 
 func (m *ProductModule) InitDelivery(router fiber.Router) {

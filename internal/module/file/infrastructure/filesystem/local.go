@@ -3,7 +3,6 @@ package filesystem
 import (
 	"bytes"
 	"fmt"
-	"github.com/h2non/filetype"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -12,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/h2non/filetype"
 
 	"github.com/Fi44er/sdmed/internal/config"
 	"github.com/Fi44er/sdmed/internal/module/file/pkg/constant"
@@ -38,6 +39,11 @@ func (s *LocalFileStorage) Upload(name *string, data []byte) error {
 	outputPath := s.config.FileDir + *name
 	reader := bytes.NewReader(data)
 
+	if err := os.MkdirAll(s.config.FileDir, 0755); err != nil {
+		s.logger.Errorf("failed to create directory: %s", s.config.FileDir)
+		return err
+	}
+
 	if img, err := webp.Decode(reader); err == nil {
 		return s.saveAsWebP(img, outputPath)
 	}
@@ -48,11 +54,6 @@ func (s *LocalFileStorage) Upload(name *string, data []byte) error {
 		newPath := s.replaceExtToWebP(outputPath)
 		*name = *name + ".webp"
 		return s.saveAsWebP(img, newPath)
-	}
-
-	if err := os.MkdirAll(s.config.FileDir, 0755); err != nil {
-		s.logger.Errorf("failed to create directory: %s", s.config.FileDir)
-		return err
 	}
 
 	kind, _ := filetype.Match(data)

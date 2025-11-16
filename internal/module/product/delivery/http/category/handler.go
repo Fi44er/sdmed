@@ -7,6 +7,7 @@ import (
 	product_dto "github.com/Fi44er/sdmed/internal/module/product/dto"
 	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
 	"github.com/Fi44er/sdmed/pkg/logger"
+	_ "github.com/Fi44er/sdmed/pkg/response"
 	"github.com/Fi44er/sdmed/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -16,6 +17,7 @@ type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
+	Delete(ctx context.Context, id string) error
 }
 
 type CategoryHandler struct {
@@ -45,12 +47,12 @@ func NewCategoryHandler(
 // CreateCategory godoc
 // @Summary Create a new category
 // @Description Create a new category
-// @Tags Category
+// @Tags categories
 // @Accept json
 // @Produce json
 // @Param category body product_dto.CreateCategoryDTO true "Category"
-// @Success 201 {object} fiber.Map
-// @Failure 500 {object} fiber.Map
+// @Success 201 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
 // @Router /categories [post]
 func (h *CategoryHandler) Create(ctx *fiber.Ctx) error {
 	dto := new(product_dto.CreateCategoryDTO)
@@ -80,8 +82,8 @@ func (h *CategoryHandler) Create(ctx *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param id path string true "Category ID"
-// @Success 200 {object} map[string]interface{} "success"
-// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Success 200 {object} response.ResponseData{data=product_dto.CategoryResponse} "OK"
+// @Failure 500 {object} response.Response "Error"
 // @Router /categories/{id} [get]
 func (h *CategoryHandler) GetByID(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
@@ -107,8 +109,8 @@ func (h *CategoryHandler) GetByID(ctx *fiber.Ctx) error {
 // @Produce json
 // @Param offset path int false "Offset for pagination" default(0)
 // @Param limit path int false "Limit for pagination" default(10)
-// @Success 200 {object} map[string]interface{} "success"
-// @Failure 500 {object} map[string]interface{} "internal server error"
+// @Success 200 {object} response.ResponseData{data=[]product_dto.CategoryResponse} "OK"
+// @Failure 500 {object} response.Response "Error"
 // @Router /categories [get]
 func (h *CategoryHandler) GetAll(ctx *fiber.Ctx) error {
 	offset := ctx.QueryInt("offset")
@@ -123,5 +125,28 @@ func (h *CategoryHandler) GetAll(ctx *fiber.Ctx) error {
 	return ctx.Status(200).JSON(fiber.Map{
 		"status": "success",
 		"data":   categoriesRes,
+	})
+}
+
+// Delete godoc
+// @Summary Delete category
+// @Description Delete a category by ID
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Param id path string true "Category ID"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /categories/{id} [delete]
+func (h *CategoryHandler) Delete(ctx *fiber.Ctx) error {
+	id := ctx.Params("id")
+
+	if err := h.usecase.Delete(ctx.Context(), id); err != nil {
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "category deleted successfully",
 	})
 }
