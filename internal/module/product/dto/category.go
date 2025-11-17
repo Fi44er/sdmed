@@ -5,9 +5,8 @@ type CategoryDTO struct {
 }
 
 type UpdateCatgoryDTO struct {
-	Name            string   `json:"name" validate:"required,min=1,max=255"`
-	DeleteImagesIDs []string `json:"delete_images_ids" validate:"dive,uuid4"`
-	Images          []string `json:"images" validate:"dive,url"`
+	Name   string   `json:"name" validate:"required,min=1,max=255"`
+	Images []string `json:"images" validate:"dive,url"`
 }
 
 type CreateCategoryDTO struct {

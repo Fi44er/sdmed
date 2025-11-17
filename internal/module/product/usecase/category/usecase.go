@@ -8,6 +8,7 @@ import (
 	product_constant "github.com/Fi44er/sdmed/internal/module/product/pkg"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
+	"github.com/Fi44er/sdmed/pkg/utils"
 )
 
 const ownerType = "category"
@@ -30,6 +31,7 @@ type ICategoryUsecase interface {
 
 type ICategoryRepository interface {
 	Create(ctx context.Context, entity *product_entity.Category) error
+	Update(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
 	GetByName(ctx context.Context, name string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
@@ -61,10 +63,37 @@ func (u *CategoryUsecase) Update(ctx context.Context, category *product_entity.C
 	u.logger.Infof("Updating category: %s", category.Name)
 
 	return u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, ownerType)
+		if err != nil {
+			u.logger.Errorf("Failed to get repository: %v", err)
+			return err
+		}
+		categoryRepo := repo.(ICategoryRepository)
+
+		existCategory, err := categoryRepo.GetByID(ctx, category.ID)
+		if err != nil {
+			u.logger.Errorf("Failed to get category from repository: %v", err)
+			return err
+		}
+
+		if err := categoryRepo.Update(ctx, category); err != nil {
+			u.logger.Errorf("Failed to update category in repository: %v", err)
+			return err
+		}
+
+		deletedImg, addedImg := utils.FindDifferences(existCategory.Images, category.Images, func(f product_entity.File) string { return f.ID })
+
+		for _, fileID := range deletedImg {
+			if err := u.fileUsecase.DeleteByID(ctx, fileID); err != nil {
+			}
+		}
+
+		if err := u.fileUsecase.MakeFilesPermanent(ctx, addedImg, category.ID, ownerType); err != nil {
+
+		}
 
 		return nil
 	})
-
 }
 
 func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.Category) error {
