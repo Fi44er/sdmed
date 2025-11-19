@@ -8,4 +8,5 @@ func (h *CategoryHandler) RegisterRoutes(router fiber.Router) {
 	categories.Get("/:id", h.GetByID)
 	categories.Get("/", h.GetAll)
 	categories.Delete("/:id", h.Delete)
+	categories.Put("/:id", h.Update)
 }

@@ -27,6 +27,7 @@ type ICategoryUsecase interface {
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
 	Delete(ctx context.Context, id string) error
+	Update(ctx context.Context, category *product_entity.Category) error
 }
 
 type ICategoryRepository interface {
@@ -81,15 +82,27 @@ func (u *CategoryUsecase) Update(ctx context.Context, category *product_entity.C
 			return err
 		}
 
-		deletedImg, addedImg := utils.FindDifferences(existCategory.Images, category.Images, func(f product_entity.File) string { return f.ID })
+		files, err := u.fileUsecase.GetByOwner(ctx, category.ID, ownerType)
+		if err != nil {
+			u.logger.Warnf("Failed to get files for category %s: %v", category.ID, err)
+		} else {
+			u.logger.Debugf("Found %d files for category %s", len(files), category.ID)
+		}
 
+		existCategory.Images = files
+
+		deletedImg, addedImg := utils.FindDifferences(existCategory.Images, category.Images, func(f product_entity.File) (string, string) { return f.Name, f.ID })
+
+		// TODO: оптимизировать удаление файлов
 		for _, fileID := range deletedImg {
 			if err := u.fileUsecase.DeleteByID(ctx, fileID); err != nil {
+				u.logger.Warnf("Failed to delete file %s: %v", fileID, err)
 			}
 		}
 
 		if err := u.fileUsecase.MakeFilesPermanent(ctx, addedImg, category.ID, ownerType); err != nil {
-
+			u.logger.Errorf("Failed to make files permanent for category %s: %v", category.ID, err)
+			return err
 		}
 
 		return nil

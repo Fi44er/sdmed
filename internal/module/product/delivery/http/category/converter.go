@@ -19,7 +19,7 @@ func NewConverter(config *config.Config) *Converter {
 	}
 }
 
-func (c *Converter) ToEntity(dto *product_dto.CreateCategoryDTO) *product_entity.Category {
+func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateCategoryRequest) *product_entity.Category {
 	imageEntity := make([]product_entity.File, 0)
 	for _, fileURL := range dto.Images {
 		fileName := path.Base(fileURL)
@@ -29,6 +29,21 @@ func (c *Converter) ToEntity(dto *product_dto.CreateCategoryDTO) *product_entity
 	}
 	return &product_entity.Category{
 		Name:   dto.Name,
+		Images: imageEntity,
+	}
+}
+
+func (c *Converter) ToEntityFromUpdate(dto *product_dto.UpdateCategoryRequest) *product_entity.Category {
+	imageEntity := make([]product_entity.File, 0)
+	for _, fileURL := range *dto.Images {
+		fileName := path.Base(fileURL)
+		imageEntity = append(imageEntity, product_entity.File{
+			Name: fileName,
+		})
+	}
+	return &product_entity.Category{
+		ID:     dto.ID,
+		Name:   *dto.Name,
 		Images: imageEntity,
 	}
 }

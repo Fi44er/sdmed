@@ -1,4 +1,3 @@
-// file_usecase/cleaner.go
 package file_usecase
 
 import (

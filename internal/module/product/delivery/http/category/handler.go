@@ -18,6 +18,7 @@ type ICategoryUsecase interface {
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
 	Delete(ctx context.Context, id string) error
+	Update(ctx context.Context, category *product_entity.Category) error
 }
 
 type CategoryHandler struct {
@@ -50,14 +51,14 @@ func NewCategoryHandler(
 // @Tags categories
 // @Accept json
 // @Produce json
-// @Param category body product_dto.CreateCategoryDTO true "Category"
+// @Param category body product_dto.CreateCategoryRequest true "Category"
 // @Success 201 {object} response.Response "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /categories [post]
 func (h *CategoryHandler) Create(ctx *fiber.Ctx) error {
-	dto := new(product_dto.CreateCategoryDTO)
+	dto := new(product_dto.CreateCategoryRequest)
 
-	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntity, h.logger)
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityFromCreate, h.logger)
 	if err != nil {
 		return ctx.Status(400).JSON(fiber.Map{
 			"status":  "fail",
@@ -72,6 +73,39 @@ func (h *CategoryHandler) Create(ctx *fiber.Ctx) error {
 	return ctx.Status(201).JSON(fiber.Map{
 		"status":  "success",
 		"message": "category created successfully",
+	})
+}
+
+// Update godoc
+// @Summary Update a category
+// @Description Update a category
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Param id path string true "Category ID"
+// @Param category body product_dto.UpdateCategoryRequest true "Category"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /categories/{id} [put]
+func (h *CategoryHandler) Update(ctx *fiber.Ctx) error {
+	dto := new(product_dto.UpdateCategoryRequest)
+	dto.ID = ctx.Params("id")
+
+	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityFromUpdate, h.logger)
+	if err != nil {
+		return ctx.Status(400).JSON(fiber.Map{
+			"status":  "fail",
+			"message": err.Error(),
+		})
+	}
+
+	if err := h.usecase.Update(ctx.Context(), entity); err != nil {
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "category updated successfully",
 	})
 }
 
