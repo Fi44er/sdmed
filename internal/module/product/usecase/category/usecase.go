@@ -118,6 +118,7 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
+
 		categoryRepo := repo.(ICategoryRepository)
 
 		needCleanup := true

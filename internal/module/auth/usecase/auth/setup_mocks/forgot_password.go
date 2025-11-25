@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Fi44er/sdmed/internal/module/auth/entity"
-	"github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
+	auth_entity "github.com/Fi44er/sdmed/internal/module/auth/entity"
+	auth_constant "github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
 	mocks "github.com/Fi44er/sdmed/internal/module/auth/usecase/auth/mock"
 	"github.com/golang/mock/gomock"
 )
