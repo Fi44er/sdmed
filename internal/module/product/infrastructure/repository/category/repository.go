@@ -58,7 +58,7 @@ func (r *CategoryRepository) GetByID(ctx context.Context, id string) (*product_e
 		r.logger.Errorf("Failed to get category by ID %s: %v", id, err)
 		return nil, err
 	}
-	category := r.converter.Toproduct_entity(&categoryModel)
+	category := r.converter.ToEntity(&categoryModel)
 
 	r.logger.Debugf("Category retrieved successfully: %s", id)
 	return category, nil
@@ -80,7 +80,7 @@ func (r *CategoryRepository) GetAll(ctx context.Context, offset, limit int) ([]p
 	}
 	categories := make([]product_entity.Category, len(categoryModels))
 	for i, categoryModel := range categoryModels {
-		categories[i] = *r.converter.Toproduct_entity(&categoryModel)
+		categories[i] = *r.converter.ToEntity(&categoryModel)
 	}
 
 	r.logger.Debugf("Retrieved %d categories", len(categories))
@@ -124,7 +124,7 @@ func (r *CategoryRepository) GetByName(ctx context.Context, name string) (*produ
 		r.logger.Errorf("Failed to get category by name %s: %v", name, err)
 		return nil, err
 	}
-	category := r.converter.Toproduct_entity(&categoryModel)
+	category := r.converter.ToEntity(&categoryModel)
 
 	r.logger.Debugf("Category found by name: %s (ID: %s)", name, category.ID)
 	return category, nil
