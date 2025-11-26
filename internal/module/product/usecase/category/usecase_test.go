@@ -121,3 +121,40 @@ func (s *CategoryUsecaseTestSuite) TestGetByID() {
 		})
 	}
 }
+
+func (s *CategoryUsecaseTestSuite) TestGetAll() {
+	tests := category_testcases.GetGetAllTestCases()
+
+	for _, tc := range tests {
+		s.T().Run(tc.Name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repoMock := mock.NewMockICategoryRepository(ctrl)
+			fileMock := mock.NewMockIFileUsecaseAdapter(ctrl)
+
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, s.uowMock)
+
+			mockStruct := &category_testcases.MockGetAll{
+				Ctrl:     ctrl,
+				Ctx:      s.ctx,
+				RepoMock: repoMock,
+				FileMock: fileMock,
+				T:        t,
+			}
+
+			tc.SetupMocks(mockStruct)
+
+			result, err := usecase.GetAll(s.ctx, tc.InputOffset, tc.InputLimit)
+
+			if tc.ExpectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tc.ExpectedError, err)
+				assert.Nil(t, result)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.ExpectedCategories, result)
+			}
+		})
+	}
+}

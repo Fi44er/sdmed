@@ -11,8 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var ownerID string = "test-category-123"
-
 type MockGetByID struct {
 	Ctrl     *gomock.Controller
 	Ctx      context.Context
@@ -31,6 +29,7 @@ type GetTestCase struct {
 }
 
 func GetGetByIDTestCases() []GetTestCase {
+	ownerID := "test-category-123"
 	return []GetTestCase{
 		{
 			Name:    "successful_get",
