@@ -126,7 +126,7 @@ func GetCreateTestCases() []CreateTestCase {
 					Delete(m.Ctx, "test-category-456").
 					Return(nil)
 			},
-			ExpectedError: product_constant.ErrCategoryAlreadyExist,
+			ExpectedError: product_constant.ErrCategoryAlreadyExists,
 		},
 		{
 			Name: "failed_to_create_category",

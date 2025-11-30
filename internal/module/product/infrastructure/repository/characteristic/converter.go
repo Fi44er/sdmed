@@ -7,7 +7,7 @@ import (
 
 type Converter struct{}
 
-func (c *Converter) ToModel(entity *product_model.Characteristic) *product_model.Characteristic {
+func (c *Converter) ToModel(entity *product_entity.Characteristic) *product_model.Characteristic {
 	return &product_model.Characteristic{
 		ID:          entity.ID,
 		Name:        entity.Name,

@@ -39,24 +39,32 @@ type ICategoryRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
+type ICharacteristicUsecase interface {
+	Create(ctx context.Context, characteristic *product_entity.Characteristic) error
+	CreateMany(ctx context.Context, characteristics []product_entity.Characteristic) error
+}
+
 type CategoryUsecase struct {
-	repository  ICategoryRepository
-	uow         uow.Uow
-	logger      *logger.Logger
-	fileUsecase IFileUsecaseAdapter
+	repository            ICategoryRepository
+	uow                   uow.Uow
+	logger                *logger.Logger
+	fileUsecase           IFileUsecaseAdapter
+	characteristicUsecase ICharacteristicUsecase
 }
 
 func NewCategoryUsecase(
 	logger *logger.Logger,
 	repository ICategoryRepository,
 	fileUsease IFileUsecaseAdapter,
+	characteristicUsecase ICharacteristicUsecase,
 	uow uow.Uow,
 ) ICategoryUsecase {
 	return &CategoryUsecase{
-		logger:      logger,
-		repository:  repository,
-		fileUsecase: fileUsease,
-		uow:         uow,
+		logger:                logger,
+		repository:            repository,
+		fileUsecase:           fileUsease,
+		characteristicUsecase: characteristicUsecase,
+		uow:                   uow,
 	}
 }
 
@@ -139,11 +147,20 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 
 		if existCategory != nil {
 			u.logger.Warnf("Category already exists: %s", category.Name)
-			return product_constant.ErrCategoryAlreadyExist
+			return product_constant.ErrCategoryAlreadyExists
 		}
 
 		if err := categoryRepo.Create(ctx, category); err != nil {
 			u.logger.Errorf("Failed to create category in repository: %v", err)
+			return err
+		}
+
+		for _, characteristic := range category.Characteristic {
+			characteristic.CategoryID = category.ID
+		}
+
+		if err := u.characteristicUsecase.CreateMany(ctx, category.Characteristic); err != nil {
+			u.logger.Errorf("Failed to create category characteristics: %v", err)
 			return err
 		}
 

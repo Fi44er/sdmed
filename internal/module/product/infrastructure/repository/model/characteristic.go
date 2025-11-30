@@ -30,7 +30,6 @@ type Characteristic struct {
 	UpdatedAt   time.Time `gorm:"not null;default:now()"`
 
 	Category Category `gorm:"foreignKey:CategoryID;references:ID"`
-	// ProductCharacteristics []ProductCharacteristic `gorm:"foreignKey:CharacteristicID"` // если будет связь с товарами
 }
 
 func (Characteristic) TableName() string {

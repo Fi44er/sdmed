@@ -33,7 +33,7 @@ func (s *CategoryUsecaseTestSuite) SetupSuite() {
 	s.fileMock = mock.NewMockIFileUsecaseAdapter(s.ctrl)
 	s.uowMock = uow_mock.NewMockUow(s.ctrl)
 	s.logger = logger.NewLogger()
-	s.usecase = category_usecase.NewCategoryUsecase(s.logger, s.repoMock, s.fileMock, s.uowMock)
+	s.usecase = category_usecase.NewCategoryUsecase(s.logger, s.repoMock, s.fileMock, nil, s.uowMock)
 }
 
 func TestCategoryUsecase(t *testing.T) {
@@ -65,7 +65,7 @@ func (s *CategoryUsecaseTestSuite) TestCreate() {
 				T:        t,
 			}
 
-			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, uowMock)
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, nil, uowMock)
 
 			tc.SetupMocks(mockStruct)
 
@@ -73,7 +73,7 @@ func (s *CategoryUsecaseTestSuite) TestCreate() {
 
 			if tc.ExpectedError != nil {
 				assert.Error(t, err)
-				if tc.ExpectedError != product_constant.ErrCategoryAlreadyExist {
+				if tc.ExpectedError != product_constant.ErrCategoryAlreadyExists {
 					assert.Contains(t, err.Error(), tc.ExpectedError.Error())
 				} else {
 					assert.Equal(t, tc.ExpectedError, err)
@@ -96,7 +96,7 @@ func (s *CategoryUsecaseTestSuite) TestGetByID() {
 			repoMock := mock.NewMockICategoryRepository(ctrl)
 			fileMock := mock.NewMockIFileUsecaseAdapter(ctrl)
 
-			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, s.uowMock)
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, nil, s.uowMock)
 
 			mockStruct := &category_testcases.MockGetByID{
 				Ctrl:     ctrl,
@@ -133,7 +133,7 @@ func (s *CategoryUsecaseTestSuite) TestGetAll() {
 			repoMock := mock.NewMockICategoryRepository(ctrl)
 			fileMock := mock.NewMockIFileUsecaseAdapter(ctrl)
 
-			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, s.uowMock)
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, nil, s.uowMock)
 
 			mockStruct := &category_testcases.MockGetAll{
 				Ctrl:     ctrl,
