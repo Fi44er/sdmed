@@ -497,7 +497,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update a category",
+                "description": "Update a category\n### Особенности обновления характеристик:\n**Важно:** При обновлении категории поле ` + "`" + `Characteristics` + "`" + ` работает по принципу полной замены.\n1. **Добавление новых характеристик:**\nУкажите все существующие характеристики + новые\n2. **Удаление характеристик:**\nУкажите только те характеристики, которые должны остаться\n3. **Изменение характеристик:**\nУкажите обновленный список всех характеристик",
                 "consumes": [
                     "application/json"
                 ],
@@ -1016,6 +1016,12 @@ const docTemplate = `{
         "product_dto.CategoryResponse": {
             "type": "object",
             "properties": {
+                "characteristics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/product_dto.CharacteristicResponse"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1036,6 +1042,29 @@ const docTemplate = `{
                 }
             }
         },
+        "product_dto.CharacteristicResponse": {
+            "type": "object",
+            "properties": {
+                "data_type": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                }
+            }
+        },
         "product_dto.CreateCategoryRequest": {
             "type": "object",
             "required": [
@@ -1043,6 +1072,12 @@ const docTemplate = `{
                 "name"
             ],
             "properties": {
+                "characteristics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/product_dto.CreateCharacteristicRequest"
+                    }
+                },
                 "images": {
                     "type": "array",
                     "minItems": 1,
@@ -1051,6 +1086,36 @@ const docTemplate = `{
                     }
                 },
                 "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                }
+            }
+        },
+        "product_dto.CreateCharacteristicRequest": {
+            "type": "object",
+            "required": [
+                "data_type",
+                "name"
+            ],
+            "properties": {
+                "data_type": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "is_required": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "unit": {
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1
@@ -1074,6 +1139,17 @@ const docTemplate = `{
         "product_dto.UpdateCategoryRequest": {
             "type": "object",
             "properties": {
+                "characteristics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/product_dto.CreateCharacteristicRequest"
+                    }
+                },
+                "id": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
                 "images": {
                     "type": "array",
                     "items": {

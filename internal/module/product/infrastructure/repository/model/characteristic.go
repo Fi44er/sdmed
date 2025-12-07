@@ -2,13 +2,6 @@ package product_model
 
 import "time"
 
-// type Characteristic struct {
-// 	ID         string  `gorm:"primaryKey;type:uuid;default:uuid_generate_v4();"`
-// 	Name       string  `gorm:"type:varchar(255);not null"`
-// 	CategoryID string  `gorm:"type:varchar(255);not null"`
-// 	Unit       *string `gorm:"type:varchar(255);"` // шт кг и тд..
-// }
-
 type DataType string
 
 const (

@@ -79,6 +79,14 @@ func (h *CategoryHandler) Create(ctx *fiber.Ctx) error {
 // Update godoc
 // @Summary Update a category
 // @Description Update a category
+// @Description ### Особенности обновления характеристик:
+// @Description **Важно:** При обновлении категории поле `Characteristics` работает по принципу полной замены.
+// @Description 1. **Добавление новых характеристик:**
+// @Description   Укажите все существующие характеристики + новые
+// @Description 2. **Удаление характеристик:**
+// @Description   Укажите только те характеристики, которые должны остаться
+// @Description 3. **Изменение характеристик:**
+// @Description   Укажите обновленный список всех характеристик
 // @Tags categories
 // @Accept json
 // @Produce json

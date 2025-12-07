@@ -80,6 +80,10 @@ func (r *CharacteristicRepository) GetByID(ctx context.Context, id string) (*pro
 
 	characteristicModel := &product_model.Characteristic{}
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(characteristicModel).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Warnf("Characteristic not found: %s", id)
+			return nil, nil
+		}
 		r.logger.Errorf("Failed to get characteristic: %v", err)
 		return nil, err
 	}
@@ -93,6 +97,10 @@ func (r *CharacteristicRepository) GetByCategoryID(ctx context.Context, category
 
 	characteristicModels := []*product_model.Characteristic{}
 	if err := r.db.WithContext(ctx).Where("category_id = ?", categoryID).Find(&characteristicModels).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Warnf("No characteristics found for category: %s", categoryID)
+			return nil, nil
+		}
 		r.logger.Errorf("Failed to get characteristics: %v", err)
 		return nil, err
 	}
@@ -140,6 +148,10 @@ func (r *CharacteristicRepository) GetByCategoryAndName(ctx context.Context, cat
 	r.logger.Debugf("Getting characteristics by category: ID %s; name %s", categoryID, name)
 	characteristicModel := &product_model.Characteristic{}
 	if err := r.db.WithContext(ctx).Where("category_id = ? AND name = ?", categoryID, name).First(characteristicModel).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Warnf("No characteristics found for category: %s", categoryID)
+			return nil, nil
+		}
 		r.logger.Errorf("Failed to get characteristics by category %s and name %s: %v", categoryID, name, err)
 		return nil, err
 	}

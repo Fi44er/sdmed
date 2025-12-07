@@ -42,6 +42,7 @@ type ICategoryRepository interface {
 type ICharacteristicUsecase interface {
 	Create(ctx context.Context, characteristic *product_entity.Characteristic) error
 	CreateMany(ctx context.Context, characteristics []product_entity.Characteristic) error
+	Delete(ctx context.Context, id string) error
 }
 
 type CategoryUsecase struct {
@@ -100,6 +101,28 @@ func (u *CategoryUsecase) Update(ctx context.Context, category *product_entity.C
 		existCategory.Images = files
 
 		deletedImg, addedImg := utils.FindDifferences(existCategory.Images, category.Images, func(f product_entity.File) (string, string) { return f.Name, f.ID })
+		deleteCharacteristic, addCharacteristic := utils.FindDifferences(existCategory.Characteristics, category.Characteristics, func(c product_entity.Characteristic) (string, string) { return c.ID, c.Name })
+
+		for _, characteristcID := range deleteCharacteristic {
+			if err := u.characteristicUsecase.Delete(ctx, characteristcID); err != nil {
+				u.logger.Warnf("Failed to delete characteristic %s: %v", characteristcID, err)
+			}
+		}
+
+		newCharacteristic := make([]product_entity.Characteristic, 0, len(addCharacteristic))
+		charMap := make(map[string]product_entity.Characteristic)
+		for _, characteristic := range category.Characteristics {
+			charMap[characteristic.Name] = characteristic
+		}
+
+		for _, characteristicName := range addCharacteristic {
+			if characteristic, exists := charMap[characteristicName]; exists {
+				newCharacteristic = append(newCharacteristic, characteristic)
+			}
+		}
+		if err := u.characteristicUsecase.CreateMany(ctx, newCharacteristic); err != nil {
+			u.logger.Warnf("Failed to create characteristics: %v", err)
+		}
 
 		// TODO: оптимизировать удаление файлов
 		for _, fileID := range deletedImg {
@@ -155,11 +178,11 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			return err
 		}
 
-		for _, characteristic := range category.Characteristic {
-			characteristic.CategoryID = category.ID
+		for i := range category.Characteristics {
+			category.Characteristics[i].CategoryID = category.ID
 		}
 
-		if err := u.characteristicUsecase.CreateMany(ctx, category.Characteristic); err != nil {
+		if err := u.characteristicUsecase.CreateMany(ctx, category.Characteristics); err != nil {
 			u.logger.Errorf("Failed to create category characteristics: %v", err)
 			return err
 		}

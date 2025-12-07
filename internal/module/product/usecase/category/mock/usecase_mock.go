@@ -311,3 +311,68 @@ func (mr *MockICategoryRepositoryMockRecorder) Update(ctx, category interface{})
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockICategoryRepository)(nil).Update), ctx, category)
 }
+
+// MockICharacteristicUsecase is a mock of ICharacteristicUsecase interface.
+type MockICharacteristicUsecase struct {
+	ctrl     *gomock.Controller
+	recorder *MockICharacteristicUsecaseMockRecorder
+}
+
+// MockICharacteristicUsecaseMockRecorder is the mock recorder for MockICharacteristicUsecase.
+type MockICharacteristicUsecaseMockRecorder struct {
+	mock *MockICharacteristicUsecase
+}
+
+// NewMockICharacteristicUsecase creates a new mock instance.
+func NewMockICharacteristicUsecase(ctrl *gomock.Controller) *MockICharacteristicUsecase {
+	mock := &MockICharacteristicUsecase{ctrl: ctrl}
+	mock.recorder = &MockICharacteristicUsecaseMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockICharacteristicUsecase) EXPECT() *MockICharacteristicUsecaseMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockICharacteristicUsecase) Create(ctx context.Context, characteristic *product_entity.Characteristic) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, characteristic)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockICharacteristicUsecaseMockRecorder) Create(ctx, characteristic interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockICharacteristicUsecase)(nil).Create), ctx, characteristic)
+}
+
+// CreateMany mocks base method.
+func (m *MockICharacteristicUsecase) CreateMany(ctx context.Context, characteristics []product_entity.Characteristic) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateMany", ctx, characteristics)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateMany indicates an expected call of CreateMany.
+func (mr *MockICharacteristicUsecaseMockRecorder) CreateMany(ctx, characteristics interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateMany", reflect.TypeOf((*MockICharacteristicUsecase)(nil).CreateMany), ctx, characteristics)
+}
+
+// Delete mocks base method.
+func (m *MockICharacteristicUsecase) Delete(ctx context.Context, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockICharacteristicUsecaseMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockICharacteristicUsecase)(nil).Delete), ctx, id)
+}

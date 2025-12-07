@@ -54,18 +54,20 @@ func (s *CategoryUsecaseTestSuite) TestCreate() {
 
 			repoMock := mock.NewMockICategoryRepository(ctrl)
 			fileMock := mock.NewMockIFileUsecaseAdapter(ctrl)
+			characteristicMock := mock.NewMockICharacteristicUsecase(ctrl)
 			uowMock := uow_mock.NewMockUow(ctrl)
 
 			mockStruct := &category_testcases.MockCreate{
-				Ctrl:     ctrl,
-				Ctx:      s.ctx,
-				RepoMock: repoMock,
-				FileMock: fileMock,
-				UowMock:  uowMock,
-				T:        t,
+				Ctrl:               ctrl,
+				Ctx:                s.ctx,
+				RepoMock:           repoMock,
+				FileMock:           fileMock,
+				UowMock:            uowMock,
+				CharacteristicMock: characteristicMock,
+				T:                  t,
 			}
 
-			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, nil, uowMock)
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, characteristicMock, uowMock)
 
 			tc.SetupMocks(mockStruct)
 
@@ -107,7 +109,6 @@ func (s *CategoryUsecaseTestSuite) TestGetByID() {
 			}
 
 			tc.SetupMocks(mockStruct)
-
 			result, err := usecase.GetByID(s.ctx, tc.InputID)
 
 			if tc.ExpectedError != nil {

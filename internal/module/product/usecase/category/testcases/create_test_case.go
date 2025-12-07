@@ -13,12 +13,13 @@ import (
 )
 
 type MockCreate struct {
-	Ctrl     *gomock.Controller
-	Ctx      context.Context
-	RepoMock *mock.MockICategoryRepository
-	FileMock *mock.MockIFileUsecaseAdapter
-	UowMock  *uow_mock.MockUow
-	T        assert.TestingT
+	Ctrl               *gomock.Controller
+	Ctx                context.Context
+	RepoMock           *mock.MockICategoryRepository
+	FileMock           *mock.MockIFileUsecaseAdapter
+	CharacteristicMock *mock.MockICharacteristicUsecase
+	UowMock            *uow_mock.MockUow
+	T                  assert.TestingT
 }
 
 type CreateTestCase struct {
@@ -38,6 +39,12 @@ func GetCreateTestCases() []CreateTestCase {
 				Images: []product_entity.File{
 					{Name: "image1.jpg"},
 					{Name: "image2.png"},
+				},
+				Characteristics: []product_entity.Characteristic{
+					{
+						Name:       "test characteristic",
+						CategoryID: "test-category-123",
+					},
 				},
 			},
 			SetupMocks: func(m *MockCreate) {
@@ -63,6 +70,16 @@ func GetCreateTestCases() []CreateTestCase {
 						return nil
 					})
 
+				m.CharacteristicMock.EXPECT().
+					CreateMany(m.Ctx, gomock.Any()).
+					DoAndReturn(func(ctx context.Context, characteristics []product_entity.Characteristic) error {
+						if len(characteristics) > 0 {
+							assert.Equal(m.T, "test-category-123", characteristics[0].CategoryID)
+							assert.Equal(m.T, "test characteristic", characteristics[0].Name)
+						}
+						return nil
+					})
+
 				m.FileMock.EXPECT().
 					MakeFilesPermanent(m.Ctx, []string{"image1.jpg", "image2.png"}, "test-category-123", "category").
 					Return(nil)
@@ -75,6 +92,12 @@ func GetCreateTestCases() []CreateTestCase {
 				ID:     "test-category-123",
 				Name:   "Test Category",
 				Images: []product_entity.File{},
+				Characteristics: []product_entity.Characteristic{
+					{
+						Name:       "test characteristic",
+						CategoryID: "test-category-123",
+					},
+				},
 			},
 			SetupMocks: func(m *MockCreate) {
 				m.UowMock.EXPECT().
@@ -95,6 +118,16 @@ func GetCreateTestCases() []CreateTestCase {
 					DoAndReturn(func(ctx context.Context, category *product_entity.Category) error {
 						assert.Equal(m.T, "test-category-123", category.ID)
 						assert.Equal(m.T, "Test Category", category.Name)
+						return nil
+					})
+
+				m.CharacteristicMock.EXPECT().
+					CreateMany(m.Ctx, gomock.Any()).
+					DoAndReturn(func(ctx context.Context, characteristics []product_entity.Characteristic) error {
+						if len(characteristics) > 0 {
+							assert.Equal(m.T, "test-category-123", characteristics[0].CategoryID)
+							assert.Equal(m.T, "test characteristic", characteristics[0].Name)
+						}
 						return nil
 					})
 			},
@@ -192,6 +225,16 @@ func GetCreateTestCases() []CreateTestCase {
 					DoAndReturn(func(ctx context.Context, category *product_entity.Category) error {
 						assert.Equal(m.T, "test-category-123", category.ID)
 						assert.Equal(m.T, "Test Category", category.Name)
+						return nil
+					})
+
+				m.CharacteristicMock.EXPECT().
+					CreateMany(m.Ctx, gomock.Any()).
+					DoAndReturn(func(ctx context.Context, characteristics []product_entity.Characteristic) error {
+						if len(characteristics) > 0 {
+							assert.Equal(m.T, "test-category-123", characteristics[0].CategoryID)
+							assert.Equal(m.T, "test characteristic", characteristics[0].Name)
+						}
 						return nil
 					})
 

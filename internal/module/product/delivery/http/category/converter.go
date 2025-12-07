@@ -21,6 +21,16 @@ func NewConverter(config *config.Config) *Converter {
 
 func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateCategoryRequest) *product_entity.Category {
 	imageEntity := make([]product_entity.File, 0)
+	characteristicsEntity := make([]product_entity.Characteristic, 0)
+	for _, characteristic := range dto.Characteristics {
+		characteristicsEntity = append(characteristicsEntity, product_entity.Characteristic{
+			Name:        characteristic.Name,
+			Unit:        &characteristic.Unit,
+			Description: &characteristic.Description,
+			DataType:    product_entity.DataType(characteristic.DataType),
+			IsRequired:  characteristic.IsRequired,
+		})
+	}
 	for _, fileURL := range dto.Images {
 		fileName := path.Base(fileURL)
 		imageEntity = append(imageEntity, product_entity.File{
@@ -28,14 +38,15 @@ func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateCategoryRequest) *
 		})
 	}
 	return &product_entity.Category{
-		Name:   dto.Name,
-		Images: imageEntity,
+		Name:            dto.Name,
+		Images:          imageEntity,
+		Characteristics: characteristicsEntity,
 	}
 }
 
 func (c *Converter) ToEntityFromUpdate(dto *product_dto.UpdateCategoryRequest) *product_entity.Category {
 	imageEntity := make([]product_entity.File, 0)
-	for _, fileURL := range *dto.Images {
+	for _, fileURL := range dto.Images {
 		fileName := path.Base(fileURL)
 		imageEntity = append(imageEntity, product_entity.File{
 			Name: fileName,
@@ -66,9 +77,32 @@ func (c *Converter) toCategoryResponse(category *product_entity.Category) *produ
 	}
 
 	return &product_dto.CategoryResponse{
-		ID:     category.ID,
-		Name:   category.Name,
-		Images: c.toFileResponses(category.Images),
+		ID:              category.ID,
+		Name:            category.Name,
+		Images:          c.toFileResponses(category.Images),
+		Characteristics: c.toCharacteristicResponses(category.Characteristics),
+	}
+}
+
+func (c *Converter) toCharacteristicResponses(characteristics []product_entity.Characteristic) []product_dto.CharacteristicResponse {
+	if len(characteristics) == 0 {
+		return []product_dto.CharacteristicResponse{}
+	}
+
+	characteristicResponses := make([]product_dto.CharacteristicResponse, len(characteristics))
+	for i, characteristic := range characteristics {
+		characteristicResponses[i] = c.toCharacteristicResponse(characteristic)
+	}
+	return characteristicResponses
+}
+
+func (c *Converter) toCharacteristicResponse(characteristic product_entity.Characteristic) product_dto.CharacteristicResponse {
+	return product_dto.CharacteristicResponse{
+		ID:          characteristic.ID,
+		Name:        characteristic.Name,
+		Description: *characteristic.Description,
+		Unit:        *characteristic.Unit,
+		DataType:    string(characteristic.DataType),
 	}
 }
 

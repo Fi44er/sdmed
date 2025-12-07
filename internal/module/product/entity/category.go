@@ -10,5 +10,5 @@ type Category struct {
 	UpdatedAt time.Time
 	DeletedAt *time.Time
 
-	Characteristic []Characteristic
+	Characteristics []Characteristic
 }

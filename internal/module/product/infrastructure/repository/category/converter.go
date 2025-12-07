@@ -29,9 +29,26 @@ func (c *Converter) ToModel(entity *product_entity.Category) *product_model.Cate
 }
 
 func (c *Converter) ToEntity(model *product_model.Category) *product_entity.Category {
+	characteristicsEntity := make([]product_entity.Characteristic, len(model.Characteristics))
+	for i, characteristic := range model.Characteristics {
+
+		characteristicsEntity[i] = product_entity.Characteristic{
+			ID:          characteristic.ID,
+			Name:        characteristic.Name,
+			CategoryID:  characteristic.CategoryID,
+			Unit:        characteristic.Unit,
+			Description: characteristic.Description,
+			DataType:    product_entity.DataType(characteristic.DataType),
+			IsRequired:  characteristic.IsRequired,
+			CreatedAt:   characteristic.CreatedAt,
+			UpdatedAt:   characteristic.UpdatedAt,
+		}
+	}
+
 	entity := &product_entity.Category{
-		ID:   model.ID,
-		Name: model.Name,
+		ID:              model.ID,
+		Name:            model.Name,
+		Characteristics: characteristicsEntity,
 	}
 
 	if model.DeletedAt.Valid {

@@ -35,7 +35,7 @@ type CharacteristicUsecase struct {
 	logger     *logger.Logger
 }
 
-func NewCharacteristicUsecase(repository ICharacteristicRepository, uow uow.Uow, logger *logger.Logger) *CharacteristicUsecase {
+func NewCharacteristicUsecase(repository ICharacteristicRepository, uow uow.Uow, logger *logger.Logger) ICharacteristicUsecase {
 	return &CharacteristicUsecase{
 		repository: repository,
 		uow:        uow,

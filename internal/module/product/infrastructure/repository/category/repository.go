@@ -50,7 +50,7 @@ func (r *CategoryRepository) GetByID(ctx context.Context, id string) (*product_e
 	r.logger.Debugf("Getting category by ID: %s", id)
 
 	var categoryModel product_model.Category
-	if err := r.db.WithContext(ctx).First(&categoryModel, "id = ?", id).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Characteristics").First(&categoryModel, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.logger.Debugf("Category not found: %s", id)
 			return nil, nil
@@ -74,7 +74,7 @@ func (r *CategoryRepository) GetAll(ctx context.Context, offset, limit int) ([]p
 	if offset == 0 {
 		offset = -1
 	}
-	if err := r.db.WithContext(ctx).Limit(limit).Offset(offset).Find(&categoryModels).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Characteristics").Limit(limit).Offset(offset).Find(&categoryModels).Error; err != nil {
 		r.logger.Errorf("Failed to get categories: %v", err)
 		return nil, err
 	}
