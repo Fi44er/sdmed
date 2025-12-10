@@ -8,7 +8,7 @@ const (
 	DataTypeString  DataType = "string"
 	DataTypeNumber  DataType = "number"
 	DataTypeBoolean DataType = "boolean"
-	DataTypeEnum    DataType = "enum"
+	DataTypeSelect  DataType = "select"
 )
 
 type Characteristic struct {

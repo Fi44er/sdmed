@@ -1,8 +1,19 @@
 package product_entity
 
-type CharacteristicValue struct {
+import "time"
+
+type ProductCharValue struct {
 	ID               string
 	CharacteristicID string
-	Value            string
 	ProductID        string
+
+	StringValue  string
+	NumberValue  *float64
+	BooleanValue *bool
+
+	OptionID *uint
+	Option   *CharOption
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

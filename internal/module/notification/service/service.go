@@ -11,7 +11,7 @@ type Message struct {
 	Subject      string
 	Content      string
 	TemplatePath string
-	Data         interface{}
+	Data         any
 	Timestamp    time.Time
 }
 

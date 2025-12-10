@@ -12,7 +12,7 @@ const (
 	DataTypeString  DataType = "string"
 	DataTypeNumber  DataType = "number"
 	DataTypeBoolean DataType = "boolean"
-	DataTypeEnum    DataType = "enum"
+	DataTypeSelect  DataType = "select"
 )
 
 type Characteristic struct {
@@ -23,13 +23,21 @@ type Characteristic struct {
 	Unit        *string
 	DataType    DataType
 	IsRequired  bool
+	Options     []CharOption
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
+type CharOption struct {
+	ID               uint
+	CharacteristicID uint
+	Value            string
+	CreatedAt        time.Time
+}
+
 func (e *Characteristic) ValidateDataType() error {
 	switch e.DataType {
-	case DataTypeString, DataTypeNumber, DataTypeBoolean, DataTypeEnum:
+	case DataTypeString, DataTypeNumber, DataTypeBoolean, DataTypeSelect:
 		return nil
 	default:
 		return product_constant.ErrInvalidDataTypeCharacteristic

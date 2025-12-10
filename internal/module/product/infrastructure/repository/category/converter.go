@@ -12,6 +12,7 @@ func (c *Converter) ToModel(entity *product_entity.Category) *product_model.Cate
 	model := &product_model.Category{
 		ID:        entity.ID,
 		Name:      entity.Name,
+		Slug:      entity.Slug,
 		CreatedAt: entity.CreatedAt,
 		UpdatedAt: entity.UpdatedAt,
 	}
@@ -48,6 +49,7 @@ func (c *Converter) ToEntity(model *product_model.Category) *product_entity.Cate
 	entity := &product_entity.Category{
 		ID:              model.ID,
 		Name:            model.Name,
+		Slug:            model.Slug,
 		Characteristics: characteristicsEntity,
 	}
 

@@ -9,13 +9,22 @@ import (
 	"gorm.io/gorm"
 )
 
+type IProductRepository interface {
+	Create(ctx context.Context, product *product_entity.Product) error
+	GetByID(ctx context.Context, id string) (*product_entity.Product, error)
+	GetAll(ctx context.Context, limit, offset int) ([]product_entity.Product, error)
+	Update(ctx context.Context, product *product_entity.Product) error
+	Delete(ctx context.Context, id string) error
+	GetByArticle(ctx context.Context, article string) (*product_entity.Product, error)
+}
+
 type ProductRepository struct {
 	logger    *logger.Logger
 	db        *gorm.DB
 	converter *Converter
 }
 
-func NewProductRepository(logger *logger.Logger, db *gorm.DB) *ProductRepository {
+func NewProductRepository(logger *logger.Logger, db *gorm.DB) IProductRepository {
 	return &ProductRepository{
 		logger:    logger,
 		db:        db,
@@ -91,4 +100,20 @@ func (r *ProductRepository) Delete(ctx context.Context, id string) error {
 	}
 	r.logger.Info("Product deleted successfully")
 	return nil
+}
+
+func (r *ProductRepository) GetByArticle(ctx context.Context, article string) (*product_entity.Product, error) {
+	r.logger.Infof("Getting product by article: %s", article)
+	var productModel product_model.Product
+	if err := r.db.WithContext(ctx).Where("article = ?", article).First(&productModel).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Warnf("Product not found: %s", article)
+			return nil, nil
+		}
+		r.logger.Errorf("Error getting product by article: %v", err)
+		return nil, err
+	}
+	product := r.converter.ToEntity(&productModel)
+	r.logger.Info("Product got successfully")
+	return product, nil
 }

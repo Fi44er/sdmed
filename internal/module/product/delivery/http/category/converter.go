@@ -79,6 +79,7 @@ func (c *Converter) toCategoryResponse(category *product_entity.Category) *produ
 	return &product_dto.CategoryResponse{
 		ID:              category.ID,
 		Name:            category.Name,
+		Slug:            category.Slug,
 		Images:          c.toFileResponses(category.Images),
 		Characteristics: c.toCharacteristicResponses(category.Characteristics),
 	}

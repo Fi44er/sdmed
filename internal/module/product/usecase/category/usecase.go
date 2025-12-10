@@ -6,21 +6,13 @@ import (
 
 	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
 	product_constant "github.com/Fi44er/sdmed/internal/module/product/pkg"
+	category_usecase_contracts "github.com/Fi44er/sdmed/internal/module/product/usecase/category/contracts"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
 	"github.com/Fi44er/sdmed/pkg/utils"
 )
 
 const ownerType = "category"
-
-type IFileUsecaseAdapter interface {
-	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
-	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]product_entity.File, error)
-	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) (map[string][]product_entity.File, error)
-
-	DeleteByOwner(ctx context.Context, ownerID, ownerType string) error
-	DeleteByID(ctx context.Context, id string) error
-}
 
 type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
@@ -30,34 +22,19 @@ type ICategoryUsecase interface {
 	Update(ctx context.Context, category *product_entity.Category) error
 }
 
-type ICategoryRepository interface {
-	Create(ctx context.Context, entity *product_entity.Category) error
-	Update(ctx context.Context, category *product_entity.Category) error
-	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
-	GetByName(ctx context.Context, name string) (*product_entity.Category, error)
-	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
-	Delete(ctx context.Context, id string) error
-}
-
-type ICharacteristicUsecase interface {
-	Create(ctx context.Context, characteristic *product_entity.Characteristic) error
-	CreateMany(ctx context.Context, characteristics []product_entity.Characteristic) error
-	Delete(ctx context.Context, id string) error
-}
-
 type CategoryUsecase struct {
-	repository            ICategoryRepository
+	repository            category_usecase_contracts.ICategoryRepository
 	uow                   uow.Uow
 	logger                *logger.Logger
-	fileUsecase           IFileUsecaseAdapter
-	characteristicUsecase ICharacteristicUsecase
+	fileUsecase           category_usecase_contracts.IFileUsecaseAdapter
+	characteristicUsecase category_usecase_contracts.ICharacteristicUsecase
 }
 
 func NewCategoryUsecase(
 	logger *logger.Logger,
-	repository ICategoryRepository,
-	fileUsease IFileUsecaseAdapter,
-	characteristicUsecase ICharacteristicUsecase,
+	repository category_usecase_contracts.ICategoryRepository,
+	fileUsease category_usecase_contracts.IFileUsecaseAdapter,
+	characteristicUsecase category_usecase_contracts.ICharacteristicUsecase,
 	uow uow.Uow,
 ) ICategoryUsecase {
 	return &CategoryUsecase{
@@ -78,7 +55,7 @@ func (u *CategoryUsecase) Update(ctx context.Context, category *product_entity.C
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
-		categoryRepo := repo.(ICategoryRepository)
+		categoryRepo := repo.(category_usecase_contracts.ICategoryRepository)
 
 		existCategory, err := categoryRepo.GetByID(ctx, category.ID)
 		if err != nil {
@@ -86,6 +63,7 @@ func (u *CategoryUsecase) Update(ctx context.Context, category *product_entity.C
 			return err
 		}
 
+		category.Slugify()
 		if err := categoryRepo.Update(ctx, category); err != nil {
 			u.logger.Errorf("Failed to update category in repository: %v", err)
 			return err
@@ -150,7 +128,7 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			return err
 		}
 
-		categoryRepo := repo.(ICategoryRepository)
+		categoryRepo := repo.(category_usecase_contracts.ICategoryRepository)
 
 		needCleanup := true
 		defer func() {
@@ -173,6 +151,7 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			return product_constant.ErrCategoryAlreadyExists
 		}
 
+		category.Slugify()
 		if err := categoryRepo.Create(ctx, category); err != nil {
 			u.logger.Errorf("Failed to create category in repository: %v", err)
 			return err
@@ -264,7 +243,7 @@ func (u *CategoryUsecase) Delete(ctx context.Context, id string) error {
 			u.logger.Errorf("Failed to get repository for deletion: %v", err)
 			return err
 		}
-		categoryRepo := repo.(ICategoryRepository)
+		categoryRepo := repo.(category_usecase_contracts.ICategoryRepository)
 
 		if err := categoryRepo.Delete(ctx, id); err != nil {
 			u.logger.Errorf("Failed to delete category %s: %v", id, err)

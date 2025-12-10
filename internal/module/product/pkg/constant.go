@@ -8,4 +8,7 @@ var (
 
 	ErrInvalidDataTypeCharacteristic = customerr.NewError(400, "invalid data type for characteristic")
 	ErrCharacteristicAlreadyExists   = customerr.NewError(409, "characteristic already exists")
+
+	ErrProductAlreadyExists = customerr.NewError(409, "product already exists")
+	ErrProductNotFound      = customerr.NewError(404, "product not found")
 )

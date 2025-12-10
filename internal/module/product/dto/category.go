@@ -18,6 +18,7 @@ type UpdateCategoryRequest struct {
 type CategoryResponse struct {
 	ID              string                   `json:"id"`
 	Name            string                   `json:"name"`
+	Slug            string                   `json:"slug"`
 	Images          []FileResponse           `json:"images"`
 	Characteristics []CharacteristicResponse `json:"characteristics"`
 	CreatedAt       time.Time                `json:"created_at"`

@@ -12,8 +12,12 @@ func (c *Converter) ToModel(entity *product_entity.Product) *product_model.Produ
 		ID:          entity.ID,
 		Name:        entity.Name,
 		Description: entity.Description,
-		Price:       entity.Price.Price,
 		CategoryID:  entity.CategoryID,
+
+		ManualPrice:    *entity.ManualPrice,
+		UseManualPrice: entity.UseManualPrice,
+
+		IsActive: entity.IsActive,
 	}
 }
 
@@ -22,7 +26,13 @@ func (c *Converter) ToEntity(model *product_model.Product) *product_entity.Produ
 		ID:          model.ID,
 		Name:        model.Name,
 		Description: model.Description,
-		Price:       product_entity.Price{Price: model.Price},
 		CategoryID:  model.CategoryID,
+
+		ManualPrice:    &model.ManualPrice,
+		UseManualPrice: model.UseManualPrice,
+
+		IsActive:  model.IsActive,
+		CreatedAt: model.CreatedAt,
+		UpdatedAt: model.UpdatedAt,
 	}
 }

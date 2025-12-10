@@ -4,24 +4,40 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-)
+	"time"
 
-type Price struct {
-	Price     float64
-	TRU       string
-	RegionISO string
-}
+	"github.com/Fi44er/sdmed/pkg/utils"
+)
 
 type Product struct {
 	ID          string
 	Article     string
 	Name        string
+	Slug        string
 	Description string
-	Price       Price
-	Images      []string
+	Images      []File
 
 	CategoryID      string
-	Characteristics []CharacteristicValue
+	Characteristics []ProductCharValue
+
+	ManualPrice    *float64
+	UseManualPrice bool
+
+	IsActive bool
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (p *Product) Slogify() {
+	var additionalPostfix string
+	if p.Article == "" {
+		additionalPostfix = utils.CreateSlugRU(p.ID)
+	} else {
+		additionalPostfix = utils.CreateSlugRU(p.Article)
+	}
+
+	p.Slug = utils.CreateSlugRU(p.Name) + "-" + additionalPostfix
 }
 
 func (p *Product) Validate() error {
@@ -59,7 +75,7 @@ func (p *Product) ValidateName() error {
 }
 
 func (p *Product) ValidatePrice() error {
-	if p.Price.Price <= 0 {
+	if *p.ManualPrice <= 0 {
 		return fmt.Errorf("price must be positive")
 	}
 	return nil
@@ -71,20 +87,4 @@ func (p *Product) FormatDescription() {
 
 func (p *Product) IsInCategory(categoryID string) bool {
 	return p.CategoryID == categoryID
-}
-
-func (p *Product) ApplyDiscount(discountPercent float64) error {
-	if discountPercent < 0 || discountPercent > 100 {
-		return fmt.Errorf("invalid discount percentage")
-	}
-	p.Price.Price = p.Price.Price * (1 - discountPercent/100)
-	return nil
-}
-
-func (p *Product) IncreasePrice(percent float64) error {
-	if percent < 0 {
-		return fmt.Errorf("invalid percentage")
-	}
-	p.Price.Price = p.Price.Price * (1 + percent/100)
-	return nil
 }

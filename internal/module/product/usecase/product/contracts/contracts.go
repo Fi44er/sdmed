@@ -1,13 +1,18 @@
-package contracts
+package product_usecase_contracts
 
 import (
 	"context"
 
-	"github.com/Fi44er/sdmed/internal/module/product/entity"
+	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
 )
 
-type IFileUsecase interface {
-	UploadFile(ctx context.Context, file *product_entity.File) error
+type IFileUsecaseAdapter interface {
+	MakeFilesPermanent(ctx context.Context, fileIDs []string, ownerID, ownerType string) error
+	GetByOwner(ctx context.Context, ownerID, ownerType string) ([]product_entity.File, error)
+	GetByOwners(ctx context.Context, ownerIDs []string, ownerType string) (map[string][]product_entity.File, error)
+
+	DeleteByOwner(ctx context.Context, ownerID, ownerType string) error
+	DeleteByID(ctx context.Context, id string) error
 }
 
 type IProductRepository interface {
@@ -16,4 +21,6 @@ type IProductRepository interface {
 	Create(ctx context.Context, entity *product_entity.Product) error
 	Update(ctx context.Context, entity *product_entity.Product) error
 	Delete(ctx context.Context, id string) error
+	GetByArticle(ctx context.Context, article string) (*product_entity.Product, error)
+	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
 }
