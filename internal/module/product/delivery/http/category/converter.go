@@ -2,6 +2,7 @@ package category_http
 
 import (
 	"fmt"
+	"math"
 	"path"
 
 	"github.com/Fi44er/sdmed/internal/config"
@@ -59,16 +60,24 @@ func (c *Converter) ToEntityFromUpdate(dto *product_dto.UpdateCategoryRequest) *
 	}
 }
 
-func (c *Converter) toCategoryResponses(categories []product_entity.Category) []product_dto.CategoryResponse {
+func (c *Converter) toCategoryResponses(categories []product_entity.Category, count int64, page, pageSize int) *product_dto.CategoryListResponse {
 	if len(categories) == 0 {
-		return []product_dto.CategoryResponse{}
+		return &product_dto.CategoryListResponse{}
 	}
 
 	result := make([]product_dto.CategoryResponse, len(categories))
 	for i, category := range categories {
 		result[i] = *c.toCategoryResponse(&category)
 	}
-	return result
+	return &product_dto.CategoryListResponse{
+		Data: result,
+		Pagination: product_dto.PaginationInfo{
+			Total:    count,
+			Page:     page,
+			PageSize: pageSize,
+			Pages:    int(math.Ceil(float64(count) / float64(pageSize))),
+		},
+	}
 }
 
 func (c *Converter) toCategoryResponse(category *product_entity.Category) *product_dto.CategoryResponse {

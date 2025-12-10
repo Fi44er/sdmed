@@ -16,6 +16,7 @@ type ICategoryRepository interface {
 	Update(ctx context.Context, category *product_entity.Category) error
 	Delete(ctx context.Context, id string) error
 	GetByName(ctx context.Context, name string) (*product_entity.Category, error)
+	Count(ctx context.Context) (int64, error)
 }
 
 type CategoryRepository struct {
@@ -128,4 +129,17 @@ func (r *CategoryRepository) GetByName(ctx context.Context, name string) (*produ
 
 	r.logger.Debugf("Category found by name: %s (ID: %s)", name, category.ID)
 	return category, nil
+}
+
+func (r CategoryRepository) Count(ctx context.Context) (int64, error) {
+	r.logger.Infof("Counting categories")
+
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&product_model.Category{}).Count(&count).Error; err != nil {
+		r.logger.Errorf("Failed to count categories: %v", err)
+		return 0, err
+	}
+
+	r.logger.Infof("Categories counted successfully: %d", count)
+	return count, nil
 }

@@ -366,16 +366,16 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "default": 0,
-                        "description": "Offset for pagination",
-                        "name": "offset",
-                        "in": "path"
+                        "description": "Page for pagination",
+                        "name": "page",
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "default": 10,
-                        "description": "Limit for pagination",
-                        "name": "limit",
-                        "in": "path"
+                        "description": "Page size for pagination",
+                        "name": "page_size",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1035,6 +1035,9 @@ const docTemplate = `{
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "slug": {
                     "type": "string"
                 },
                 "updated_at": {

@@ -38,13 +38,13 @@ type FileResponse struct {
 }
 
 type CategoryListResponse struct {
-	Data       []CategoryShortResponse `json:"data"`
-	Pagination PaginationInfo          `json:"pagination"`
+	Data       []CategoryResponse `json:"data"`
+	Pagination PaginationInfo     `json:"pagination"`
 }
 
 type PaginationInfo struct {
-	Total    int `json:"total"`
-	Page     int `json:"page"`
-	PageSize int `json:"page_size"`
-	Pages    int `json:"pages"`
+	Total    int64 `json:"total"`
+	Page     int   `json:"page"`
+	PageSize int   `json:"page_size"`
+	Pages    int   `json:"pages"`
 }

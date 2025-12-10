@@ -22,6 +22,7 @@ type ICategoryRepository interface {
 	GetByName(ctx context.Context, name string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
 	Delete(ctx context.Context, id string) error
+	Count(ctx context.Context) (int64, error)
 }
 
 type ICharacteristicUsecase interface {

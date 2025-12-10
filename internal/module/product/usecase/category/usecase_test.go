@@ -146,7 +146,7 @@ func (s *CategoryUsecaseTestSuite) TestGetAll() {
 
 			tc.SetupMocks(mockStruct)
 
-			result, err := usecase.GetAll(s.ctx, tc.InputOffset, tc.InputLimit)
+			result, _, err := usecase.GetAll(s.ctx, tc.InputOffset, tc.InputLimit)
 
 			if tc.ExpectedError != nil {
 				assert.Error(t, err)

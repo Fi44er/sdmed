@@ -17,7 +17,7 @@ const ownerType = "category"
 type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
-	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
+	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, int64, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, category *product_entity.Category) error
 }
@@ -210,19 +210,20 @@ func (u *CategoryUsecase) GetByID(ctx context.Context, id string) (*product_enti
 	return category, nil
 }
 
-func (u *CategoryUsecase) GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error) {
-	u.logger.Debugf("Getting all categories (offset: %d, limit: %d)", offset, limit)
+func (u *CategoryUsecase) GetAll(ctx context.Context, page, pageSize int) ([]product_entity.Category, int64, error) {
+	u.logger.Debugf("Getting all categories (page: %d, pageSize: %d)", page, pageSize)
 
+	offset, limit := utils.SafeCalculateForPostgres(page, pageSize)
 	categories, err := u.repository.GetAll(ctx, offset, limit)
 	if err != nil {
 		u.logger.Errorf("Failed to get categories: %v", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	u.logger.Debugf("Found %d categories", len(categories))
 
 	if len(categories) == 0 {
-		return categories, nil
+		return categories, 0, nil
 	}
 
 	if err := u.enrichWithBatch(ctx, categories); err != nil {
@@ -231,7 +232,13 @@ func (u *CategoryUsecase) GetAll(ctx context.Context, offset, limit int) ([]prod
 		u.logger.Debugf("Successfully enriched %d categories with images", len(categories))
 	}
 
-	return categories, nil
+	count, err := u.repository.Count(ctx)
+	if err != nil {
+		u.logger.Errorf("Failed to count categories: %v", err)
+		return categories, count, err
+	}
+
+	return categories, count, nil
 }
 
 func (u *CategoryUsecase) Delete(ctx context.Context, id string) error {

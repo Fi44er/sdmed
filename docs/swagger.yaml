@@ -64,6 +64,8 @@ definitions:
         type: array
       name:
         type: string
+      slug:
+        type: string
       updated_at:
         type: string
     type: object
@@ -436,14 +438,14 @@ paths:
       description: Get list of categories with pagination
       parameters:
       - default: 0
-        description: Offset for pagination
-        in: path
-        name: offset
+        description: Page for pagination
+        in: query
+        name: page
         type: integer
       - default: 10
-        description: Limit for pagination
-        in: path
-        name: limit
+        description: Page size for pagination
+        in: query
+        name: page_size
         type: integer
       produces:
       - application/json

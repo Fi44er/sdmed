@@ -16,7 +16,7 @@ import (
 type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
-	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
+	GetAll(ctx context.Context, page, pageSize int) ([]product_entity.Category, int64, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, category *product_entity.Category) error
 }
@@ -149,20 +149,20 @@ func (h *CategoryHandler) GetByID(ctx *fiber.Ctx) error {
 // @Tags categories
 // @Accept json
 // @Produce json
-// @Param offset path int false "Offset for pagination" default(0)
-// @Param limit path int false "Limit for pagination" default(10)
+// @Param page query int false "Page for pagination" default(0)
+// @Param page_size query int false "Page size for pagination" default(10)
 // @Success 200 {object} response.ResponseData{data=[]product_dto.CategoryResponse} "OK"
 // @Failure 500 {object} response.Response "Error"
 // @Router /categories [get]
 func (h *CategoryHandler) GetAll(ctx *fiber.Ctx) error {
-	offset := ctx.QueryInt("offset")
-	limit := ctx.QueryInt("limit")
+	page := ctx.QueryInt("page", 1)
+	pageSize := ctx.QueryInt("page_size", 10)
 
-	categories, err := h.usecase.GetAll(ctx.Context(), offset, limit)
+	categories, count, err := h.usecase.GetAll(ctx.Context(), page, pageSize)
 	if err != nil {
 		return err
 	}
-	categoriesRes := h.converter.toCategoryResponses(categories)
+	categoriesRes := h.converter.toCategoryResponses(categories, count, page, pageSize)
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status": "success",
