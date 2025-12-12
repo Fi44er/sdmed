@@ -126,6 +126,14 @@ func (u *CharacteristicUsecase) Create(ctx context.Context, characteristic *prod
 			return product_constant.ErrCharacteristicAlreadyExists
 		}
 
+		if characteristic.DataType == product_entity.DataTypeSelect {
+			if len(characteristic.Options) == 0 {
+				return product_constant.ErrCharacteristicOptionsEmpty
+			}
+		} else {
+			characteristic.Options = nil
+		}
+
 		if err := characteristicRepo.Create(ctx, characteristic); err != nil {
 			u.logger.Errorf("Failed to create characteristic in repository: %v", err)
 			return err
@@ -161,7 +169,6 @@ func (u *CharacteristicUsecase) CreateMany(ctx context.Context, characteristics 
 						u.logger.Errorf("Failed to delete characteristic %s: %v", characteristic.ID, err)
 					}
 				}
-
 			}
 		}()
 
@@ -172,6 +179,13 @@ func (u *CharacteristicUsecase) CreateMany(ctx context.Context, characteristics 
 				return err
 			}
 			if existCharacteristic == nil {
+				if characteristic.DataType == product_entity.DataTypeSelect {
+					if len(characteristic.Options) == 0 {
+						return product_constant.ErrCharacteristicOptionsEmpty
+					}
+				} else {
+					characteristic.Options = nil
+				}
 				newCharacteristics = append(newCharacteristics, characteristic)
 			}
 		}
@@ -182,7 +196,6 @@ func (u *CharacteristicUsecase) CreateMany(ctx context.Context, characteristics 
 		}
 
 		needCleanup = false
-
 		u.logger.Infof("Characteristics created successfully: %d", len(newCharacteristics))
 
 		return nil

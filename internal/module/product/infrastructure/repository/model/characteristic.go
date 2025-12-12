@@ -22,9 +22,13 @@ type Characteristic struct {
 	CreatedAt   time.Time `gorm:"not null;default:now()"`
 	UpdatedAt   time.Time `gorm:"not null;default:now()"`
 
-	Category Category `gorm:"foreignKey:CategoryID;references:ID"`
+	Options  []CharOption `gorm:"foreignKey:CharacteristicID;references:ID"`
+	Category Category     `gorm:"foreignKey:CategoryID;references:ID"`
 }
 
-func (Characteristic) TableName() string {
-	return "product_module.characteristics"
+type CharOption struct {
+	ID               string    `gorm:"primaryKey;type:uuid;default:uuid_generate_v4()"`
+	CharacteristicID string    `gorm:"type:uuid;not null;index"`
+	Value            string    `gorm:"type:varchar(255);not null"`
+	CreatedAt        time.Time `gorm:"not null;default:now()"`
 }

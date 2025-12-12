@@ -8,6 +8,7 @@ var (
 
 	ErrInvalidDataTypeCharacteristic = customerr.NewError(400, "invalid data type for characteristic")
 	ErrCharacteristicAlreadyExists   = customerr.NewError(409, "characteristic already exists")
+	ErrCharacteristicOptionsEmpty    = customerr.NewError(400, "characteristic options cannot be empty")
 
 	ErrProductAlreadyExists = customerr.NewError(409, "product already exists")
 	ErrProductNotFound      = customerr.NewError(404, "product not found")

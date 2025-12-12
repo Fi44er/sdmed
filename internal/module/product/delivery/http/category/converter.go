@@ -24,12 +24,19 @@ func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateCategoryRequest) *
 	imageEntity := make([]product_entity.File, 0)
 	characteristicsEntity := make([]product_entity.Characteristic, 0)
 	for _, characteristic := range dto.Characteristics {
+		options := make([]product_entity.CharOption, len(characteristic.Options))
+		for i, option := range characteristic.Options {
+			options[i] = product_entity.CharOption{
+				Value: option,
+			}
+		}
 		characteristicsEntity = append(characteristicsEntity, product_entity.Characteristic{
 			Name:        characteristic.Name,
 			Unit:        &characteristic.Unit,
 			Description: &characteristic.Description,
 			DataType:    product_entity.DataType(characteristic.DataType),
 			IsRequired:  characteristic.IsRequired,
+			Options:     options,
 		})
 	}
 	for _, fileURL := range dto.Images {
@@ -38,6 +45,7 @@ func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateCategoryRequest) *
 			Name: fileName,
 		})
 	}
+
 	return &product_entity.Category{
 		Name:            dto.Name,
 		Images:          imageEntity,
@@ -91,6 +99,8 @@ func (c *Converter) toCategoryResponse(category *product_entity.Category) *produ
 		Slug:            category.Slug,
 		Images:          c.toFileResponses(category.Images),
 		Characteristics: c.toCharacteristicResponses(category.Characteristics),
+		CreatedAt:       category.CreatedAt,
+		UpdatedAt:       category.UpdatedAt,
 	}
 }
 
@@ -107,12 +117,22 @@ func (c *Converter) toCharacteristicResponses(characteristics []product_entity.C
 }
 
 func (c *Converter) toCharacteristicResponse(characteristic product_entity.Characteristic) product_dto.CharacteristicResponse {
+
+	options := make([]product_dto.CharOption, len(characteristic.Options))
+	for i, option := range characteristic.Options {
+		options[i] = product_dto.CharOption{
+			ID:    option.ID,
+			Value: option.Value,
+		}
+	}
+
 	return product_dto.CharacteristicResponse{
 		ID:          characteristic.ID,
 		Name:        characteristic.Name,
 		Description: *characteristic.Description,
 		Unit:        *characteristic.Unit,
 		DataType:    string(characteristic.DataType),
+		Options:     options,
 	}
 }
 

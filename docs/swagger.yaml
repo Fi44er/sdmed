@@ -117,6 +117,10 @@ definitions:
         maxLength: 255
         minLength: 1
         type: string
+      options:
+        items:
+          type: string
+        type: array
       unit:
         maxLength: 255
         minLength: 1
@@ -584,6 +588,36 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: Update a category
+      tags:
+      - categories
+  /categories/by-slug/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Get a single category by its slug
+      parameters:
+      - description: Category slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.ResponseData'
+            - properties:
+                data:
+                  $ref: '#/definitions/product_dto.CategoryResponse'
+              type: object
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get category by slug
       tags:
       - categories
   /files/{name}:

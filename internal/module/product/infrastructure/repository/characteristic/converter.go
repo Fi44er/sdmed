@@ -8,6 +8,14 @@ import (
 type Converter struct{}
 
 func (c *Converter) ToModel(entity *product_entity.Characteristic) *product_model.Characteristic {
+	options := make([]product_model.CharOption, len(entity.Options))
+	for i, option := range entity.Options {
+		options[i] = product_model.CharOption{
+			ID:    option.ID,
+			Value: option.Value,
+		}
+	}
+
 	return &product_model.Characteristic{
 		ID:          entity.ID,
 		Name:        entity.Name,
@@ -15,6 +23,7 @@ func (c *Converter) ToModel(entity *product_entity.Characteristic) *product_mode
 		Unit:        entity.Unit,
 		Description: entity.Description,
 		DataType:    product_model.DataType(entity.DataType),
+		Options:     options,
 		IsRequired:  entity.IsRequired,
 		CreatedAt:   entity.CreatedAt,
 		UpdatedAt:   entity.UpdatedAt,

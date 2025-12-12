@@ -19,6 +19,7 @@ type ICategoryRepository interface {
 	Create(ctx context.Context, entity *product_entity.Category) error
 	Update(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
+	GetBySlug(ctx context.Context, slug string) (*product_entity.Category, error)
 	GetByName(ctx context.Context, name string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, error)
 	Delete(ctx context.Context, id string) error

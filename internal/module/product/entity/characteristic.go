@@ -29,8 +29,8 @@ type Characteristic struct {
 }
 
 type CharOption struct {
-	ID               uint
-	CharacteristicID uint
+	ID               string
+	CharacteristicID string
 	Value            string
 	CreatedAt        time.Time
 }

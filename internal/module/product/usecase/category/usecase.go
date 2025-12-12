@@ -17,6 +17,7 @@ const ownerType = "category"
 type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
+	GetBySlug(ctx context.Context, slug string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, offset, limit int) ([]product_entity.Category, int64, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, category *product_entity.Category) error
@@ -182,6 +183,32 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 		u.logger.Infof("Category created successfully: %s (ID: %s)", category.Name, category.ID)
 		return nil
 	})
+}
+
+func (u *CategoryUsecase) GetBySlug(ctx context.Context, slug string) (*product_entity.Category, error) {
+	u.logger.Debugf("Getting category by ID: %s", slug)
+
+	category, err := u.repository.GetBySlug(ctx, slug)
+	if err != nil {
+		u.logger.Errorf("Failed to get category by slug %s: %v", slug, err)
+		return nil, err
+	}
+
+	if category == nil {
+		u.logger.Debugf("Category not found: %s", slug)
+		return nil, product_constant.ErrCategoryNotFound
+	}
+
+	files, err := u.fileUsecase.GetByOwner(ctx, category.ID, ownerType)
+	if err != nil {
+		u.logger.Warnf("Failed to get files for category %s: %v", category.ID, err)
+	} else {
+		u.logger.Debugf("Found %d files for category %s", len(files), category.ID)
+	}
+
+	category.Images = files
+	u.logger.Debugf("Category retrieved successfully: %s", category.ID)
+	return category, nil
 }
 
 func (u *CategoryUsecase) GetByID(ctx context.Context, id string) (*product_entity.Category, error) {

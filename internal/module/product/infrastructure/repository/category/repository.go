@@ -16,6 +16,7 @@ type ICategoryRepository interface {
 	Update(ctx context.Context, category *product_entity.Category) error
 	Delete(ctx context.Context, id string) error
 	GetByName(ctx context.Context, name string) (*product_entity.Category, error)
+	GetBySlug(ctx context.Context, slug string) (*product_entity.Category, error)
 	Count(ctx context.Context) (int64, error)
 }
 
@@ -47,6 +48,24 @@ func (r *CategoryRepository) Create(ctx context.Context, category *product_entit
 	return nil
 }
 
+func (r *CategoryRepository) GetBySlug(ctx context.Context, slug string) (*product_entity.Category, error) {
+	r.logger.Debugf("Getting category by Slug: %s", slug)
+
+	var categoryModel product_model.Category
+	if err := r.db.WithContext(ctx).Preload("Characteristics").First(&categoryModel, "slug = ?", slug).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Debugf("Category not found: %s", slug)
+			return nil, nil
+		}
+		r.logger.Errorf("Failed to get category by Slug %s: %v", slug, err)
+		return nil, err
+	}
+	category := r.converter.ToEntity(&categoryModel)
+
+	r.logger.Debugf("Category retrieved successfully: %s", slug)
+	return category, nil
+}
+
 func (r *CategoryRepository) GetByID(ctx context.Context, id string) (*product_entity.Category, error) {
 	r.logger.Debugf("Getting category by ID: %s", id)
 
@@ -75,7 +94,7 @@ func (r *CategoryRepository) GetAll(ctx context.Context, offset, limit int) ([]p
 	if offset == 0 {
 		offset = -1
 	}
-	if err := r.db.WithContext(ctx).Preload("Characteristics").Limit(limit).Offset(offset).Find(&categoryModels).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Characteristics.Options").Limit(limit).Offset(offset).Find(&categoryModels).Error; err != nil {
 		r.logger.Errorf("Failed to get categories: %v", err)
 		return nil, err
 	}

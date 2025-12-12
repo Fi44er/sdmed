@@ -9,8 +9,8 @@ type Product struct {
 	Slug        string `gorm:"type:varchar(255);not null"`
 	Description string `gorm:"type:varchar(255);"`
 
-	CategoryID      string           `gorm:"type:varchar(255);not null"`
-	Characteristics []Characteristic `gorm:"many2many:product_characteristics;"`
+	CategoryID      string                `gorm:"type:varchar(255);not null"`
+	Characteristics []CharacteristicValue `gorm:"foreignKey:ProductID" json:"characteristics"`
 
 	ManualPrice    float64 `gorm:"type:decimal(10,2);not null"`
 	UseManualPrice bool    `gorm:"type:boolean;default:false"`
@@ -19,8 +19,4 @@ type Product struct {
 
 	CreatedAt time.Time `gorm:"type:timestamp;default:now();"`
 	UpdatedAt time.Time `gorm:"type:timestamp;default:now();"`
-}
-
-func (Product) TableName() string {
-	return "product_module.products"
 }

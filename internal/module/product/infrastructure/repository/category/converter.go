@@ -33,6 +33,16 @@ func (c *Converter) ToEntity(model *product_model.Category) *product_entity.Cate
 	characteristicsEntity := make([]product_entity.Characteristic, len(model.Characteristics))
 	for i, characteristic := range model.Characteristics {
 
+		options := make([]product_entity.CharOption, len(characteristic.Options))
+		for j, option := range characteristic.Options {
+			options[j] = product_entity.CharOption{
+				ID:               option.ID,
+				Value:            option.Value,
+				CharacteristicID: option.CharacteristicID,
+				CreatedAt:        option.CreatedAt,
+			}
+		}
+
 		characteristicsEntity[i] = product_entity.Characteristic{
 			ID:          characteristic.ID,
 			Name:        characteristic.Name,
@@ -40,6 +50,7 @@ func (c *Converter) ToEntity(model *product_model.Category) *product_entity.Cate
 			Unit:        characteristic.Unit,
 			Description: characteristic.Description,
 			DataType:    product_entity.DataType(characteristic.DataType),
+			Options:     options,
 			IsRequired:  characteristic.IsRequired,
 			CreatedAt:   characteristic.CreatedAt,
 			UpdatedAt:   characteristic.UpdatedAt,
@@ -51,6 +62,8 @@ func (c *Converter) ToEntity(model *product_model.Category) *product_entity.Cate
 		Name:            model.Name,
 		Slug:            model.Slug,
 		Characteristics: characteristicsEntity,
+		CreatedAt:       model.CreatedAt,
+		UpdatedAt:       model.UpdatedAt,
 	}
 
 	if model.DeletedAt.Valid {

@@ -17,6 +17,7 @@ type ICategoryUsecase interface {
 	Create(ctx context.Context, category *product_entity.Category) error
 	GetByID(ctx context.Context, id string) (*product_entity.Category, error)
 	GetAll(ctx context.Context, page, pageSize int) ([]product_entity.Category, int64, error)
+	GetBySlug(ctx context.Context, slug string) (*product_entity.Category, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, category *product_entity.Category) error
 }
@@ -131,6 +132,32 @@ func (h *CategoryHandler) GetByID(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 
 	category, err := h.usecase.GetByID(ctx.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	categoryRes := h.converter.toCategoryResponse(category)
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"data":   categoryRes,
+	})
+}
+
+// GetBySlug godoc
+// @Summary Get category by slug
+// @Description Get a single category by its slug
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Param slug path string true "Category slug"
+// @Success 200 {object} response.ResponseData{data=product_dto.CategoryResponse} "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /categories/by-slug/{slug} [get]
+func (h *CategoryHandler) GetBySlug(ctx *fiber.Ctx) error {
+	slug := ctx.Params("slug")
+
+	category, err := h.usecase.GetBySlug(ctx.Context(), slug)
 	if err != nil {
 		return err
 	}

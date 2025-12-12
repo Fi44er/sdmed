@@ -11,7 +11,3 @@ type File struct {
 	CreatedAt time.Time  `json:"created_at"`
 	Status    string     `gorm:"column:status;type:file_status;not null" json:"status"`
 }
-
-func (File) TableName() string {
-	return "file_module.files"
-}
