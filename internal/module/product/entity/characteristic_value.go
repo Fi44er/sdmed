@@ -7,12 +7,12 @@ type ProductCharValue struct {
 	CharacteristicID string
 	ProductID        string
 
-	StringValue  string
+	StringValue  *string
 	NumberValue  *float64
 	BooleanValue *bool
 
-	OptionID *uint
-	Option   *CharOption
+	OptionID *string
+	// Option   *CharOption
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

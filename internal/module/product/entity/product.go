@@ -17,8 +17,8 @@ type Product struct {
 	Description string
 	Images      []File
 
-	CategoryID      string
-	Characteristics []ProductCharValue
+	CategoryID string
+	CharValues []ProductCharValue
 
 	ManualPrice    *float64
 	UseManualPrice bool

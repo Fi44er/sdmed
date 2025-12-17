@@ -11,8 +11,7 @@ type CharacteristicValue struct {
 	NumberValue  float64 `gorm:"type:float;not null"`
 	BooleanValue bool    `gorm:"type:boolean;not null"`
 
-	OptionID string     `gorm:"type:varchar(255);not null"`
-	Option   CharOption `gorm:"foreignKey:OptionID;references:ID"`
+	OptionID string `gorm:"type:varchar(255);not null"`
 
 	CreatedAt time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP"`

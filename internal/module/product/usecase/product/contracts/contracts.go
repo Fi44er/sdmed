@@ -24,3 +24,7 @@ type IProductRepository interface {
 	GetByArticle(ctx context.Context, article string) (*product_entity.Product, error)
 	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
 }
+
+type ICharValueUsecase interface {
+	CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error
+}

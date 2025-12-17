@@ -1,4 +1,4 @@
-package usecase
+package product_usecase
 
 import (
 	"context"
@@ -20,10 +20,11 @@ type IProductUsecase interface {
 }
 
 type ProductUsecase struct {
-	repository  product_usecase_contracts.IProductRepository
-	logger      *logger.Logger
-	uow         uow.Uow
-	fileUsecase product_usecase_contracts.IFileUsecaseAdapter
+	repository       product_usecase_contracts.IProductRepository
+	logger           *logger.Logger
+	uow              uow.Uow
+	fileUsecase      product_usecase_contracts.IFileUsecaseAdapter
+	charValueUsecase product_usecase_contracts.ICharValueUsecase
 }
 
 func NewProductUsecase(
@@ -31,12 +32,14 @@ func NewProductUsecase(
 	logger *logger.Logger,
 	uow uow.Uow,
 	fileUsecase product_usecase_contracts.IFileUsecaseAdapter,
+	charValueUsecase product_usecase_contracts.ICharValueUsecase,
 ) IProductUsecase {
 	return &ProductUsecase{
-		repository:  repository,
-		logger:      logger,
-		uow:         uow,
-		fileUsecase: fileUsecase,
+		repository:       repository,
+		logger:           logger,
+		uow:              uow,
+		fileUsecase:      fileUsecase,
+		charValueUsecase: charValueUsecase,
 	}
 }
 
@@ -141,6 +144,20 @@ func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Pro
 				return err
 			}
 		}
+
+		// for i := range validatedCharValues {
+		// 	validatedCharValues[i].ProductID = product.ID
+		// }
+
+		for i := range product.CharValues {
+			product.CharValues[i].ProductID = product.ID
+		}
+
+		if err := u.charValueUsecase.CreateMany(ctx, product.CharValues); err != nil {
+			u.logger.Errorf("Failed to create char values for product %s: %v", product.ID, err)
+			return err
+		}
+
 		needCleanup = false
 		u.logger.Infof("Product created successfully: %s (ID: %s)", product.Name, product.ID)
 		return nil
