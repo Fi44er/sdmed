@@ -145,10 +145,6 @@ func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Pro
 			}
 		}
 
-		// for i := range validatedCharValues {
-		// 	validatedCharValues[i].ProductID = product.ID
-		// }
-
 		for i := range product.CharValues {
 			product.CharValues[i].ProductID = product.ID
 		}

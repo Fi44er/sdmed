@@ -3,11 +3,14 @@ package product_dto
 import "time"
 
 type CreateProductRequest struct {
-	Name        string  `json:"name" validate:"required,min=2,max=100"`
-	Article     string  `json:"article" validate:"required,min=2,max=100"`
-	Description string  `json:"description" validate:"omitempty,min=2,max=5000"` // не обязательно, но если есть - от 2 до 5000 символов
-	ManualPrice float64 `json:"manual_price" validate:"omitempty,gte=0"`         // не обязательно, но если есть - >= 0
-	IsActive    bool    `json:"is_active" validate:"required"`
+	Name                 string             `json:"name" validate:"required,min=2,max=100"`
+	Article              string             `json:"article" validate:"required,min=2,max=100"`
+	Description          string             `json:"description" validate:"omitempty,min=2,max=5000"` // не обязательно, но если есть - от 2 до 5000 символов
+	ManualPrice          float64            `json:"manual_price" validate:"omitempty,gte=0"`         // не обязательно, но если есть - >= 0
+	IsActive             bool               `json:"is_active" validate:"required"`
+	Images               []string           `json:"images" validate:"required,min=1,dive,url"`
+	CategoryID           string             `json:"category_id" validate:"omitempty"`
+	CharacteristicValues []CharValueRequest `json:"characteristic_values" validate:"omitempty"`
 }
 
 type ProductResponse struct {

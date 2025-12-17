@@ -25,10 +25,9 @@ type CharOption struct {
 }
 
 type CharValueRequest struct {
-	CharacteristicID string     `json:"characteristic_id" validate:"required"`
-	StringValue      string     `json:"string_value"`
-	NumberValue      float64    `json:"number_value"`
-	BooleanValue     bool       `json:"boolean_value"`
-	OptionID         string     `json:"option_id"`
-	Option           CharOption `json:"option"`
+	CharacteristicID string  `json:"characteristic_id" validate:"required"`
+	StringValue      string  `json:"string_value"`
+	NumberValue      float64 `json:"number_value"`
+	BooleanValue     bool    `json:"boolean_value"`
+	OptionID         string  `json:"option_id"`
 }
