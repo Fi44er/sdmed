@@ -13,6 +13,7 @@ import (
 
 type IProductUsecase interface {
 	Create(ctx context.Context, product *product_entity.Product) error
+	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
 }
 
 type ProductHandler struct {
@@ -64,5 +65,29 @@ func (h *ProductHandler) Create(ctx *fiber.Ctx) error {
 	return ctx.Status(201).JSON(fiber.Map{
 		"status":  "success",
 		"message": "product created successfully",
+	})
+}
+
+// @Summary Get a product by slug
+// @Description Get a product by slug
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param slug path string true "Slug"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /products/{slug} [get]
+func (h *ProductHandler) GetBySlug(ctx *fiber.Ctx) error {
+	slug := ctx.Params("slug")
+
+	product, err := h.usecase.GetBySlug(ctx.Context(), slug)
+	if err != nil {
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "product retrieved successfully",
+		"data":    product,
 	})
 }

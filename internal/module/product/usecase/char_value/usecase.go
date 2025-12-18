@@ -78,36 +78,32 @@ func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_
 		}()
 
 		characteristicsMap := make(map[string]*product_entity.Characteristic)
-		optionsMap := make(map[string]map[string]bool) // characteristicID -> optionValue -> exists
+		optionsMap := make(map[string]map[string]string)
 
 		for _, characteristic := range characteristics {
 			characteristicsMap[characteristic.ID] = &characteristic
-			u.logger.Debugf("Characteristci: %+v", characteristic)
+			// u.logger.Debugf("Characteristci: %+v", characteristic)
 			if characteristic.DataType == product_entity.DataTypeSelect {
-				optionsMap[characteristic.ID] = make(map[string]bool)
+				optionsMap[characteristic.ID] = make(map[string]string)
 				for _, option := range characteristic.Options {
-					optionsMap[characteristic.ID][strings.ToLower(option.Value)] = true
+					optionsMap[characteristic.ID][strings.ToLower(option.Value)] = option.ID
 				}
 			}
 		}
 
-		fmt.Printf("%+v", optionsMap)
-
-		for i, value := range charValues {
-			// Проверяем существует ли характеристика
+		for i := range charValues {
+			value := &charValues[i]
 			characteristic, exists := characteristicsMap[value.CharacteristicID]
 			if !exists {
 				return fmt.Errorf("characteristic with ID %s not found: %w",
 					value.CharacteristicID, product_constant.ErrCharacteristicNotFound)
 			}
 
-			// Валидируем в зависимости от типа данных
 			if err := u.validateValueByDataType(value, characteristic, optionsMap); err != nil {
 				return fmt.Errorf("validation failed for characteristic %s (index %d): %w",
 					characteristic.Name, i, err)
 			}
 
-			// Проверка обязательных полей
 			if characteristic.IsRequired {
 				if err := u.validateRequired(value, characteristic.DataType); err != nil {
 					return fmt.Errorf("required characteristic %s is empty: %w",
@@ -116,22 +112,25 @@ func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_
 			}
 		}
 
-		if err := u.repository.CreateMany(ctx, charValues); err != nil {
+		if err := charValueRepo.CreateMany(ctx, charValues); err != nil {
 			u.logger.Errorf("failed to create characteristic values: %v", err)
 			return err
 		}
 
 		needCleanup = false
-		// u.logger.Infof("Characteristic value created successfully: %s", charValue.ID)
 		return nil
 	})
 }
 
 func (u *CharValueUsecase) validateValueByDataType(
-	value product_entity.ProductCharValue,
+	value *product_entity.ProductCharValue,
 	characteristic *product_entity.Characteristic,
-	optionsMap map[string]map[string]bool,
+	optionsMap map[string]map[string]string,
 ) error {
+	if value.StringValue == nil || *value.StringValue == "" {
+		return product_constant.ErrInvalidString
+	}
+
 	switch characteristic.DataType {
 	case product_entity.DataTypeString:
 		return u.validateStringValue(value)
@@ -151,105 +150,110 @@ func (u *CharValueUsecase) validateValueByDataType(
 	}
 }
 
-func (u *CharValueUsecase) validateStringValue(value product_entity.ProductCharValue) error {
-	if value.StringValue != nil && *value.StringValue != "" {
-		strVal := *value.StringValue
-		if len(strVal) > 1000 {
-			return fmt.Errorf("string value too long (max 1000 chars): %w", product_constant.ErrInvalidString)
-		}
-
-		if strings.Contains(strVal, "<script>") || strings.Contains(strVal, "javascript:") {
-			return fmt.Errorf("string contains dangerous characters: %w", product_constant.ErrInvalidString)
-		}
+func (u *CharValueUsecase) validateStringValue(value *product_entity.ProductCharValue) error {
+	strVal := *value.StringValue
+	if len(strVal) > 1000 {
+		return fmt.Errorf("string value too long (max 1000 chars): %w", product_constant.ErrInvalidString)
 	}
 
-	if value.NumberValue != nil || value.BooleanValue != nil || value.OptionID != nil {
-		return fmt.Errorf("string characteristic should not have number/bool/option values: %w", product_constant.ErrInvalidString)
+	if strings.Contains(strVal, "<script>") || strings.Contains(strVal, "javascript:") {
+		return fmt.Errorf("string contains dangerous characters: %w", product_constant.ErrInvalidString)
 	}
+
+	u.clearOtherValueFields(value, ClearOptions{
+		KeepString: true,
+	})
 
 	return nil
 }
 
-func (u *CharValueUsecase) validateNumberValue(value product_entity.ProductCharValue, unit *string) error {
-	if value.NumberValue != nil {
-		numVal := *value.NumberValue
-
-		if math.IsNaN(numVal) || math.IsInf(numVal, 0) {
-			return fmt.Errorf("invalid number value (NaN or Infinity): %w", product_constant.ErrInvalidNumber)
-		}
-
-		if numVal < -1000000 || numVal > 1000000 {
-			return fmt.Errorf("number value out of range (-1,000,000 to 1,000,000): %w", product_constant.ErrInvalidNumber)
-		}
-
-		// if unit != nil && *unit != "" {
-		// 	switch *unit {
-		// 	case "кг", "г", "л", "м", "см":
-		// 		if numVal < 0 {
-		// 			return fmt.Errorf("negative value not allowed for unit %s: %w", *unit, product_constant.ErrInvalidNumber)
-		// 		}
-		// 	}
-		// }
+func (u *CharValueUsecase) validateNumberValue(value *product_entity.ProductCharValue, unit *string) error {
+	numVal, err := strconv.ParseFloat(*value.StringValue, 64)
+	if err != nil {
+		return product_constant.ErrInvalidNumber
 	}
 
-	if value.StringValue != nil && *value.StringValue != "" {
-		if _, err := strconv.ParseFloat(*value.StringValue, 64); err == nil {
-			return fmt.Errorf("number value should be in NumberValue field, not StringValue: %w", product_constant.ErrInvalidNumber)
-		}
+	if math.IsNaN(numVal) || math.IsInf(numVal, 0) {
+		return fmt.Errorf("invalid number value (NaN or Infinity): %w", product_constant.ErrInvalidNumber)
 	}
 
-	if value.BooleanValue != nil || value.OptionID != nil {
-		return fmt.Errorf("number characteristic should not have bool/option values: %w", product_constant.ErrInvalidNumber)
+	if numVal < -1000000 || numVal > 1000000 {
+		return fmt.Errorf("number value out of range (-1,000,000 to 1,000,000): %w", product_constant.ErrInvalidNumber)
 	}
+
+	// if unit != nil && *unit != "" {
+	// 	switch *unit {
+	// 	case "кг", "г", "л", "м", "см":
+	// 		if numVal < 0 {
+	// 			return fmt.Errorf("negative value not allowed for unit %s: %w", *unit, product_constant.ErrInvalidNumber)
+	// 		}
+	// 	}
+	// }
+
+	value.NumberValue = &numVal
+
+	u.clearOtherValueFields(value, ClearOptions{
+		KeepNumber: true,
+	})
 
 	return nil
 }
 
-func (u *CharValueUsecase) validateBooleanValue(value product_entity.ProductCharValue) error {
-	if value.StringValue != nil && *value.StringValue != "" {
-		strVal := strings.ToLower(*value.StringValue)
-		if strVal == "true" || strVal == "false" || strVal == "1" || strVal == "0" {
-			return fmt.Errorf("boolean value should be in BooleanValue field, not StringValue: %w", product_constant.ErrInvalidBoolean)
-		}
+func (u *CharValueUsecase) validateBooleanValue(value *product_entity.ProductCharValue) error {
+	var boolStringMap = map[string]bool{
+		"true":  true,
+		"1":     true,
+		"yes":   true,
+		"y":     true,
+		"on":    true,
+		"false": false,
+		"0":     false,
+		"no":    false,
+		"n":     false,
+		"off":   false,
 	}
 
-	if value.NumberValue != nil || value.OptionID != nil {
-		return fmt.Errorf("boolean characteristic should not have number/option values: %w", product_constant.ErrInvalidBoolean)
+	strVal := strings.TrimSpace(strings.ToLower(*value.StringValue))
+
+	boolVal, exists := boolStringMap[strVal]
+	if !exists {
+		return fmt.Errorf("invalid boolean string '%s': %w", *value.StringValue, product_constant.ErrInvalidBoolean)
 	}
+
+	value.BooleanValue = &boolVal
+	u.clearOtherValueFields(value, ClearOptions{
+		KeepBoolean: true,
+	})
 
 	return nil
 }
 
 func (u *CharValueUsecase) validateSelectValue(
-	value product_entity.ProductCharValue,
+	value *product_entity.ProductCharValue,
 	characteristicID string,
-	optionsMap map[string]map[string]bool,
+	optionsMap map[string]map[string]string,
 ) error {
-	if value.OptionID != nil && *value.OptionID != "" {
-		u.logger.Warnf("Option with ID %s not validated in-depth", *value.OptionID)
-	}
+	strVal := *value.StringValue
 
-	if value.StringValue != nil && *value.StringValue != "" {
-		strVal := *value.StringValue
-
-		if optMap, exists := optionsMap[characteristicID]; exists {
-			if !optMap[strings.ToLower(strVal)] {
-				return fmt.Errorf("value '%s' is not in available options: %w",
-					strVal, product_constant.ErrOptionNotFound)
-			}
+	if optMap, exists := optionsMap[characteristicID]; exists {
+		if optionID := optMap[strings.ToLower(strVal)]; optionID != "" {
+			value.OptionID = &optionID
 		} else {
-			u.logger.Warnf("Options map not found for characteristic %s", characteristicID)
+			return fmt.Errorf("value '%s' is not in available options: %w",
+				strVal, product_constant.ErrOptionNotFound)
 		}
+	} else {
+		u.logger.Warnf("Options map not found for characteristic %s", characteristicID)
 	}
 
-	if value.NumberValue != nil || value.BooleanValue != nil {
-		return fmt.Errorf("select characteristic should not have number/bool values: %w", product_constant.ErrOptionNotFound)
-	}
+	u.clearOtherValueFields(value, ClearOptions{
+		KeepOptionID: true,
+	})
 
 	return nil
 }
 
-func (u *CharValueUsecase) validateRequired(value product_entity.ProductCharValue, dataType product_entity.DataType) error {
+func (u *CharValueUsecase) validateRequired(value *product_entity.ProductCharValue, dataType product_entity.DataType) error {
 	switch dataType {
 	case product_entity.DataTypeString:
 		if value.StringValue == nil || *value.StringValue == "" {
@@ -274,4 +278,26 @@ func (u *CharValueUsecase) validateRequired(value product_entity.ProductCharValu
 	}
 
 	return nil
+}
+
+type ClearOptions struct {
+	KeepString   bool
+	KeepNumber   bool
+	KeepBoolean  bool
+	KeepOptionID bool
+}
+
+func (u *CharValueUsecase) clearOtherValueFields(value *product_entity.ProductCharValue, opts ClearOptions) {
+	if !opts.KeepString {
+		value.StringValue = nil
+	}
+	if !opts.KeepNumber {
+		value.NumberValue = nil
+	}
+	if !opts.KeepBoolean {
+		value.BooleanValue = nil
+	}
+	if !opts.KeepOptionID {
+		value.OptionID = nil
+	}
 }

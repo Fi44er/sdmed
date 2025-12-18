@@ -102,7 +102,6 @@ func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Pro
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
-
 		productRepo := repo.(product_usecase_contracts.IProductRepository)
 
 		needCleanup := true

@@ -22,10 +22,7 @@ func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateProductRequest) *p
 	for _, charValue := range dto.CharacteristicValues {
 		charValueEntity = append(charValueEntity, product_entity.ProductCharValue{
 			CharacteristicID: charValue.CharacteristicID,
-			StringValue:      &charValue.StringValue,
-			NumberValue:      &charValue.NumberValue,
-			BooleanValue:     &charValue.BooleanValue,
-			OptionID:         &charValue.OptionID,
+			StringValue:      &charValue.Value,
 		})
 	}
 

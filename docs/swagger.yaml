@@ -78,13 +78,7 @@ definitions:
     type: object
   product_dto.CharValueRequest:
     properties:
-      boolean_value:
-        type: boolean
       characteristic_id:
-        type: string
-      number_value:
-        type: number
-      option_id:
         type: string
       string_value:
         type: string
@@ -772,6 +766,31 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: Create a product
+      tags:
+      - products
+  /products/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Get a product by slug
+      parameters:
+      - description: Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get a product by slug
       tags:
       - products
   /users:

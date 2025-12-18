@@ -10,7 +10,7 @@ type Product struct {
 	Description string `gorm:"type:varchar(255);"`
 
 	CategoryID      string                `gorm:"type:varchar(255);not null"`
-	Characteristics []CharacteristicValue `gorm:"foreignKey:ProductID" json:"characteristics"`
+	Characteristics []CharacteristicValue `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE" json:"characteristics"`
 
 	ManualPrice    float64 `gorm:"type:decimal(10,2);not null"`
 	UseManualPrice bool    `gorm:"type:boolean;default:false"`

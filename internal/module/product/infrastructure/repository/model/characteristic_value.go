@@ -7,11 +7,14 @@ type CharacteristicValue struct {
 	CharacteristicID string `gorm:"type:varchar(255);not null"`
 	ProductID        string `gorm:"type:varchar(255);not null"`
 
-	StringValue  string  `gorm:"type:varchar(255);not null"`
-	NumberValue  float64 `gorm:"type:float;not null"`
-	BooleanValue bool    `gorm:"type:boolean;not null"`
+	StringValue  string  `gorm:"type:varchar(255);"`
+	NumberValue  float64 `gorm:"type:float;"`
+	BooleanValue bool    `gorm:"type:boolean;"`
 
-	OptionID string `gorm:"type:varchar(255);not null"`
+	OptionID string `gorm:"type:varchar(255);"`
+
+	Option  CharOption `gorm:"foreignKey:OptionID;references:ID"`
+	Product Product    `gorm:"foreignKey:ProductID;references:ID"`
 
 	CreatedAt time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP"`

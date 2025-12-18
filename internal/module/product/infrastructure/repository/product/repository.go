@@ -123,7 +123,7 @@ func (r *ProductRepository) GetBySlug(ctx context.Context, slug string) (*produc
 	r.logger.Debugf("Getting product by Slug: %s", slug)
 
 	var productModel product_model.Product
-	if err := r.db.WithContext(ctx).Preload("Characteristics").First(&productModel, "slug = ?", slug).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Characteristics.Option").First(&productModel, "slug = ?", slug).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.logger.Debugf("Product not found: %s", slug)
 			return nil, nil

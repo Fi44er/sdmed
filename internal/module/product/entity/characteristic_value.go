@@ -12,7 +12,7 @@ type ProductCharValue struct {
 	BooleanValue *bool
 
 	OptionID *string
-	// Option   *CharOption
+	Option   *CharOption
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

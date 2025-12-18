@@ -761,6 +761,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/products/{slug}": {
+            "get": {
+                "description": "Get a product by slug",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Get a product by slug",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "description": "Get all users",
@@ -1152,16 +1190,7 @@ const docTemplate = `{
                 "characteristic_id"
             ],
             "properties": {
-                "boolean_value": {
-                    "type": "boolean"
-                },
                 "characteristic_id": {
-                    "type": "string"
-                },
-                "number_value": {
-                    "type": "number"
-                },
-                "option_id": {
                     "type": "string"
                 },
                 "string_value": {
