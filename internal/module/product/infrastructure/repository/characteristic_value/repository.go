@@ -12,6 +12,7 @@ import (
 type ICharValueRepository interface {
 	Create(ctx context.Context, charValue *product_entity.ProductCharValue) error
 	CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error
+	Delete(ctx context.Context, id string) error
 }
 
 type CharValueRepository struct {
@@ -20,11 +21,11 @@ type CharValueRepository struct {
 	converter *Converter
 }
 
-func NewCharValueRepository(logger *logger.Logger, db *gorm.DB, converter *Converter) ICharValueRepository {
+func NewCharValueRepository(logger *logger.Logger, db *gorm.DB) ICharValueRepository {
 	return &CharValueRepository{
 		logger:    logger,
 		db:        db,
-		converter: converter,
+		converter: &Converter{},
 	}
 }
 
@@ -55,6 +56,24 @@ func (r *CharValueRepository) CreateMany(ctx context.Context, charValues []produ
 		return err
 	}
 
+	for i := range charValueModels {
+		charValues[i].ID = charValueModels[i].ID
+		r.logger.Debug(charValueModels[i].ID)
+	}
+
 	r.logger.Infof("Characteristic values created successfully")
+	return nil
+}
+
+func (r *CharValueRepository) Delete(ctx context.Context, id string) error {
+	r.logger.Infof("Deleting characteristic value with ID: %s", id)
+
+	charValueModel := &product_model.CharacteristicValue{}
+	if err := r.db.WithContext(ctx).Where("id = ?", id).Delete(charValueModel).Error; err != nil {
+		r.logger.Errorf("Failed to delete characteristic value: %v", err)
+		return err
+	}
+
+	r.logger.Infof("Characteristic value deleted successfully: %s", id)
 	return nil
 }

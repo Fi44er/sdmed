@@ -10,8 +10,8 @@ import (
 type Converter struct{}
 
 func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateProductRequest) *product_entity.Product {
-	imageEntity := make([]product_entity.File, 0)
-	charValueEntity := make([]product_entity.ProductCharValue, dto.)
+	imageEntity := make([]product_entity.File, 0, len(dto.Images))
+	charValueEntity := make([]product_entity.ProductCharValue, 0, len(dto.CharacteristicValues))
 	for _, fileURL := range dto.Images {
 		fileName := path.Base(fileURL)
 		imageEntity = append(imageEntity, product_entity.File{
@@ -22,10 +22,10 @@ func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateProductRequest) *p
 	for _, charValue := range dto.CharacteristicValues {
 		charValueEntity = append(charValueEntity, product_entity.ProductCharValue{
 			CharacteristicID: charValue.CharacteristicID,
-			StringValue: &charValue.StringValue,
-			NumberValue: &charValue.NumberValue,
-			BooleanValue: &charValue.BooleanValue,
-			OptionID: &charValue.OptionID,
+			StringValue:      &charValue.StringValue,
+			NumberValue:      &charValue.NumberValue,
+			BooleanValue:     &charValue.BooleanValue,
+			OptionID:         &charValue.OptionID,
 		})
 	}
 
@@ -36,6 +36,6 @@ func (c *Converter) ToEntityFromCreate(dto *product_dto.CreateProductRequest) *p
 		Description: dto.Description,
 		CategoryID:  dto.CategoryID,
 		ManualPrice: &dto.ManualPrice,
-		CharValues: charValueEntity,
+		CharValues:  charValueEntity,
 	}
 }

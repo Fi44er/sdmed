@@ -16,6 +16,7 @@ type ICharacteristicRepository interface {
 	Delete(ctx context.Context, id string) error
 	DeleteByCategory(ctx context.Context, categoryID string) error
 	GetByID(ctx context.Context, id string) (*product_entity.Characteristic, error)
+	GetByIDs(ctx context.Context, ids []string) ([]product_entity.Characteristic, error)
 	GetByCategoryID(ctx context.Context, categoryID string) ([]product_entity.Characteristic, error)
 	GetByCategoryAndName(ctx context.Context, categoryID, name string) (*product_entity.Characteristic, error)
 }
@@ -73,6 +74,23 @@ func (r *CharacteristicRepository) Delete(ctx context.Context, id string) error 
 
 	r.logger.Infof("Characteristic deleted successfully: %s", id)
 	return nil
+}
+
+func (r *CharacteristicRepository) GetByIDs(ctx context.Context, ids []string) ([]product_entity.Characteristic, error) {
+	r.logger.Debug("Getting characteristics by ids")
+
+	characteristicModels := new([]product_model.Characteristic)
+	if err := r.db.WithContext(ctx).Preload("Options").Find(characteristicModels, ids).Error; err != nil {
+		r.logger.Errorf("Failed to get characteristics: %v", err)
+		return nil, err
+	}
+
+	characteristics := make([]product_entity.Characteristic, len(*characteristicModels))
+	for i, characteristicModel := range *characteristicModels {
+		characteristics[i] = *r.converter.ToEntity(&characteristicModel)
+	}
+
+	return characteristics, nil
 }
 
 func (r *CharacteristicRepository) GetByID(ctx context.Context, id string) (*product_entity.Characteristic, error) {

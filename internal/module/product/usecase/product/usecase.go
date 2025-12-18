@@ -11,7 +11,7 @@ import (
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
 )
 
-const ownerType = "category"
+const ownerType = "product"
 
 type IProductUsecase interface {
 	Create(ctx context.Context, product *product_entity.Product) error
@@ -132,7 +132,7 @@ func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Pro
 			return err
 		}
 
-		imagesNames := make([]string, 0)
+		imagesNames := make([]string, 0, len(product.Images))
 		for _, image := range product.Images {
 			imagesNames = append(imagesNames, image.Name)
 		}

@@ -16,6 +16,7 @@ type IProductRepository interface {
 	Update(ctx context.Context, product *product_entity.Product) error
 	Delete(ctx context.Context, id string) error
 	GetByArticle(ctx context.Context, article string) (*product_entity.Product, error)
+	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
 }
 
 type ProductRepository struct {
@@ -116,4 +117,22 @@ func (r *ProductRepository) GetByArticle(ctx context.Context, article string) (*
 	product := r.converter.ToEntity(&productModel)
 	r.logger.Info("Product got successfully")
 	return product, nil
+}
+
+func (r *ProductRepository) GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error) {
+	r.logger.Debugf("Getting product by Slug: %s", slug)
+
+	var productModel product_model.Product
+	if err := r.db.WithContext(ctx).Preload("Characteristics").First(&productModel, "slug = ?", slug).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			r.logger.Debugf("Product not found: %s", slug)
+			return nil, nil
+		}
+		r.logger.Errorf("Failed to get product by Slug %s: %v", slug, err)
+		return nil, err
+	}
+	category := r.converter.ToEntity(&productModel)
+
+	r.logger.Debugf("Product retrieved successfully: %s", slug)
+	return category, nil
 }

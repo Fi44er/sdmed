@@ -31,12 +31,21 @@ func (c *Converter) ToModel(entity *product_entity.Characteristic) *product_mode
 }
 
 func (c *Converter) ToEntity(model *product_model.Characteristic) *product_entity.Characteristic {
+	options := make([]product_entity.CharOption, len(model.Options))
+	for i, option := range model.Options {
+		options[i] = product_entity.CharOption{
+			ID:    option.ID,
+			Value: option.Value,
+		}
+	}
+
 	return &product_entity.Characteristic{
 		ID:          model.ID,
 		Name:        model.Name,
 		CategoryID:  model.CategoryID,
 		Unit:        model.Unit,
 		Description: model.Description,
+		Options:     options,
 		DataType:    product_entity.DataType(model.DataType),
 		IsRequired:  model.IsRequired,
 		CreatedAt:   model.CreatedAt,

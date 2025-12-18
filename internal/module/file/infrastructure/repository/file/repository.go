@@ -143,6 +143,7 @@ func (r *FileRepository) GetExpiredTemporaryFiles(ctx context.Context) ([]*file_
 }
 func (r *FileRepository) Update(ctx context.Context, file *file_entity.File) error {
 	r.logger.Info("updating file...")
+
 	fileModel := r.converter.ToModel(file)
 	if err := r.db.WithContext(ctx).Model(&fileModel).Updates(fileModel).Error; err != nil {
 		return err

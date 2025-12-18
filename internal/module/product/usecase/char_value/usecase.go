@@ -27,16 +27,33 @@ type CharValueUsecase struct {
 	characteristicUsecase char_value_usecase_contracts.ICharacteristicUsecase
 }
 
-func NewCharValueUsecase(logger *logger.Logger, repository char_value_usecase_contracts.ICharValueRepository, uow uow.Uow) ICharValueUsecase {
+func NewCharValueUsecase(
+	logger *logger.Logger,
+	repository char_value_usecase_contracts.ICharValueRepository,
+	uow uow.Uow,
+	characteristicUsecase char_value_usecase_contracts.ICharacteristicUsecase,
+) ICharValueUsecase {
 	return &CharValueUsecase{
-		logger:     logger,
-		repository: repository,
-		uow:        uow,
+		logger:                logger,
+		repository:            repository,
+		uow:                   uow,
+		characteristicUsecase: characteristicUsecase,
 	}
 }
 
 func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error {
 	u.logger.Info("Creating char values")
+
+	characteristicIDs := make([]string, len(charValues))
+	for i, val := range charValues {
+		characteristicIDs[i] = val.CharacteristicID
+	}
+
+	characteristics, err := u.characteristicUsecase.GetByIDs(ctx, characteristicIDs)
+	if err != nil {
+		u.logger.Errorf("Failed to get characteristics: %v", err)
+		return err
+	}
 
 	return u.uow.Do(ctx, func(ctx context.Context) error {
 		repo, err := u.uow.GetRepository(ctx, ownerType)
@@ -51,30 +68,21 @@ func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_
 			if needCleanup {
 				for _, val := range charValues {
 					u.logger.Warnf("Cleaning up characteristic value due to failed creation: %s", val.ID)
-					if err := charValueRepo.Delete(ctx, val.ID); err != nil {
-						u.logger.Errorf("Failed to cleanup characteristic  %s: %v", val.ID, err)
+					if val.ID != "" {
+						if err := charValueRepo.Delete(ctx, val.ID); err != nil {
+							u.logger.Errorf("Failed to cleanup characteristic  %s: %v", val.ID, err)
+						}
 					}
 				}
 			}
 		}()
-
-		characteristicIDs := make([]string, len(charValues))
-		for i, val := range charValues {
-			characteristicIDs[i] = val.CharacteristicID
-		}
-
-		characteristics, err := u.characteristicUsecase.GetByIDs(ctx, characteristicIDs)
-		if err != nil {
-			u.logger.Errorf("Failed to get characteristics: %v", err)
-			return err
-		}
 
 		characteristicsMap := make(map[string]*product_entity.Characteristic)
 		optionsMap := make(map[string]map[string]bool) // characteristicID -> optionValue -> exists
 
 		for _, characteristic := range characteristics {
 			characteristicsMap[characteristic.ID] = &characteristic
-
+			u.logger.Debugf("Characteristci: %+v", characteristic)
 			if characteristic.DataType == product_entity.DataTypeSelect {
 				optionsMap[characteristic.ID] = make(map[string]bool)
 				for _, option := range characteristic.Options {
@@ -82,6 +90,8 @@ func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_
 				}
 			}
 		}
+
+		fmt.Printf("%+v", optionsMap)
 
 		for i, value := range charValues {
 			// Проверяем существует ли характеристика

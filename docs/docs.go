@@ -721,6 +721,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/products": {
+            "post": {
+                "description": "Create a product",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Create a product",
+                "parameters": [
+                    {
+                        "description": "Product",
+                        "name": "category",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/product_dto.CreateProductRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "description": "Get all users",
@@ -1095,6 +1135,40 @@ const docTemplate = `{
                 }
             }
         },
+        "product_dto.CharOption": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "product_dto.CharValueRequest": {
+            "type": "object",
+            "required": [
+                "characteristic_id"
+            ],
+            "properties": {
+                "boolean_value": {
+                    "type": "boolean"
+                },
+                "characteristic_id": {
+                    "type": "string"
+                },
+                "number_value": {
+                    "type": "number"
+                },
+                "option_id": {
+                    "type": "string"
+                },
+                "string_value": {
+                    "type": "string"
+                }
+            }
+        },
         "product_dto.CharacteristicResponse": {
             "type": "object",
             "properties": {
@@ -1112,6 +1186,12 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                },
+                "options": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/product_dto.CharOption"
+                    }
                 },
                 "unit": {
                     "type": "string"
@@ -1178,6 +1258,57 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 255,
                     "minLength": 1
+                }
+            }
+        },
+        "product_dto.CreateProductRequest": {
+            "type": "object",
+            "required": [
+                "article",
+                "images",
+                "is_active",
+                "name"
+            ],
+            "properties": {
+                "article": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
+                },
+                "category_id": {
+                    "type": "string"
+                },
+                "characteristic_values": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/product_dto.CharValueRequest"
+                    }
+                },
+                "description": {
+                    "description": "не обязательно, но если есть - от 2 до 5000 символов",
+                    "type": "string",
+                    "maxLength": 5000,
+                    "minLength": 2
+                },
+                "images": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "manual_price": {
+                    "description": "не обязательно, но если есть - \u003e= 0",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 }
             }
         },

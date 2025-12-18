@@ -69,6 +69,28 @@ definitions:
       updated_at:
         type: string
     type: object
+  product_dto.CharOption:
+    properties:
+      id:
+        type: string
+      value:
+        type: string
+    type: object
+  product_dto.CharValueRequest:
+    properties:
+      boolean_value:
+        type: boolean
+      characteristic_id:
+        type: string
+      number_value:
+        type: number
+      option_id:
+        type: string
+      string_value:
+        type: string
+    required:
+    - characteristic_id
+    type: object
   product_dto.CharacteristicResponse:
     properties:
       data_type:
@@ -81,6 +103,10 @@ definitions:
         type: boolean
       name:
         type: string
+      options:
+        items:
+          $ref: '#/definitions/product_dto.CharOption'
+        type: array
       unit:
         type: string
     type: object
@@ -127,6 +153,44 @@ definitions:
         type: string
     required:
     - data_type
+    - name
+    type: object
+  product_dto.CreateProductRequest:
+    properties:
+      article:
+        maxLength: 100
+        minLength: 2
+        type: string
+      category_id:
+        type: string
+      characteristic_values:
+        items:
+          $ref: '#/definitions/product_dto.CharValueRequest'
+        type: array
+      description:
+        description: не обязательно, но если есть - от 2 до 5000 символов
+        maxLength: 5000
+        minLength: 2
+        type: string
+      images:
+        items:
+          type: string
+        minItems: 1
+        type: array
+      is_active:
+        type: boolean
+      manual_price:
+        description: не обязательно, но если есть - >= 0
+        minimum: 0
+        type: number
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+    required:
+    - article
+    - images
+    - is_active
     - name
     type: object
   product_dto.FileResponse:
@@ -684,6 +748,32 @@ paths:
       summary: Upload Temporary File
       tags:
       - files
+  /products:
+    post:
+      consumes:
+      - application/json
+      description: Create a product
+      parameters:
+      - description: Product
+        in: body
+        name: category
+        required: true
+        schema:
+          $ref: '#/definitions/product_dto.CreateProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Create a product
+      tags:
+      - products
   /users:
     get:
       consumes:

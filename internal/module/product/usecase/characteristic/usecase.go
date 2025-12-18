@@ -18,6 +18,7 @@ type ICharacteristicRepository interface {
 	Delete(ctx context.Context, id string) error
 	DeleteByCategory(ctx context.Context, categoryID string) error
 	GetByID(ctx context.Context, id string) (*product_entity.Characteristic, error)
+	GetByIDs(ctx context.Context, ids []string) ([]product_entity.Characteristic, error)
 	GetByCategoryID(ctx context.Context, categoryID string) ([]product_entity.Characteristic, error)
 	GetByCategoryAndName(ctx context.Context, categoryID, name string) (*product_entity.Characteristic, error)
 }
@@ -27,6 +28,7 @@ type ICharacteristicUsecase interface {
 	CreateMany(ctx context.Context, characteristics []product_entity.Characteristic) error
 	Delete(ctx context.Context, id string) error
 	DeleteByCategory(ctx context.Context, categoryID string) error
+	GetByIDs(ctx context.Context, ids []string) ([]product_entity.Characteristic, error)
 }
 
 type CharacteristicUsecase struct {
@@ -41,6 +43,18 @@ func NewCharacteristicUsecase(repository ICharacteristicRepository, uow uow.Uow,
 		uow:        uow,
 		logger:     logger,
 	}
+}
+
+func (u *CharacteristicUsecase) GetByIDs(ctx context.Context, ids []string) ([]product_entity.Characteristic, error) {
+	u.logger.Debug("Getting charcteristics by ids")
+
+	characteristics, err := u.repository.GetByIDs(ctx, ids)
+	if err != nil {
+		u.logger.Debugf("Failet to get characteristics by ids, %v", err)
+		return nil, err
+	}
+
+	return characteristics, nil
 }
 
 func (u *CharacteristicUsecase) Delete(ctx context.Context, id string) error {

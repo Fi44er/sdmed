@@ -32,6 +32,9 @@ func (f *File) IsExpired() bool {
 }
 
 func (f *File) MarkAsPermanent(ownerID, ownerType string) {
+	if f == nil {
+		return
+	}
 	f.Status = FileStatusPermanent
 	f.OwnerID = &ownerID
 	f.OwnerType = &ownerType
