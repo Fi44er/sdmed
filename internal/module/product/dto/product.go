@@ -14,7 +14,7 @@ type CreateProductRequest struct {
 }
 
 type ProductResponse struct {
-	ID                   uint64             `json:"id"`
+	ID                   string             `json:"id"`
 	Name                 string             `json:"name"`
 	Article              string             `json:"article"`
 	Description          string             `json:"description"`

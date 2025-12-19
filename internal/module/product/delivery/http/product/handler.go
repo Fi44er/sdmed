@@ -3,6 +3,7 @@ package product_http
 import (
 	"context"
 
+	"github.com/Fi44er/sdmed/internal/config"
 	product_dto "github.com/Fi44er/sdmed/internal/module/product/dto"
 	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
 	"github.com/Fi44er/sdmed/pkg/logger"
@@ -22,18 +23,21 @@ type ProductHandler struct {
 	validator *validator.Validate
 	logger    *logger.Logger
 	converter *Converter
+	config    *config.Config
 }
 
 func NewProductHandler(
 	usecase IProductUsecase,
 	validator *validator.Validate,
 	logger *logger.Logger,
+	config *config.Config,
 ) *ProductHandler {
 	return &ProductHandler{
 		usecase:   usecase,
 		validator: validator,
 		logger:    logger,
-		converter: &Converter{},
+		converter: &Converter{config: config},
+		config:    config,
 	}
 }
 
@@ -85,9 +89,11 @@ func (h *ProductHandler) GetBySlug(ctx *fiber.Ctx) error {
 		return err
 	}
 
+	productRes := h.converter.ToProductResponse(product)
+
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
 		"message": "product retrieved successfully",
-		"data":    product,
+		"data":    productRes,
 	})
 }

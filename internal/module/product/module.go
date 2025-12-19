@@ -94,7 +94,7 @@ func (m *ProductModule) Init() {
 
 	m.productRepository = product_repository.NewProductRepository(m.logger, m.db)
 	m.productUsecase = product_usecase.NewProductUsecase(m.productRepository, m.logger, m.uow, m.fileUsecaseAdapter, m.charValueUsecase)
-	m.productHandler = product_http.NewProductHandler(m.productUsecase, m.validator, m.logger)
+	m.productHandler = product_http.NewProductHandler(m.productUsecase, m.validator, m.logger, m.config)
 }
 
 func (m *ProductModule) InitDelivery(router fiber.Router) {
