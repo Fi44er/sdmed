@@ -189,7 +189,7 @@ func (h *CategoryHandler) GetAll(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	categoriesRes := h.converter.toCategoryResponses(categories, count, page, pageSize)
+	categoriesRes := h.converter.ToCategoryListResponse(categories, count, page, pageSize)
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status": "success",

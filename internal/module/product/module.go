@@ -16,6 +16,7 @@ import (
 	product_usecase "github.com/Fi44er/sdmed/internal/module/product/usecase/product"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
+	"github.com/Fi44er/sdmed/pkg/redis"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -39,11 +40,12 @@ type ProductModule struct {
 	charValueRepository char_value_repository.ICharValueRepository
 	charValueUsecase    char_value_usecase.ICharValueUsecase
 
-	logger    *logger.Logger
-	validator *validator.Validate
-	db        *gorm.DB
-	uow       uow.Uow
-	config    *config.Config
+	logger       *logger.Logger
+	validator    *validator.Validate
+	db           *gorm.DB
+	uow          uow.Uow
+	config       *config.Config
+	redisManager redis.IRedisManager
 }
 
 func NewProductModule(
@@ -53,14 +55,16 @@ func NewProductModule(
 	uow uow.Uow,
 	fileUsecase file_usecase.IFileUsecase,
 	config *config.Config,
+	redisManager redis.IRedisManager,
 ) *ProductModule {
 	return &ProductModule{
-		logger:      logger,
-		validator:   validator,
-		db:          db,
-		uow:         uow,
-		fileUsecase: fileUsecase,
-		config:      config,
+		logger:       logger,
+		validator:    validator,
+		db:           db,
+		uow:          uow,
+		fileUsecase:  fileUsecase,
+		config:       config,
+		redisManager: redisManager,
 	}
 }
 
@@ -93,7 +97,7 @@ func (m *ProductModule) Init() {
 	m.charValueUsecase = char_value_usecase.NewCharValueUsecase(m.logger, m.charValueRepository, m.uow, m.characteristicUsecase)
 
 	m.productRepository = product_repository.NewProductRepository(m.logger, m.db)
-	m.productUsecase = product_usecase.NewProductUsecase(m.productRepository, m.logger, m.uow, m.fileUsecaseAdapter, m.charValueUsecase)
+	m.productUsecase = product_usecase.NewProductUsecase(m.productRepository, m.logger, m.uow, m.redisManager, m.fileUsecaseAdapter, m.charValueUsecase)
 	m.productHandler = product_http.NewProductHandler(m.productUsecase, m.validator, m.logger, m.config)
 }
 

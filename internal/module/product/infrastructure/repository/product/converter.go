@@ -27,16 +27,17 @@ func (c *Converter) ToEntity(model *product_model.Product) *product_entity.Produ
 	charValues := make([]product_entity.ProductCharValue, 0)
 	for _, charValue := range model.Characteristics {
 		charValues = append(charValues, product_entity.ProductCharValue{
-			ID:               charValue.ID,
-			CharacteristicID: charValue.CharacteristicID,
-			ProductID:        charValue.ProductID,
-			StringValue:      &charValue.StringValue,
-			NumberValue:      &charValue.NumberValue,
-			BooleanValue:     &charValue.BooleanValue,
-			OptionID:         &charValue.OptionID,
-			Option:           (*product_entity.CharOption)(&charValue.Option),
-			CreatedAt:        charValue.CreatedAt,
-			UpdatedAt:        charValue.UpdatedAt,
+			ID:                 charValue.ID,
+			CharacteristicID:   charValue.CharacteristicID,
+			CharacteristicName: charValue.CharacteristicName,
+			ProductID:          charValue.ProductID,
+			StringValue:        charValue.StringValue,
+			NumberValue:        charValue.NumberValue,
+			BooleanValue:       charValue.BooleanValue,
+			OptionID:           charValue.OptionID,
+			Option:             (*product_entity.CharOption)(&charValue.Option),
+			CreatedAt:          charValue.CreatedAt,
+			UpdatedAt:          charValue.UpdatedAt,
 		})
 	}
 	return &product_entity.Product{

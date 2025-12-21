@@ -36,15 +36,3 @@ type FileResponse struct {
 	URL  string `json:"url"`
 	Name string `json:"name,omitempty"`
 }
-
-type CategoryListResponse struct {
-	Data       []CategoryResponse `json:"data"`
-	Pagination PaginationInfo     `json:"pagination"`
-}
-
-type PaginationInfo struct {
-	Total    int64 `json:"total"`
-	Page     int   `json:"page"`
-	PageSize int   `json:"page_size"`
-	Pages    int   `json:"pages"`
-}

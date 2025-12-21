@@ -9,7 +9,7 @@ type Product struct {
 	Slug        string `gorm:"type:varchar(255);not null"`
 	Description string `gorm:"type:varchar(255);"`
 
-	CategoryID      string                `gorm:"type:varchar(255);not null"`
+	CategoryID      *string               `gorm:"type:uuid;null"`
 	Characteristics []CharacteristicValue `gorm:"foreignKey:ProductID;constraint:OnDelete:CASCADE" json:"characteristics"`
 
 	ManualPrice    float64 `gorm:"type:decimal(10,2);not null"`

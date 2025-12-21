@@ -44,45 +44,30 @@ func NewCharValueUsecase(
 func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error {
 	u.logger.Info("Creating char values")
 
-	characteristicIDs := make([]string, len(charValues))
-	for i, val := range charValues {
-		characteristicIDs[i] = val.CharacteristicID
-	}
-
-	characteristics, err := u.characteristicUsecase.GetByIDs(ctx, characteristicIDs)
-	if err != nil {
-		u.logger.Errorf("Failed to get characteristics: %v", err)
-		return err
-	}
-
 	return u.uow.Do(ctx, func(ctx context.Context) error {
 		repo, err := u.uow.GetRepository(ctx, ownerType)
 		if err != nil {
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
-
 		charValueRepo := repo.(char_value_usecase_contracts.ICharValueRepository)
-		needCleanup := true
-		defer func() {
-			if needCleanup {
-				for _, val := range charValues {
-					u.logger.Warnf("Cleaning up characteristic value due to failed creation: %s", val.ID)
-					if val.ID != "" {
-						if err := charValueRepo.Delete(ctx, val.ID); err != nil {
-							u.logger.Errorf("Failed to cleanup characteristic  %s: %v", val.ID, err)
-						}
-					}
-				}
-			}
-		}()
 
 		characteristicsMap := make(map[string]*product_entity.Characteristic)
 		optionsMap := make(map[string]map[string]string)
 
+		characteristicIDs := make([]string, len(charValues))
+		for i, val := range charValues {
+			characteristicIDs[i] = val.CharacteristicID
+		}
+
+		characteristics, err := u.characteristicUsecase.GetByIDs(ctx, characteristicIDs)
+		if err != nil {
+			u.logger.Errorf("Failed to get characteristics: %v", err)
+			return err
+		}
+
 		for _, characteristic := range characteristics {
 			characteristicsMap[characteristic.ID] = &characteristic
-			// u.logger.Debugf("Characteristci: %+v", characteristic)
 			if characteristic.DataType == product_entity.DataTypeSelect {
 				optionsMap[characteristic.ID] = make(map[string]string)
 				for _, option := range characteristic.Options {
@@ -95,19 +80,18 @@ func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_
 			value := &charValues[i]
 			characteristic, exists := characteristicsMap[value.CharacteristicID]
 			if !exists {
-				return fmt.Errorf("characteristic with ID %s not found: %w",
-					value.CharacteristicID, product_constant.ErrCharacteristicNotFound)
+				return product_constant.ErrCharacteristicNotFound.WithContext(
+					fmt.Sprintf("characteristic with ID %s not found", value.CharacteristicID),
+				)
 			}
 
 			if err := u.validateValueByDataType(value, characteristic, optionsMap); err != nil {
-				return fmt.Errorf("validation failed for characteristic %s (index %d): %w",
-					characteristic.Name, i, err)
+				return product_constant.ErrInvalidValue.WithContext(fmt.Sprintf("invalid value for characteristic %s (index %d)", characteristic.Name, i)).WithCause(err)
 			}
 
 			if characteristic.IsRequired {
 				if err := u.validateRequired(value, characteristic.DataType); err != nil {
-					return fmt.Errorf("required characteristic %s is empty: %w",
-						characteristic.Name, err)
+					return product_constant.ErrRequiredCharacteristicEmpty.WithContext(fmt.Sprintf("required characteristic %s is empty", characteristic.Name)).WithCause(err)
 				}
 			}
 		}
@@ -117,7 +101,6 @@ func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_
 			return err
 		}
 
-		needCleanup = false
 		return nil
 	})
 }
@@ -145,19 +128,18 @@ func (u *CharValueUsecase) validateValueByDataType(
 		return u.validateSelectValue(value, characteristic.ID, optionsMap)
 
 	default:
-		return fmt.Errorf("unknown data type %s: %w",
-			string(characteristic.DataType), product_constant.ErrInvalidDataType)
+		return product_constant.ErrInvalidDataType.WithContext(fmt.Sprintf("unknown data type %s", string(characteristic.DataType)))
 	}
 }
 
 func (u *CharValueUsecase) validateStringValue(value *product_entity.ProductCharValue) error {
 	strVal := *value.StringValue
 	if len(strVal) > 1000 {
-		return fmt.Errorf("string value too long (max 1000 chars): %w", product_constant.ErrInvalidString)
+		return product_constant.ErrInvalidString.WithContext("string value too long (max 1000 chars)")
 	}
 
 	if strings.Contains(strVal, "<script>") || strings.Contains(strVal, "javascript:") {
-		return fmt.Errorf("string contains dangerous characters: %w", product_constant.ErrInvalidString)
+		return product_constant.ErrInvalidString.WithContext("string contains dangerous characters")
 	}
 
 	u.clearOtherValueFields(value, ClearOptions{
@@ -174,11 +156,11 @@ func (u *CharValueUsecase) validateNumberValue(value *product_entity.ProductChar
 	}
 
 	if math.IsNaN(numVal) || math.IsInf(numVal, 0) {
-		return fmt.Errorf("invalid number value (NaN or Infinity): %w", product_constant.ErrInvalidNumber)
+		return product_constant.ErrInvalidNumber.WithContext("invalid number value (NaN or Infinity)")
 	}
 
 	if numVal < -1000000 || numVal > 1000000 {
-		return fmt.Errorf("number value out of range (-1,000,000 to 1,000,000): %w", product_constant.ErrInvalidNumber)
+		return product_constant.ErrInvalidNumber.WithContext("number value out of range (-1,000,000 to 1,000,000)")
 	}
 
 	// if unit != nil && *unit != "" {
@@ -217,7 +199,7 @@ func (u *CharValueUsecase) validateBooleanValue(value *product_entity.ProductCha
 
 	boolVal, exists := boolStringMap[strVal]
 	if !exists {
-		return fmt.Errorf("invalid boolean string '%s': %w", *value.StringValue, product_constant.ErrInvalidBoolean)
+		return product_constant.ErrInvalidBoolean.WithContext(fmt.Sprintf("invalid boolean string '%s'", *value.StringValue))
 	}
 
 	value.BooleanValue = &boolVal
@@ -239,8 +221,7 @@ func (u *CharValueUsecase) validateSelectValue(
 		if optionID := optMap[strings.ToLower(strVal)]; optionID != "" {
 			value.OptionID = &optionID
 		} else {
-			return fmt.Errorf("value '%s' is not in available options: %w",
-				strVal, product_constant.ErrOptionNotFound)
+			return product_constant.ErrOptionNotFound.WithContext(fmt.Sprintf("value '%s' is not in available options", strVal))
 		}
 	} else {
 		u.logger.Warnf("Options map not found for characteristic %s", characteristicID)

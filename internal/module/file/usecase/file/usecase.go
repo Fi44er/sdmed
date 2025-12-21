@@ -7,6 +7,7 @@ import (
 
 	"github.com/Fi44er/sdmed/internal/config"
 	file_entity "github.com/Fi44er/sdmed/internal/module/file/entity"
+	file_constant "github.com/Fi44er/sdmed/internal/module/file/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/postgres/uow"
 )
@@ -101,6 +102,9 @@ func (u *FileUsecase) MakeFilesPermanent(ctx context.Context, fileIDs []string, 
 			file, err := fileRepo.GetByName(ctx, fileID)
 			if err != nil {
 				return err
+			}
+			if file == nil || file.Status != file_entity.FileStatusTemporary {
+				return file_constant.ErrFileNotFound
 			}
 
 			file.MarkAsPermanent(ownerID, ownerType)

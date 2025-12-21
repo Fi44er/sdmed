@@ -94,6 +94,7 @@ func (p *moduleProvider) ProductModule() error {
 		p.app.uow,
 		p.fileModule.GetFileService(),
 		p.app.config,
+		p.app.redisManager,
 	)
 	p.productModule.Init()
 	return nil

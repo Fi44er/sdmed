@@ -722,6 +722,81 @@ const docTemplate = `{
             }
         },
         "/products": {
+            "get": {
+                "description": "Get a list of products with support for pagination, sorting, and dynamic filters by characteristics",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Get all products with filters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page (default 10)",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by category ID",
+                        "name": "category_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Minimum price",
+                        "name": "min_price",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Maximum price",
+                        "name": "max_price",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sorting order: price_asc, price_desc, newest",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Dynamic filters in format chars[char_id]=value",
+                        "name": "chars",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Create a product",
                 "consumes": [
@@ -743,6 +818,44 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/product_dto.CreateProductRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/products/filters/{category_id}": {
+            "get": {
+                "description": "Get filters for a category",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "products"
+                ],
+                "summary": "Get filters for a category",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Category ID",
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -1193,7 +1306,7 @@ const docTemplate = `{
                 "characteristic_id": {
                     "type": "string"
                 },
-                "string_value": {
+                "value": {
                     "type": "string"
                 }
             }
@@ -1314,7 +1427,6 @@ const docTemplate = `{
                     }
                 },
                 "description": {
-                    "description": "не обязательно, но если есть - от 2 до 5000 символов",
                     "type": "string",
                     "maxLength": 5000,
                     "minLength": 2
@@ -1330,7 +1442,6 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "manual_price": {
-                    "description": "не обязательно, но если есть - \u003e= 0",
                     "type": "number",
                     "minimum": 0
                 },

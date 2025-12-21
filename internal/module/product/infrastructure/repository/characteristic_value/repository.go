@@ -44,7 +44,7 @@ func (r *CharValueRepository) Create(ctx context.Context, charValue *product_ent
 }
 
 func (r *CharValueRepository) CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error {
-	r.logger.Infof("Creating characteristic values: %v", charValues)
+	r.logger.Infof("Creating characteristic values: %+v", charValues)
 
 	charValueModels := make([]product_model.CharacteristicValue, len(charValues))
 	for i, charValue := range charValues {

@@ -16,12 +16,16 @@ const ownerType = "product"
 type IProductUsecase interface {
 	Create(ctx context.Context, product *product_entity.Product) error
 	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
-	GetAll(ctx context.Context, limit, offset int) ([]product_entity.Product, error)
+	GetAll(ctx context.Context, params *product_entity.ProductFilterParams) ([]product_entity.Product, int64, error)
+
+	GetFilters(ctx context.Context, categoryID string) ([]product_entity.Filter, error)
 }
 
 type ProductUsecase struct {
-	repository       product_usecase_contracts.IProductRepository
-	logger           *logger.Logger
+	repository product_usecase_contracts.IProductRepository
+	logger     *logger.Logger
+	cache      product_usecase_contracts.ICache
+
 	uow              uow.Uow
 	fileUsecase      product_usecase_contracts.IFileUsecaseAdapter
 	charValueUsecase product_usecase_contracts.ICharValueUsecase
@@ -31,6 +35,7 @@ func NewProductUsecase(
 	repository product_usecase_contracts.IProductRepository,
 	logger *logger.Logger,
 	uow uow.Uow,
+	cache product_usecase_contracts.ICache,
 	fileUsecase product_usecase_contracts.IFileUsecaseAdapter,
 	charValueUsecase product_usecase_contracts.ICharValueUsecase,
 ) IProductUsecase {
@@ -38,24 +43,26 @@ func NewProductUsecase(
 		repository:       repository,
 		logger:           logger,
 		uow:              uow,
+		cache:            cache,
 		fileUsecase:      fileUsecase,
 		charValueUsecase: charValueUsecase,
 	}
 }
 
-func (u *ProductUsecase) GetAll(ctx context.Context, limit, offset int) ([]product_entity.Product, error) {
-	u.logger.Debugf("Getting all products (offset: %d, limit: %d)", offset, limit)
+func (u *ProductUsecase) GetAll(ctx context.Context, params *product_entity.ProductFilterParams) ([]product_entity.Product, int64, error) {
+	u.logger.Debugf("Getting all products (page: %d, pageSize: %d)", params.Page, params.PageSize)
 
-	products, err := u.repository.GetAll(ctx, limit, offset)
+	u.logger.Debugf("Filter params: %+v", params)
+	products, total, err := u.repository.GetAll(ctx, *params)
 	if err != nil {
 		u.logger.Errorf("Failed to get all products: %v", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	u.logger.Debugf("Found %d products", len(products))
 
 	if len(products) == 0 {
-		return products, nil
+		return products, 0, nil
 	}
 
 	if err := u.enrichWithBatch(ctx, products); err != nil {
@@ -64,7 +71,7 @@ func (u *ProductUsecase) GetAll(ctx context.Context, limit, offset int) ([]produ
 		u.logger.Debugf("Successfully enriched %d products with images", len(products))
 	}
 
-	return products, nil
+	return products, total, nil
 }
 
 func (u *ProductUsecase) GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error) {
@@ -104,16 +111,6 @@ func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Pro
 		}
 		productRepo := repo.(product_usecase_contracts.IProductRepository)
 
-		needCleanup := true
-		defer func() {
-			if needCleanup {
-				u.logger.Warnf("Cleaning up product due to failed creation: %s", product.ID)
-				if err := productRepo.Delete(ctx, product.ID); err != nil {
-					u.logger.Errorf("Failed to cleanup product %s: %v", product.ID, err)
-				}
-			}
-		}()
-
 		existProduct, err := productRepo.GetByArticle(ctx, product.Article)
 		if err != nil {
 			u.logger.Errorf("Failed to check if product with article %s exists: %v", product.Article, err)
@@ -148,12 +145,13 @@ func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Pro
 			product.CharValues[i].ProductID = product.ID
 		}
 
-		if err := u.charValueUsecase.CreateMany(ctx, product.CharValues); err != nil {
-			u.logger.Errorf("Failed to create char values for product %s: %v", product.ID, err)
-			return err
+		if len(product.CharValues) > 0 {
+			if err := u.charValueUsecase.CreateMany(ctx, product.CharValues); err != nil {
+				u.logger.Errorf("Failed to create char values for product %s: %v", product.ID, err)
+				return err
+			}
 		}
 
-		needCleanup = false
 		u.logger.Infof("Product created successfully: %s (ID: %s)", product.Name, product.ID)
 		return nil
 	})
@@ -164,7 +162,50 @@ func (u *ProductUsecase) Update(ctx context.Context, product_entity *product_ent
 }
 
 func (u *ProductUsecase) Delete(ctx context.Context, id string) error {
-	return u.repository.Delete(ctx, id)
+	u.logger.Infof("Deleting product with ID: %s", id)
+
+	return u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, ownerType)
+		if err != nil {
+			u.logger.Errorf("Failed to get repository for product deletion: %v", err)
+			return err
+		}
+		productRepo := repo.(product_usecase_contracts.IProductRepository)
+
+		if err := productRepo.Delete(ctx, id); err != nil {
+			u.logger.Errorf("Failed to delete product with ID %s: %v", id, err)
+			return err
+		}
+
+		if err := u.fileUsecase.DeleteByOwner(ctx, id, ownerType); err != nil {
+			u.logger.Errorf("Failed to delete files for category %s: %v", id, err)
+			return err
+		}
+
+		u.logger.Infof("Product with ID %s deleted successfully", id)
+		return nil
+	})
+}
+
+func (u *ProductUsecase) GetFilters(ctx context.Context, categoryID string) ([]product_entity.Filter, error) {
+	cachedFilters := new([]product_entity.Filter)
+	key := product_constant.CategoryFiltersKeyPrefix + categoryID
+	if err := u.cache.Get(ctx, key, cachedFilters); err == nil {
+		u.logger.Debugf("Get filters for category %s from cache successfully", categoryID)
+		return *cachedFilters, nil
+	}
+
+	filters, err := u.repository.GetFiltersByCategory(ctx, categoryID)
+	if err != nil {
+		u.logger.Errorf("Failed to get filters for category %s: %v", categoryID, err)
+		return nil, err
+	}
+
+	if err := u.cache.Set(ctx, key, filters, product_constant.FilterExpered); err != nil {
+		u.logger.Errorf("Failed to set filters for category %s to cache: %v", categoryID, err)
+	}
+
+	return filters, nil
 }
 
 func (u *ProductUsecase) enrichWithBatch(ctx context.Context, products []product_entity.Product) error {

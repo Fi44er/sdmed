@@ -80,7 +80,7 @@ definitions:
     properties:
       characteristic_id:
         type: string
-      string_value:
+      value:
         type: string
     required:
     - characteristic_id
@@ -162,7 +162,6 @@ definitions:
           $ref: '#/definitions/product_dto.CharValueRequest'
         type: array
       description:
-        description: не обязательно, но если есть - от 2 до 5000 символов
         maxLength: 5000
         minLength: 2
         type: string
@@ -174,7 +173,6 @@ definitions:
       is_active:
         type: boolean
       manual_price:
-        description: не обязательно, но если есть - >= 0
         minimum: 0
         type: number
       name:
@@ -743,6 +741,57 @@ paths:
       tags:
       - files
   /products:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of products with support for pagination, sorting, and
+        dynamic filters by characteristics
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 10)
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by category ID
+        in: query
+        name: category_id
+        type: string
+      - description: Minimum price
+        in: query
+        name: min_price
+        type: number
+      - description: Maximum price
+        in: query
+        name: max_price
+        type: number
+      - description: 'Sorting order: price_asc, price_desc, newest'
+        in: query
+        name: sort
+        type: string
+      - collectionFormat: csv
+        description: Dynamic filters in format chars[char_id]=value
+        in: query
+        items:
+          type: string
+        name: chars
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get all products with filters
+      tags:
+      - products
     post:
       consumes:
       - application/json
@@ -791,6 +840,31 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: Get a product by slug
+      tags:
+      - products
+  /products/filters/{category_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get filters for a category
+      parameters:
+      - description: Category ID
+        in: path
+        name: category_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get filters for a category
       tags:
       - products
   /users:

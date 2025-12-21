@@ -128,18 +128,7 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
-
 		categoryRepo := repo.(category_usecase_contracts.ICategoryRepository)
-
-		needCleanup := true
-		defer func() {
-			if needCleanup {
-				u.logger.Warnf("Cleaning up category due to failed creation: %s", category.ID)
-				if err := categoryRepo.Delete(ctx, category.ID); err != nil {
-					u.logger.Errorf("Failed to cleanup category %s: %v", category.ID, err)
-				}
-			}
-		}()
 
 		existCategory, err := categoryRepo.GetByName(ctx, category.Name)
 		if err != nil {
@@ -179,7 +168,7 @@ func (u *CategoryUsecase) Create(ctx context.Context, category *product_entity.C
 				return err
 			}
 		}
-		needCleanup = false
+
 		u.logger.Infof("Category created successfully: %s (ID: %s)", category.Name, category.ID)
 		return nil
 	})

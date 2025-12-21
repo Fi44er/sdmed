@@ -1,4 +1,4 @@
-package constant
+package file_constant
 
 import "github.com/Fi44er/sdmed/pkg/customerr"
 

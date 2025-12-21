@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
+type uowKey struct{}
+
 var (
 	ErrTxAlreadyStarted   = errors.New("transaction already started")
 	ErrTxNotStarted       = errors.New("no transaction started")
@@ -21,14 +23,14 @@ type Uow interface {
 	RegisterRepository(name string, factory RepositoryFactory)
 	GetRepository(ctx context.Context, name string) (any, error)
 	Do(ctx context.Context, fn func(ctx context.Context) error) error
-	Begin(ctx context.Context) error
-	Commit() error
-	Rollback() error
+
+	Begin(ctx context.Context) (context.Context, error)
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
 }
 
 type uow struct {
 	db           *gorm.DB
-	tx           *gorm.DB
 	repositories map[string]RepositoryFactory
 	mu           sync.RWMutex
 }
@@ -55,85 +57,77 @@ func (u *uow) GetRepository(ctx context.Context, name string) (any, error) {
 		return nil, fmt.Errorf("%w: %s", ErrRepositoryNotFound, name)
 	}
 
-	if u.tx == nil {
-		return nil, ErrTxNotStarted
+	tx, ok := ctx.Value(uowKey{}).(*gorm.DB)
+	if !ok {
+		return factory(u.db.WithContext(ctx))
 	}
 
-	return factory(u.tx)
+	return factory(tx.WithContext(ctx))
 }
 
-func (u *uow) Begin(ctx context.Context) error {
-	if u.tx != nil {
-		return ErrTxAlreadyStarted
+func (u *uow) Begin(ctx context.Context) (context.Context, error) {
+	if _, ok := ctx.Value(uowKey{}).(*gorm.DB); ok {
+		return ctx, ErrTxAlreadyStarted
 	}
 
-	u.tx = u.db.Begin()
-	if u.tx.Error != nil {
-		return fmt.Errorf("failed to begin transaction: %w", u.tx.Error)
+	tx := u.db.Begin()
+	if tx.Error != nil {
+		return ctx, fmt.Errorf("failed to begin transaction: %w", tx.Error)
 	}
 
-	return nil
+	return context.WithValue(ctx, uowKey{}, tx), nil
 }
 
-func (u *uow) Commit() error {
-	if u.tx == nil {
+func (u *uow) Commit(ctx context.Context) error {
+	tx, ok := ctx.Value(uowKey{}).(*gorm.DB)
+	if !ok {
 		return ErrTxNotStarted
 	}
 
-	if err := u.tx.Commit().Error; err != nil {
+	if err := tx.Commit().Error; err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
-
-	u.tx = nil
 	return nil
 }
 
-func (u *uow) Rollback() error {
-	if u.tx == nil {
+func (u *uow) Rollback(ctx context.Context) error {
+	tx, ok := ctx.Value(uowKey{}).(*gorm.DB)
+	if !ok {
 		return ErrTxNotStarted
 	}
 
-	if err := u.tx.Rollback().Error; err != nil {
+	if err := tx.Rollback().Error; err != nil {
 		return fmt.Errorf("failed to rollback transaction: %w", err)
 	}
-
-	u.tx = nil
 	return nil
 }
 
 func (u *uow) Do(ctx context.Context, fn func(ctx context.Context) error) error {
-	if u.tx != nil {
-		return fn(ctx)
-	}
-
-	if err := u.Begin(ctx); err != nil {
+	txCtx, err := u.Begin(ctx)
+	if err != nil {
+		if errors.Is(err, ErrTxAlreadyStarted) {
+			return fn(ctx)
+		}
 		return err
 	}
 
 	var fnErr error
 	defer func() {
 		if p := recover(); p != nil {
-			_ = u.Rollback()
+			_ = u.Rollback(txCtx)
 			panic(p)
 		}
 
 		if fnErr != nil {
-			if rbErr := u.Rollback(); rbErr != nil {
-				fnErr = fmt.Errorf("original error: %w, rollback error: %v", fnErr, rbErr)
-			}
+			_ = u.Rollback(txCtx)
 		}
 	}()
 
-	ctx = context.WithValue(ctx, "uow", u)
-	fnErr = fn(ctx)
+	fnErr = fn(txCtx)
 
 	if fnErr != nil {
 		return fnErr
 	}
 
-	if err := u.Commit(); err != nil {
-		return fmt.Errorf("commit failed: %w", err)
-	}
-
-	return nil
+	return u.Commit(txCtx)
 }

@@ -17,7 +17,7 @@ type Product struct {
 	Description string
 	Images      []File
 
-	CategoryID string
+	CategoryID *string
 	CharValues []ProductCharValue
 
 	ManualPrice    *float64
@@ -27,6 +27,16 @@ type Product struct {
 
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+type ProductFilterParams struct {
+	Page            int
+	PageSize        int
+	CategoryID      string
+	MinPrice        *float64
+	MaxPrice        *float64
+	Characteristics map[string]string
+	Sort            string
 }
 
 func (p *Product) Slogify() {
@@ -85,6 +95,6 @@ func (p *Product) FormatDescription() {
 	p.Description = strings.TrimSpace(p.Description)
 }
 
-func (p *Product) IsInCategory(categoryID string) bool {
+func (p *Product) IsInCategory(categoryID *string) bool {
 	return p.CategoryID == categoryID
 }

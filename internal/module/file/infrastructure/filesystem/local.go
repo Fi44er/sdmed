@@ -15,7 +15,7 @@ import (
 	"github.com/h2non/filetype"
 
 	"github.com/Fi44er/sdmed/internal/config"
-	"github.com/Fi44er/sdmed/internal/module/file/pkg/constant"
+	file_constant "github.com/Fi44er/sdmed/internal/module/file/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/chai2010/webp"
 )
@@ -78,7 +78,7 @@ func (s *LocalFileStorage) Delete(name string) error {
 func (s *LocalFileStorage) Get(name string) ([]byte, error) {
 	filePath := s.config.FileDir + name
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return nil, constant.ErrFileNotFound
+		return nil, file_constant.ErrFileNotFound
 	}
 	return os.ReadFile(filePath)
 }

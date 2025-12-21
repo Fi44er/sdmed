@@ -64,18 +64,7 @@ func (u *CharacteristicUsecase) Delete(ctx context.Context, id string) error {
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
-
 		characteristicRepo := repo.(ICharacteristicRepository)
-
-		needCleanup := true
-		defer func() {
-			if needCleanup {
-				u.logger.Warnf("Cleaning up characteristic due to failed creation: %s", id)
-				if err := characteristicRepo.Delete(ctx, id); err != nil {
-					u.logger.Errorf("Failed to delete characteristic: %v", err)
-				}
-			}
-		}()
 
 		if err := characteristicRepo.Delete(ctx, id); err != nil {
 			u.logger.Errorf("Failed to delete characteristic %s: %v", id, err)
@@ -95,7 +84,6 @@ func (u *CharacteristicUsecase) DeleteByCategory(ctx context.Context, categoryID
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
-
 		characteristicRepo := repo.(ICharacteristicRepository)
 
 		if err := characteristicRepo.DeleteByCategory(ctx, categoryID); err != nil {
@@ -116,18 +104,7 @@ func (u *CharacteristicUsecase) Create(ctx context.Context, characteristic *prod
 			u.logger.Errorf("Failed to get repository: %v", err)
 			return err
 		}
-
 		characteristicRepo := repo.(ICharacteristicRepository)
-
-		needCleanup := true
-		defer func() {
-			if needCleanup {
-				u.logger.Warnf("Cleaning up characteristic due to failed creation: %s", characteristic.ID)
-				if err := characteristicRepo.Delete(ctx, characteristic.ID); err != nil {
-					u.logger.Errorf("Failed to delete characteristic %s: %v", characteristic.ID, err)
-				}
-			}
-		}()
 
 		existCharacteristic, err := characteristicRepo.GetByCategoryAndName(ctx, characteristic.CategoryID, characteristic.Name)
 		if err != nil {
@@ -153,9 +130,7 @@ func (u *CharacteristicUsecase) Create(ctx context.Context, characteristic *prod
 			return err
 		}
 
-		needCleanup = false
 		u.logger.Infof("Characteristic created successfully: %s (ID: %s)", characteristic.Name, characteristic.ID)
-
 		return nil
 	})
 }
@@ -172,19 +147,7 @@ func (u *CharacteristicUsecase) CreateMany(ctx context.Context, characteristics 
 
 		characteristicRepo := repo.(ICharacteristicRepository)
 
-		needCleanup := true
 		newCharacteristics := make([]product_entity.Characteristic, 0, len(characteristics))
-
-		defer func() {
-			if needCleanup {
-				for _, characteristic := range newCharacteristics {
-					u.logger.Warnf("Cleaning up characteristic due to failed creation: %s", characteristic.ID)
-					if err := characteristicRepo.Delete(ctx, characteristic.ID); err != nil {
-						u.logger.Errorf("Failed to delete characteristic %s: %v", characteristic.ID, err)
-					}
-				}
-			}
-		}()
 
 		for _, characteristic := range characteristics {
 			existCharacteristic, err := characteristicRepo.GetByCategoryAndName(ctx, characteristic.CategoryID, characteristic.Name)
@@ -209,9 +172,7 @@ func (u *CharacteristicUsecase) CreateMany(ctx context.Context, characteristics 
 			return err
 		}
 
-		needCleanup = false
 		u.logger.Infof("Characteristics created successfully: %d", len(newCharacteristics))
-
 		return nil
 	})
 }

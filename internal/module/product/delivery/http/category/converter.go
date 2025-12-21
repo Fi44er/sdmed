@@ -8,6 +8,7 @@ import (
 	"github.com/Fi44er/sdmed/internal/config"
 	product_dto "github.com/Fi44er/sdmed/internal/module/product/dto"
 	product_entity "github.com/Fi44er/sdmed/internal/module/product/entity"
+	dto_utils "github.com/Fi44er/sdmed/pkg/utils/dto"
 )
 
 type Converter struct {
@@ -68,18 +69,18 @@ func (c *Converter) ToEntityFromUpdate(dto *product_dto.UpdateCategoryRequest) *
 	}
 }
 
-func (c *Converter) toCategoryResponses(categories []product_entity.Category, count int64, page, pageSize int) *product_dto.CategoryListResponse {
+func (c *Converter) ToCategoryListResponse(categories []product_entity.Category, count int64, page, pageSize int) *dto_utils.ListResponse[product_dto.CategoryResponse] {
 	if len(categories) == 0 {
-		return &product_dto.CategoryListResponse{}
+		return &dto_utils.ListResponse[product_dto.CategoryResponse]{}
 	}
 
 	result := make([]product_dto.CategoryResponse, len(categories))
 	for i, category := range categories {
 		result[i] = *c.toCategoryResponse(&category)
 	}
-	return &product_dto.CategoryListResponse{
+	return &dto_utils.ListResponse[product_dto.CategoryResponse]{
 		Data: result,
-		Pagination: product_dto.PaginationInfo{
+		Pagination: dto_utils.PaginationInfo{
 			Total:    count,
 			Page:     page,
 			PageSize: pageSize,

@@ -1,6 +1,9 @@
 package customerr
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type Error struct {
 	Code    int    `json:"code"`
@@ -10,22 +13,50 @@ type Error struct {
 
 func (e *Error) Error() string {
 	if e.Cause != nil {
-		return e.Message + ": " + e.Cause.Error()
+		return fmt.Sprintf("%s: %v", e.Message, e.Cause)
 	}
 	return e.Message
 }
 
+func (e *Error) Unwrap() error {
+	return e.Cause
+}
+
 func (e *Error) Is(target error) bool {
-	if err, ok := target.(*Error); ok {
-		return err.Code == e.Code && err.Message == e.Message
+	var t *Error
+	if errors.As(target, &t) {
+		return e.Code == t.Code && e.Message == t.Message
 	}
-	return errors.Is(e.Cause, target)
+	return false
 }
 
 func NewError(code int, message string) *Error {
 	return &Error{Code: code, Message: message}
 }
 
-func WrapError(code int, message string, cause error) *Error {
-	return &Error{Code: code, Message: message, Cause: cause}
+func (e *Error) WithCause(cause error) *Error {
+	return &Error{
+		Code:    e.Code,
+		Message: e.Message,
+		Cause:   cause,
+	}
+}
+
+func (e *Error) WithContext(contextMsg string) *Error {
+	return &Error{
+		Code:    e.Code,
+		Message: fmt.Sprintf("%s: %s", contextMsg, e.Message),
+		Cause:   e.Cause,
+	}
+}
+
+func FromError(err error) (int, string) {
+	if err == nil {
+		return 200, ""
+	}
+	var customErr *Error
+	if errors.As(err, &customErr) {
+		return customErr.Code, customErr.Message
+	}
+	return 500, "Internal Server Error"
 }
