@@ -19,7 +19,6 @@ func NewRedisSessionStore(client *redis.Client) *RedisSessionStore {
 	}
 }
 
-// read retrieves a session by ID from Redis
 func (s *RedisSessionStore) Read(id string) (*session.Session, error) {
 	ctx := context.Background()
 	data, err := s.client.Get(ctx, "session:"+id).Bytes()
@@ -36,7 +35,6 @@ func (s *RedisSessionStore) Read(id string) (*session.Session, error) {
 	return &session, nil
 }
 
-// write stores a session in Redis
 func (s *RedisSessionStore) Write(session *session.Session) error {
 	ctx := context.Background()
 	data, err := json.Marshal(session)
@@ -44,18 +42,15 @@ func (s *RedisSessionStore) Write(session *session.Session) error {
 		return err
 	}
 
-	// Set the session with an expiration (e.g., 24 hours)
 	err = s.client.Set(ctx, "session:"+session.ID, data, 24*time.Hour).Err()
 	return err
 }
 
-// destroy deletes a session by ID from Redis
 func (s *RedisSessionStore) Destroy(id string) error {
 	ctx := context.Background()
 	return s.client.Del(ctx, "session:"+id).Err()
 }
 
-// gc (garbage collection) removes expired sessions
 func (s *RedisSessionStore) Gc(idleExpiration, absoluteExpiration time.Duration) error {
 	ctx := context.Background()
 	iter := s.client.Scan(ctx, 0, "session:*", 0).Iterator()
@@ -83,7 +78,6 @@ func (s *RedisSessionStore) Gc(idleExpiration, absoluteExpiration time.Duration)
 	return nil
 }
 
-// Optional: Close the Redis client when done
 func (s *RedisSessionStore) Close() error {
 	return s.client.Close()
 }

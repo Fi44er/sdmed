@@ -154,10 +154,6 @@ func GetCreateTestCases() []CreateTestCase {
 				m.RepoMock.EXPECT().
 					GetByName(m.Ctx, "Existing Category").
 					Return(existingCategory, nil)
-
-				m.RepoMock.EXPECT().
-					Delete(m.Ctx, "test-category-456").
-					Return(nil)
 			},
 			ExpectedError: product_constant.ErrCategoryAlreadyExists,
 		},
@@ -188,10 +184,6 @@ func GetCreateTestCases() []CreateTestCase {
 				m.RepoMock.EXPECT().
 					Create(m.Ctx, gomock.Any()).
 					Return(errors.New("database error"))
-
-				m.RepoMock.EXPECT().
-					Delete(m.Ctx, "test-category-123").
-					Return(nil)
 			},
 			ExpectedError: errors.New("database error"),
 		},
@@ -241,10 +233,6 @@ func GetCreateTestCases() []CreateTestCase {
 				m.FileMock.EXPECT().
 					MakeFilesPermanent(m.Ctx, []string{"image1.jpg", "image2.png"}, "test-category-123", "category").
 					Return(errors.New("failed to save files"))
-
-				m.RepoMock.EXPECT().
-					Delete(m.Ctx, "test-category-123").
-					Return(nil)
 			},
 			ExpectedError: errors.New("failed to save files"),
 		},

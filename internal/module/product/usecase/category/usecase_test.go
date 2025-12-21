@@ -159,3 +159,112 @@ func (s *CategoryUsecaseTestSuite) TestGetAll() {
 		})
 	}
 }
+
+func (s *CategoryUsecaseTestSuite) TestUpdate() {
+	tests := category_testcases.GetUpdateTestCases()
+
+	for _, tc := range tests {
+		s.T().Run(tc.Name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repoMock := mock.NewMockICategoryRepository(ctrl)
+			fileMock := mock.NewMockIFileUsecaseAdapter(ctrl)
+			characteristicMock := mock.NewMockICharacteristicUsecase(ctrl)
+			uowMock := uow_mock.NewMockUow(ctrl)
+
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, characteristicMock, uowMock)
+
+			mockStruct := &category_testcases.MockUpdate{
+				Ctrl:               ctrl,
+				Ctx:                s.ctx,
+				RepoMock:           repoMock,
+				FileMock:           fileMock,
+				CharacteristicMock: characteristicMock,
+				UowMock:            uowMock,
+				T:                  t,
+			}
+
+			tc.SetupMocks(mockStruct)
+			err := usecase.Update(s.ctx, tc.InputCategory)
+
+			if tc.ExpectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.ExpectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func (s *CategoryUsecaseTestSuite) TestDelete() {
+	tests := category_testcases.GetDeleteTestCases()
+
+	for _, tc := range tests {
+		s.T().Run(tc.Name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repoMock := mock.NewMockICategoryRepository(ctrl)
+			fileMock := mock.NewMockIFileUsecaseAdapter(ctrl)
+			uowMock := uow_mock.NewMockUow(ctrl)
+
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, nil, uowMock)
+
+			mockStruct := &category_testcases.MockDelete{
+				Ctrl:     ctrl,
+				Ctx:      s.ctx,
+				RepoMock: repoMock,
+				FileMock: fileMock,
+				UowMock:  uowMock,
+				T:        t,
+			}
+
+			tc.SetupMocks(mockStruct)
+			err := usecase.Delete(s.ctx, tc.InputID)
+
+			if tc.ExpectedError != nil {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tc.ExpectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func (s *CategoryUsecaseTestSuite) TestGetBySlug() {
+	tests := category_testcases.GetGetBySlugTestCases()
+
+	for _, tc := range tests {
+		s.T().Run(tc.Name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repoMock := mock.NewMockICategoryRepository(ctrl)
+			fileMock := mock.NewMockIFileUsecaseAdapter(ctrl)
+
+			usecase := category_usecase.NewCategoryUsecase(s.logger, repoMock, fileMock, nil, s.uowMock)
+
+			mockStruct := &category_testcases.MockGetBySlug{
+				Ctrl:     ctrl,
+				Ctx:      s.ctx,
+				RepoMock: repoMock,
+				FileMock: fileMock,
+				T:        t,
+			}
+
+			tc.SetupMocks(mockStruct)
+			result, err := usecase.GetBySlug(s.ctx, tc.InputSlug)
+
+			if tc.ExpectedError != nil {
+				assert.Error(t, err)
+				assert.Equal(t, tc.ExpectedError, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tc.ExpectedCategory, result)
+			}
+		})
+	}
+}

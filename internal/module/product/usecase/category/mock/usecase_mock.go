@@ -131,10 +131,10 @@ func (m *MockICategoryRepository) EXPECT() *MockICategoryRepositoryMockRecorder 
 }
 
 // Count mocks base method.
-func (m *MockICategoryRepository) Count(ctx context.Context) (int, error) {
+func (m *MockICategoryRepository) Count(ctx context.Context) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Count", ctx)
-	ret0, _ := ret[0].(int)
+	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -216,6 +216,21 @@ func (m *MockICategoryRepository) GetByName(ctx context.Context, name string) (*
 func (mr *MockICategoryRepositoryMockRecorder) GetByName(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockICategoryRepository)(nil).GetByName), ctx, name)
+}
+
+// GetBySlug mocks base method.
+func (m *MockICategoryRepository) GetBySlug(ctx context.Context, slug string) (*product_entity.Category, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBySlug", ctx, slug)
+	ret0, _ := ret[0].(*product_entity.Category)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBySlug indicates an expected call of GetBySlug.
+func (mr *MockICategoryRepositoryMockRecorder) GetBySlug(ctx, slug interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBySlug", reflect.TypeOf((*MockICategoryRepository)(nil).GetBySlug), ctx, slug)
 }
 
 // Update mocks base method.

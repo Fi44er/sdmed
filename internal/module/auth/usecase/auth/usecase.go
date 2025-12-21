@@ -79,9 +79,14 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth
 		return nil, err
 	}
 
+	refreshHash, err := auth_utils.HashString(refreshToken)
+	if err != nil {
+		return nil, err
+	}
+
 	userSession := &auth_entity.UserSession{
-		UserID:       existingUser.ID,
-		RefreshToken: refreshToken,
+		UserID:      existingUser.ID,
+		RefreshHash: refreshHash,
 	}
 
 	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {
@@ -192,23 +197,47 @@ func (u *AuthUsecase) SendCode(ctx context.Context, sendCode *auth_entity.Code) 
 	return nil
 }
 
-func (u *AuthUsecase) RefreshAccessToken(ctx context.Context) (string, error) {
+func (u *AuthUsecase) RefreshTokens(ctx context.Context, inputRefreshToken string) (*auth_entity.Tokens, error) {
 	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	_, err = u.tokenService.ValidateToken(sessionInfo.RefreshToken, u.config.RefreshTokenPublicKey)
+	detail, err := u.tokenService.ValidateToken(inputRefreshToken, u.config.RefreshTokenPublicKey)
 	if err != nil {
-		return "", auth_constant.ErrForbidden
+		return nil, auth_constant.ErrForbidden
 	}
 
-	user, err := u.userUsecase.GetByID(ctx, sessionInfo.UserID)
-	if err != nil || user == nil {
-		return "", err
+	refreshHash, err := auth_utils.HashString(inputRefreshToken)
+	if err != nil {
+		return nil, err
 	}
 
-	return u.createToken(user.ID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
+	if sessionInfo.RefreshHash != refreshHash {
+		return nil, auth_constant.ErrForbidden
+	}
+
+	accessToken, err := u.createToken(detail.UserID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken, err := u.createToken(detail.UserID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshHash, err = auth_utils.HashString(refreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	sessionInfo.RefreshHash = refreshHash
+	if err := u.sessionRepository.PutSessionInfo(ctx, sessionInfo); err != nil {
+		return nil, err
+	}
+
+	return &auth_entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
 func (u *AuthUsecase) SignOut(ctx context.Context) error {

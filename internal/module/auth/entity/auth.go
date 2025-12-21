@@ -13,8 +13,8 @@ type Tokens struct {
 }
 
 type UserSession struct {
-	UserID       string
-	RefreshToken string
+	UserID      string
+	RefreshHash string
 }
 
 type Code struct {

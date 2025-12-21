@@ -36,11 +36,12 @@ func (m *MockUow) EXPECT() *MockUowMockRecorder {
 }
 
 // Begin mocks base method.
-func (m *MockUow) Begin(ctx context.Context) error {
+func (m *MockUow) Begin(ctx context.Context) (context.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Begin", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(context.Context)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Begin indicates an expected call of Begin.
@@ -50,17 +51,17 @@ func (mr *MockUowMockRecorder) Begin(ctx interface{}) *gomock.Call {
 }
 
 // Commit mocks base method.
-func (m *MockUow) Commit() error {
+func (m *MockUow) Commit(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Commit")
+	ret := m.ctrl.Call(m, "Commit", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Commit indicates an expected call of Commit.
-func (mr *MockUowMockRecorder) Commit() *gomock.Call {
+func (mr *MockUowMockRecorder) Commit(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockUow)(nil).Commit))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockUow)(nil).Commit), ctx)
 }
 
 // Do mocks base method.
@@ -105,15 +106,15 @@ func (mr *MockUowMockRecorder) RegisterRepository(name, factory interface{}) *go
 }
 
 // Rollback mocks base method.
-func (m *MockUow) Rollback() error {
+func (m *MockUow) Rollback(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Rollback")
+	ret := m.ctrl.Call(m, "Rollback", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Rollback indicates an expected call of Rollback.
-func (mr *MockUowMockRecorder) Rollback() *gomock.Call {
+func (mr *MockUowMockRecorder) Rollback(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockUow)(nil).Rollback))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockUow)(nil).Rollback), ctx)
 }

@@ -79,8 +79,13 @@ func (u *CategoryUsecase) Update(ctx context.Context, category *product_entity.C
 
 		existCategory.Images = files
 
-		deletedImg, addedImg := utils.FindDifferences(existCategory.Images, category.Images, func(f product_entity.File) (string, string) { return f.Name, f.ID })
-		deleteCharacteristic, addCharacteristic := utils.FindDifferences(existCategory.Characteristics, category.Characteristics, func(c product_entity.Characteristic) (string, string) { return c.ID, c.Name })
+		deletedImg, addedImg := utils.FindDifferences(existCategory.Images, category.Images, func(f product_entity.File) (string, string) {
+			return f.ID, f.Name
+		})
+
+		deleteCharacteristic, addCharacteristic := utils.FindDifferences(existCategory.Characteristics, category.Characteristics, func(c product_entity.Characteristic) (string, string) {
+			return c.ID, c.Name
+		})
 
 		for _, characteristcID := range deleteCharacteristic {
 			if err := u.characteristicUsecase.Delete(ctx, characteristcID); err != nil {

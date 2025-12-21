@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/Fi44er/sdmed/internal/config"
-	"github.com/Fi44er/sdmed/internal/module/auth/dto"
-	"github.com/Fi44er/sdmed/internal/module/auth/entity"
+	auth_dto "github.com/Fi44er/sdmed/internal/module/auth/dto"
+	auth_entity "github.com/Fi44er/sdmed/internal/module/auth/entity"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	_ "github.com/Fi44er/sdmed/pkg/response"
 	"github.com/Fi44er/sdmed/pkg/session"
@@ -20,7 +20,7 @@ type IAuthUsecase interface {
 	VerifyCode(ctx context.Context, verifyCode *auth_entity.Code) error
 	SignUp(ctx context.Context, user *auth_entity.User) error
 	SendCode(ctx context.Context, sendCode *auth_entity.Code) error
-	RefreshAccessToken(ctx context.Context) (string, error)
+	RefreshTokens(ctx context.Context, inputRefreshToken string) (*auth_entity.Tokens, error)
 	SignOut(ctx context.Context) error
 	ForgotPassword(ctx context.Context, code *auth_entity.Code) error
 	ValidateResetPassword(ctx context.Context, token string) (string, error)
@@ -96,7 +96,7 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 
 	context := h.getCtxWithSession(ctx)
 
-	accessToken, err := h.usecase.SignIn(context, entity)
+	tokens, err := h.usecase.SignIn(context, entity)
 	if err != nil {
 		h.logger.Errorf("error while create user: %s", err)
 		return err
@@ -104,7 +104,7 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 
 	ctx.Cookie(&fiber.Cookie{
 		Name:     "access_token",
-		Value:    accessToken.AccessToken,
+		Value:    tokens.AccessToken,
 		Path:     "/",
 		MaxAge:   h.config.AccessTokenMaxAge * 60,
 		Secure:   false,
@@ -118,6 +118,15 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 		MaxAge:   h.config.AccessTokenMaxAge * 60,
 		Secure:   false,
 		HTTPOnly: false,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshToken,
+		Path:     "/api/auth/refresh-token",
+		MaxAge:   h.config.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
 	})
 
 	return ctx.Status(200).JSON(fiber.Map{
@@ -196,15 +205,22 @@ func (h *AuthHandler) SignOut(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/refresh-token [post]
 func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
+	refreshToken := ctx.Cookies("refresh_token")
+	if refreshToken == "" {
+		return fiber.ErrUnauthorized
+	}
+
 	context := h.getCtxWithSession(ctx)
-	accessToken, err := h.usecase.RefreshAccessToken(context)
+	tokens, err := h.usecase.RefreshTokens(context, refreshToken)
 	if err != nil {
 		return err
 	}
 
+	h.logger.Debugf("Tokens: %v", tokens)
+
 	ctx.Cookie(&fiber.Cookie{
 		Name:     "access_token",
-		Value:    accessToken,
+		Value:    tokens.AccessToken,
 		Path:     "/",
 		MaxAge:   h.config.AccessTokenMaxAge * 60,
 		Secure:   false,
@@ -218,6 +234,15 @@ func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
 		MaxAge:   h.config.AccessTokenMaxAge * 60,
 		Secure:   false,
 		HTTPOnly: false,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshToken,
+		Path:     "/api/auth/refresh-token",
+		MaxAge:   h.config.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
 	})
 
 	return ctx.Status(200).JSON(fiber.Map{

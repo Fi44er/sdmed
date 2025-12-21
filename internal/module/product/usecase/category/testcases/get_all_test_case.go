@@ -23,7 +23,7 @@ type GetAllTestCase struct {
 	InputOffset, InputLimit int
 	SetupMocks              func(m *MockGetAll)
 	ExpectedError           error
-	ExpectedCategories      []product_entity.Category // ИСПРАВЛЕНО: ExpectedCategories
+	ExpectedCategories      []product_entity.Category
 }
 
 func GetGetAllTestCases() []GetAllTestCase {
@@ -56,10 +56,13 @@ func GetGetAllTestCases() []GetAllTestCase {
 			InputLimit:  10,
 			SetupMocks: func(m *MockGetAll) {
 				categories := []product_entity.Category{category1, category2}
+
+				// 1. Ожидаем получение списка категорий
 				m.RepoMock.EXPECT().
 					GetAll(m.Ctx, 0, 10).
 					Return(categories, nil)
 
+				// 2. Ожидаем получение файлов
 				ownerIDs := []string{"test-category-123", "test-category-456"}
 				filesByOwner := map[string][]product_entity.File{
 					"test-category-123": filesCategory1,
@@ -68,6 +71,11 @@ func GetGetAllTestCases() []GetAllTestCase {
 				m.FileMock.EXPECT().
 					GetByOwners(m.Ctx, ownerIDs, "category").
 					Return(filesByOwner, nil)
+
+				// 3. ИСПРАВЛЕНО: Добавлено ожидание Count, так как usecase вызывает его в конце
+				m.RepoMock.EXPECT().
+					Count(m.Ctx).
+					Return(int64(2), nil)
 			},
 			ExpectedError: nil,
 			ExpectedCategories: []product_entity.Category{
@@ -92,6 +100,8 @@ func GetGetAllTestCases() []GetAllTestCase {
 				m.RepoMock.EXPECT().
 					GetAll(m.Ctx, 0, 10).
 					Return(categories, nil)
+
+				// Здесь Count НЕ ожидается, так как usecase делает return, если len == 0
 			},
 			ExpectedError:      nil,
 			ExpectedCategories: []product_entity.Category{},
@@ -104,6 +114,8 @@ func GetGetAllTestCases() []GetAllTestCase {
 				m.RepoMock.EXPECT().
 					GetAll(m.Ctx, 0, 10).
 					Return(nil, errors.New("failed to get categories"))
+
+				// Здесь Count НЕ ожидается, так как usecase возвращает ошибку сразу
 			},
 			ExpectedError:      errors.New("failed to get categories"),
 			ExpectedCategories: nil,
@@ -122,8 +134,13 @@ func GetGetAllTestCases() []GetAllTestCase {
 				m.FileMock.EXPECT().
 					GetByOwners(m.Ctx, ownerIDs, "category").
 					Return(nil, errors.New("failed to get files"))
+
+				// ИСПРАВЛЕНО: Даже если файлы упали, usecase логирует Warn и продолжает путь до Count
+				m.RepoMock.EXPECT().
+					Count(m.Ctx).
+					Return(int64(2), nil)
 			},
-			ExpectedError: nil,
+			ExpectedError: nil, // Так как usecase поглощает ошибку файлов через Warn
 			ExpectedCategories: []product_entity.Category{
 				{
 					ID:     "test-category-123",

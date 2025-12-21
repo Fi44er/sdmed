@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Fi44er/sdmed/internal/module/auth/entity"
-	"github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
+	auth_entity "github.com/Fi44er/sdmed/internal/module/auth/entity"
+	auth_constant "github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/session"
 	"github.com/go-viper/mapstructure/v2"
@@ -66,3 +66,5 @@ func (r *SessionRepository) DeleteSessionInfo(ctx context.Context) error {
 	session.Delete(sessionInfoKey)
 	return nil
 }
+
+// ===================================
