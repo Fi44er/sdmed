@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	ExternalHost        string        `mapstructure:"EXTERNAL_HOST"`
+	CORSAllowedOrigins  string        `mapstructure:"CORS_ALLOWED_ORIGINS"`
 	HTTPHost            string        `mapstructure:"HTTP_HOST"`
 	HTTPPort            string        `mapstructure:"HTTP_PORT"`
 	PostgresUrl         string        `mapstructure:"POSTGRES_URL"`
@@ -19,8 +20,6 @@ type Config struct {
 	FileDir             string        `mapstructure:"FILE_DIR"`
 	ApiUrl              string        `mapstructure:"API_URL"`
 	FileLink            string        `mapstructure:"FILE_LINK"`
-
-	CorsOrigin string `mapstructure:"CORS_ORIGIN"`
 
 	PayKeeperUser   string `mapstructure:"PAY_KEEPER_USER"`
 	PayKeeperPass   string `mapstructure:"PAY_KEEPER_PASS"`
@@ -55,8 +54,6 @@ func validateConfig(config *Config) error {
 		"REDIS_URL":              config.RedisUrl,
 		"VERIFY_CODE_EXPIRED_IN": config.VerifyCodeExpiredIn,
 		"FILE_DIR":               config.FileDir,
-
-		"CORS_ORIGIN": config.CorsOrigin,
 
 		"PAY_KEEPER_USER":   config.PayKeeperUser,
 		"PAY_KEEPER_PASS":   config.PayKeeperPass,

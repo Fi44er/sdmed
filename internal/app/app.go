@@ -67,9 +67,20 @@ func NewApp() *App {
 }
 
 func (app *App) Run() error {
-	allowOriginals := fmt.Sprintf("http://127.0.0.1:8080, http://localhost:5173, http://localhost:8080, %s", app.config.ExternalHost)
+	if err := app.initConfig(); err != nil {
+		return err
+	}
+	if err := app.initLogger(); err != nil {
+		return err
+	}
+
+	origins := app.config.CORSAllowedOrigins
+	if origins == "" {
+		origins = "http://localhost:5173,http://localhost:8080"
+	}
+
 	app.app.Use(cors.New(cors.Config{
-		AllowOrigins:     allowOriginals,
+		AllowOrigins:     origins,
 		AllowCredentials: true,
 	}))
 
@@ -92,8 +103,8 @@ func (app *App) Run() error {
 
 func (app *App) initDeps() error {
 	inits := []func() error{
-		app.initConfig,
-		app.initLogger,
+		// app.initConfig,
+		// app.initLogger,
 		app.initDb,
 		app.initRedis,
 		app.initSessionManager,
