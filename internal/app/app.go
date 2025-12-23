@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Fi44er/sdmed/docs"
 	"github.com/Fi44er/sdmed/internal/config"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/middleware"
@@ -66,8 +67,9 @@ func NewApp() *App {
 }
 
 func (app *App) Run() error {
+	allowOriginals := fmt.Sprintf("http://127.0.0.1:8080, http://localhost:5173, http://localhost:8080, %s", app.config.ExternalHost)
 	app.app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://127.0.0.1:8080, http://localhost:5173, http://localhost:8080",
+		AllowOrigins:     allowOriginals,
 		AllowCredentials: true,
 	}))
 
@@ -309,7 +311,7 @@ func (app *App) initMetrics() error {
 }
 
 func (app *App) initRouter() error {
-
+	docs.SwaggerInfo.Host = app.config.ExternalHost
 	app.app.Get("/swagger/*", swagger.HandlerDefault)
 
 	api := app.app.Group("/api")

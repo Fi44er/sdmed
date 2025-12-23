@@ -10,6 +10,7 @@ import (
 )
 
 type Config struct {
+	ExternalHost        string        `mapstructure:"EXTERNAL_HOST"`
 	HTTPHost            string        `mapstructure:"HTTP_HOST"`
 	HTTPPort            string        `mapstructure:"HTTP_PORT"`
 	PostgresUrl         string        `mapstructure:"POSTGRES_URL"`
