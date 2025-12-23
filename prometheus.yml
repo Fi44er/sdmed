@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "fiber-api"
+    static_configs:
+      # 'my-app' — это имя сервиса из docker-compose.yml
+      - targets: ["backend:8080"]

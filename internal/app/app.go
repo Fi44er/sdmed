@@ -19,11 +19,15 @@ import (
 	"github.com/Fi44er/sdmed/pkg/session"
 	sessionadapter "github.com/Fi44er/sdmed/pkg/session/adapters"
 	sessionstore "github.com/Fi44er/sdmed/pkg/session/store"
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/redis/go-redis/v9"
+
 	"gorm.io/gorm"
 )
 
@@ -94,6 +98,7 @@ func (app *App) initDeps() error {
 		app.initValidator,
 		app.initProcessManager,
 		app.initModuleProvider,
+		app.initMetrics,
 		app.initRouter,
 	}
 	for _, init := range inits {
@@ -289,8 +294,24 @@ func (app *App) registerBackgroundProcesses() error {
 	return nil
 }
 
+func (app *App) initMetrics() error {
+	reg := prometheus.NewRegistry()
+
+	reg.MustRegister(collectors.NewGoCollector())
+	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+
+	p := fiberprometheus.NewWithRegistry(reg, "my-api-service", "", "", nil)
+
+	app.app.Use(p.Middleware)
+	p.RegisterAt(app.app, "/metrics")
+
+	return nil
+}
+
 func (app *App) initRouter() error {
+
 	app.app.Get("/swagger/*", swagger.HandlerDefault)
+
 	api := app.app.Group("/api")
 
 	app.moduleProvider.userModule.InitDelivery(api)

@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -16,34 +16,66 @@ services:
       - app-network
 
   backend:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: backend
     ports:
       - "8080:8080"
+    env_file:
+      - ../.env
     volumes:
       - ./image:/app/image
-      # - ./product_index:/app/product_index
+      - ../.env:/app/.env
       - ./pkg/mailer/template:/app/template
-    # depends_on:
-      # - postgres
-      # - redis
+    depends_on:
+      - postgres
+      - redis
     networks:
-      - app-network  
+      - app-network
 
   redis:
     image: redis:alpine
     container_name: redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ../prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
     networks:
       - app-network
 
 volumes:
   postgres_data:
   redis_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
-  app-network:  
+  app-network:
     driver: bridge
