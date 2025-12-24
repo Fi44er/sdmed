@@ -8,16 +8,19 @@ import (
 	constantAuth "github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
 	userEntity "github.com/Fi44er/sdmed/internal/module/user/entity"
 	constantUser "github.com/Fi44er/sdmed/internal/module/user/pkg/constant"
+	role_usecase "github.com/Fi44er/sdmed/internal/module/user/usecase/role"
 	userUsecase "github.com/Fi44er/sdmed/internal/module/user/usecase/user"
 )
 
 type UserUsecaseAdapter struct {
 	userUsecase *userUsecase.UserUsecase
+	roleUsecase role_usecase.IRoleUsecase
 }
 
-func NewUserUsecaseAdapter(userUsecase *userUsecase.UserUsecase) *UserUsecaseAdapter {
+func NewUserUsecaseAdapter(userUsecase *userUsecase.UserUsecase, roleUsecase role_usecase.IRoleUsecase) *UserUsecaseAdapter {
 	return &UserUsecaseAdapter{
 		userUsecase: userUsecase,
+		roleUsecase: roleUsecase,
 	}
 }
 
@@ -55,6 +58,19 @@ func (a *UserUsecaseAdapter) Update(ctx context.Context, user *authEntity.User) 
 	return a.userUsecase.Update(ctx, externalUser)
 }
 
+func (a *UserUsecaseAdapter) GetAllRoles(ctx context.Context) ([]authEntity.Role, error) {
+	roles, err := a.roleUsecase.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	rolesEntities := make([]authEntity.Role, len(roles))
+	for i, role := range roles {
+		rolesEntities[i] = *toAuthRole(&role)
+	}
+	return rolesEntities, nil
+}
+
 func toAuthUser(user *userEntity.User) *authEntity.User {
 	if user == nil {
 		return nil
@@ -64,6 +80,32 @@ func toAuthUser(user *userEntity.User) *authEntity.User {
 		Email:       user.Email,
 		Password:    user.PasswordHash,
 		PhoneNumber: user.PhoneNumber,
+	}
+}
+
+func toAuthRole(role *userEntity.Role) *authEntity.Role {
+	if role == nil {
+		return nil
+	}
+	return &authEntity.Role{
+		ID:          role.ID,
+		Name:        role.Name,
+		Permissions: toAuthPermissions(role.Permissions),
+	}
+}
+
+func toAuthPermissions(permissions []userEntity.Permission) []authEntity.Permission {
+	authPermissions := make([]authEntity.Permission, len(permissions))
+	for i, permission := range permissions {
+		authPermissions[i] = toAuthPermission(permission)
+	}
+	return authPermissions
+}
+
+func toAuthPermission(permission userEntity.Permission) authEntity.Permission {
+	return authEntity.Permission{
+		ID:   permission.ID,
+		Name: permission.Name,
 	}
 }
 

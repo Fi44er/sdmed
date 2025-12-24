@@ -66,5 +66,3 @@ func (r *SessionRepository) DeleteSessionInfo(ctx context.Context) error {
 	session.Delete(sessionInfoKey)
 	return nil
 }
-
-// ===================================

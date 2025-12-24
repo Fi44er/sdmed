@@ -3,10 +3,11 @@ package auth_module
 import (
 	"github.com/Fi44er/sdmed/internal/config"
 	auth_handler "github.com/Fi44er/sdmed/internal/module/auth/delivery/http"
-	"github.com/Fi44er/sdmed/internal/module/auth/infrastucture/adapters"
+	auth_adapters "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/adapters"
 	repository "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/repository/session"
 	auth_usecase "github.com/Fi44er/sdmed/internal/module/auth/usecase/auth"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
+	role_usecase "github.com/Fi44er/sdmed/internal/module/user/usecase/role"
 	user_usecase "github.com/Fi44er/sdmed/internal/module/user/usecase/user"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/redis"
@@ -20,6 +21,7 @@ type AuthModule struct {
 	authUsecase        *auth_usecase.AuthUsecase
 	authHandler        *auth_handler.AuthHandler
 	userUsecase        *user_usecase.UserUsecase
+	roleUsecase        role_usecase.IRoleUsecase
 	notificationServce *service.NotificationService
 	sessionRepository  *repository.SessionRepository
 	tokenService       *auth_adapters.TokenService
@@ -38,6 +40,7 @@ func NewAuthModule(
 	redisManager redis.IRedisManager,
 	config *config.Config,
 	userUsecase *user_usecase.UserUsecase,
+	roleUsecase role_usecase.IRoleUsecase,
 	notificationService *service.NotificationService,
 ) *AuthModule {
 	return &AuthModule{
@@ -47,12 +50,13 @@ func NewAuthModule(
 		redisManager:       redisManager,
 		config:             config,
 		userUsecase:        userUsecase,
+		roleUsecase:        roleUsecase,
 		notificationServce: notificationService,
 	}
 }
 
 func (m *AuthModule) Init() {
-	m.authauth_adapters = auth_adapters.NewUserUsecaseAdapter(m.userUsecase)
+	m.authauth_adapters = auth_adapters.NewUserUsecaseAdapter(m.userUsecase, m.roleUsecase)
 	m.sessionRepository = repository.NewSessionRepository(m.logger)
 	m.tokenService = auth_adapters.NewTokenService()
 	m.authUsecase = auth_usecase.NewAuthUsecase(
