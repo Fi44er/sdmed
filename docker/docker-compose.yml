@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
-      POSTGRES_DB: sdmedik
+      POSTGRES_DB: sdmed
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:

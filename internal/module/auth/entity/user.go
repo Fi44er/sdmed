@@ -6,6 +6,7 @@ type User struct {
 	Password    string
 	PhoneNumber string
 	FIO         string
+	Roles       []Role
 }
 
 type Role struct {

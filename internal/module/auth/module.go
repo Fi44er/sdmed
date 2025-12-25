@@ -1,10 +1,15 @@
 package auth_module
 
 import (
+	"context"
+	"log"
+
 	"github.com/Fi44er/sdmed/internal/config"
+	"github.com/Fi44er/sdmed/internal/middlewares"
 	auth_handler "github.com/Fi44er/sdmed/internal/module/auth/delivery/http"
 	auth_adapters "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/adapters"
 	repository "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/repository/session"
+	accessmanager_service "github.com/Fi44er/sdmed/internal/module/auth/usecase/access_manager"
 	auth_usecase "github.com/Fi44er/sdmed/internal/module/auth/usecase/auth"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
 	role_usecase "github.com/Fi44er/sdmed/internal/module/user/usecase/role"
@@ -25,6 +30,8 @@ type AuthModule struct {
 	notificationServce *service.NotificationService
 	sessionRepository  *repository.SessionRepository
 	tokenService       *auth_adapters.TokenService
+
+	accessManager *accessmanager_service.Manager
 
 	logger       *logger.Logger
 	validator    *validator.Validate
@@ -68,9 +75,19 @@ func (m *AuthModule) Init() {
 		m.sessionRepository,
 		m.tokenService,
 	)
+
 	m.authHandler = auth_handler.NewAuthHandler(m.authUsecase, m.logger, m.validator, m.config)
+	m.accessManager, _ = accessmanager_service.NewManager(m.db, m.authauth_adapters)
+
+	if err := m.accessManager.SyncRolePermissions(context.Background()); err != nil {
+		log.Fatal("Failed to sync policies:", err)
+	}
 }
 
 func (m *AuthModule) InitDelivery(router fiber.Router) {
 	m.authHandler.RegisterRoutes(router)
+}
+
+func (m *AuthModule) InitMiddlewares(app *fiber.App) {
+	app.Use(middlewares.InjectManager(m.accessManager))
 }

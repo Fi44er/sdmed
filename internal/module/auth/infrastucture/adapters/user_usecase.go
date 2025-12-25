@@ -75,11 +75,18 @@ func toAuthUser(user *userEntity.User) *authEntity.User {
 	if user == nil {
 		return nil
 	}
+
+	roles := make([]authEntity.Role, len(user.Roles))
+	for i, role := range user.Roles {
+		roles[i] = *toAuthRole(&role)
+	}
+
 	return &authEntity.User{
 		ID:          user.ID,
 		Email:       user.Email,
 		Password:    user.PasswordHash,
 		PhoneNumber: user.PhoneNumber,
+		Roles:       roles,
 	}
 }
 

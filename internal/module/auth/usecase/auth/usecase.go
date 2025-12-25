@@ -84,9 +84,15 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth
 		return nil, err
 	}
 
+	strinRoles := make([]string, 0)
+	for _, role := range existingUser.Roles {
+		strinRoles = append(strinRoles, role.Name)
+	}
+
 	userSession := &auth_entity.UserSession{
 		UserID:      existingUser.ID,
 		RefreshHash: refreshHash,
+		UserRoles:   strinRoles,
 	}
 
 	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {

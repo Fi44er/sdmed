@@ -11,6 +11,7 @@ import (
 
 	"github.com/Fi44er/sdmed/docs"
 	"github.com/Fi44er/sdmed/internal/config"
+	"github.com/Fi44er/sdmed/internal/middlewares"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/middleware"
 	"github.com/Fi44er/sdmed/pkg/postgres"
@@ -324,6 +325,9 @@ func (app *App) initMetrics() error {
 func (app *App) initRouter() error {
 	docs.SwaggerInfo.Host = app.config.ExternalHost
 	app.app.Get("/swagger/*", swagger.HandlerDefault)
+
+	app.app.Use(middlewares.Guest())
+	app.moduleProvider.authModule.InitMiddlewares(app.app)
 
 	api := app.app.Group("/api")
 
