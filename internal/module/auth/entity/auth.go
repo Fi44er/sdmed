@@ -14,6 +14,7 @@ type Tokens struct {
 
 type UserSession struct {
 	UserID      string
+	UserRoles   []string
 	RefreshHash string
 }
 

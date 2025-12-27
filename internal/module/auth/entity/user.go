@@ -6,4 +6,16 @@ type User struct {
 	Password    string
 	PhoneNumber string
 	FIO         string
+	Roles       []Role
+}
+
+type Role struct {
+	ID          string
+	Name        string
+	Permissions []Permission
+}
+
+type Permission struct {
+	ID   string
+	Name string
 }

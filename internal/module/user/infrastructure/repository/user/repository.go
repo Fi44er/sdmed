@@ -3,8 +3,8 @@ package user_repository
 import (
 	"context"
 
-	"github.com/Fi44er/sdmed/internal/module/user/entity"
-	"github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
+	user_entity "github.com/Fi44er/sdmed/internal/module/user/entity"
+	user_model "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
 )
@@ -75,7 +75,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*user_entity.U
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user_entity.User, error) {
 	r.logger.Infof("Getting user by email: %s", email)
 	var userModel user_model.User
-	if err := r.db.WithContext(ctx).First(&userModel, "email = ?", email).Error; err != nil {
+	if err := r.db.WithContext(ctx).Preload("Roles").First(&userModel, "email = ?", email).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			r.logger.Warnf("User not found: %s", email)
 			return nil, nil

@@ -11,6 +11,7 @@ import (
 
 	"github.com/Fi44er/sdmed/docs"
 	"github.com/Fi44er/sdmed/internal/config"
+	"github.com/Fi44er/sdmed/internal/middlewares"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/Fi44er/sdmed/pkg/middleware"
 	"github.com/Fi44er/sdmed/pkg/postgres"
@@ -74,19 +75,6 @@ func (app *App) Run() error {
 		return err
 	}
 
-	origins := app.config.CORSAllowedOrigins
-	if origins == "" {
-		origins = "http://localhost:5173,http://localhost:8080"
-	}
-
-	app.app.Use(cors.New(cors.Config{
-		AllowOrigins:     origins,
-		AllowCredentials: true,
-	}))
-
-	app.app.Use(logger.LoggerMiddleware())
-	app.app.Use(middleware.ErrHandler)
-
 	err := app.initDeps()
 	if err != nil {
 		return err
@@ -101,6 +89,26 @@ func (app *App) Run() error {
 	return app.runHttpServerWithShutdown()
 }
 
+func (app *App) initMiddlewares() error {
+	origins := app.config.CORSAllowedOrigins
+	if origins == "" {
+		origins = "http://localhost:5173,http://localhost:8080"
+	}
+
+	app.app.Use(cors.New(cors.Config{
+		AllowOrigins:     origins,
+		AllowCredentials: true,
+	}))
+
+	app.app.Use(logger.LoggerMiddleware())
+	app.app.Use(middleware.ErrHandler)
+
+	app.app.Use(middlewares.Guest())
+	app.app.Use(middlewares.InjectManager(app.moduleProvider.authModule.GetAccessManager()))
+
+	return nil
+}
+
 func (app *App) initDeps() error {
 	inits := []func() error{
 		// app.initConfig,
@@ -112,6 +120,8 @@ func (app *App) initDeps() error {
 		app.initProcessManager,
 		app.initModuleProvider,
 		app.initMetrics,
+
+		app.initMiddlewares,
 		app.initRouter,
 	}
 	for _, init := range inits {
