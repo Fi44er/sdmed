@@ -38,10 +38,9 @@ func Guest() fiber.Handler {
 			if err := mapstructure.Decode(data, &newData); err != nil {
 				return fmt.Errorf("failed to encode session data for guest user: %w", err)
 			}
-			sess.Put("session_info", newData) // Сохраняем map[string]any
+			sess.Put("session_info", newData)
 		}
 
-		fmt.Printf("Session GUEST: %v \n", sess.Get("session_info"))
 		return ctx.Next()
 	}
 }
@@ -69,8 +68,6 @@ func Authorize(obj, act string) fiber.Handler {
 				"error": "Invalid session data",
 			})
 		}
-
-		fmt.Printf("PIDOR: %v\n", sessionData)
 
 		var userSession auth_entity.UserSession
 		if err := mapstructure.Decode(sessionData, &userSession); err != nil {

@@ -65,7 +65,6 @@ func (m *Manager) SyncRolePermissions(ctx context.Context) error {
 		for _, perm := range role.Permissions {
 			parts := strings.Split(perm.Name, ":")
 			if len(parts) == 2 {
-				// p, role_admin, news, create
 				_, _ = m.Enforcer.AddPolicy(role.Name, parts[0], parts[1])
 			}
 		}

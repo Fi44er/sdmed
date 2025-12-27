@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/Fi44er/sdmed/internal/config"
-	"github.com/Fi44er/sdmed/internal/middlewares"
 	auth_handler "github.com/Fi44er/sdmed/internal/module/auth/delivery/http"
 	auth_adapters "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/adapters"
 	repository "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/repository/session"
@@ -88,6 +87,6 @@ func (m *AuthModule) InitDelivery(router fiber.Router) {
 	m.authHandler.RegisterRoutes(router)
 }
 
-func (m *AuthModule) InitMiddlewares(app *fiber.App) {
-	app.Use(middlewares.InjectManager(m.accessManager))
+func (m *AuthModule) GetAccessManager() *accessmanager_service.Manager {
+	return m.accessManager
 }
