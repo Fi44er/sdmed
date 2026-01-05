@@ -56,6 +56,5 @@ type Attachment struct {
 	FileName string
 	FileSize int64
 	MimeType string
-	S3Key    string // Путь к файлу в хранилище (S3/Minio)
 	URL      string // Временная ссылка для фронтенда
 }

@@ -206,7 +206,7 @@ func (app *App) initSessionManager() error {
 		app.sessionManager = session.NewSessionManager(
 			sessionstore.NewRedisSessionStore(app.redisClient),
 			30*time.Minute,
-			1*time.Hour,
+			2*time.Hour,
 			12*time.Hour,
 			"session",
 		)

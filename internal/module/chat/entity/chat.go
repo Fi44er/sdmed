@@ -14,8 +14,8 @@ const (
 
 type Chat struct {
 	ID         string
-	ClientID   string // Ссылка на User.ID (клиент)
-	OperatorID string // Текущий ответственный оператор (может меняться)
+	ClientID   string  // Ссылка на User.ID (клиент)
+	OperatorID *string // Текущий ответственный оператор (может меняться)
 
 	Subject  string // Тема обращения (опционально)
 	Status   ChatStatus

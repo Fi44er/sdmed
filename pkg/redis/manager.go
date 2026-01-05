@@ -9,8 +9,8 @@ import (
 )
 
 type IRedisManager interface {
-	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
-	Get(ctx context.Context, key string, dest interface{}) error
+	Set(ctx context.Context, key string, value any, expiration time.Duration) error
+	Get(ctx context.Context, key string, dest any) error
 	Del(ctx context.Context, key string) error
 	Scan(ctx context.Context, cursor uint64, match string, count int64) *redis.ScanCmd
 }
@@ -25,7 +25,7 @@ func NewRedisManger(client *redis.Client) IRedisManager {
 	}
 }
 
-func (r *RedisManager) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
+func (r *RedisManager) Set(ctx context.Context, key string, value any, expiration time.Duration) error {
 	if expiration == 0 {
 		expiration = -1
 	}
@@ -38,7 +38,7 @@ func (r *RedisManager) Set(ctx context.Context, key string, value interface{}, e
 	return r.client.Set(ctx, key, string(jsonValue), expiration).Err()
 }
 
-func (r *RedisManager) Get(ctx context.Context, key string, dest interface{}) error {
+func (r *RedisManager) Get(ctx context.Context, key string, dest any) error {
 	val, err := r.client.Get(ctx, key).Result()
 	if err != nil {
 		return err
