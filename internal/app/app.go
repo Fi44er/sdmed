@@ -103,6 +103,7 @@ func (app *App) initMiddlewares() error {
 	app.app.Use(logger.LoggerMiddleware())
 	app.app.Use(middleware.ErrHandler)
 
+	app.app.Use(sessionadapter.FiberMiddleware(app.sessionManager))
 	app.app.Use(middlewares.Guest())
 	app.app.Use(middlewares.InjectManager(app.moduleProvider.authModule.GetAccessManager()))
 
@@ -211,7 +212,6 @@ func (app *App) initSessionManager() error {
 			"session",
 		)
 
-		app.app.Use(sessionadapter.FiberMiddleware(app.sessionManager))
 	}
 
 	return nil
