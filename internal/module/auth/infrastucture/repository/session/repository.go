@@ -25,7 +25,7 @@ const (
 	sessionInfoKey = "session_info"
 )
 
-func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*auth_entity.UserSession, error) {
+func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*auth_entity.ActiveSession, error) {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
 		r.logger.Error("session not found")
@@ -37,7 +37,7 @@ func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*auth_entity.Us
 		return nil, auth_constant.ErrSessionInfoNotFound
 	}
 
-	var userSession auth_entity.UserSession
+	var userSession auth_entity.ActiveSession
 	if err := mapstructure.Decode(sessionData, &userSession); err != nil {
 		return nil, fmt.Errorf("failed to decode session data: %v", err)
 	}
@@ -45,7 +45,7 @@ func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*auth_entity.Us
 	return &userSession, nil
 }
 
-func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *auth_entity.UserSession) error {
+func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *auth_entity.ActiveSession) error {
 	session, ok := ctx.Value("session").(session.Session)
 	if !ok {
 		r.logger.Error("session not found")

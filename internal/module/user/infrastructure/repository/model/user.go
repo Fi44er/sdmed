@@ -8,5 +8,6 @@ type User struct {
 	Surname      string `gorm:"type:varchar(255);"`
 	Patronymic   string `gorm:"type:varchar(255);"`
 	PhoneNumber  string `gorm:"type:varchar(255);"`
+	IsShadow     bool   `gorm:"default:false"`
 	Roles        []Role `gorm:"many2many:user_roles;"`
 }

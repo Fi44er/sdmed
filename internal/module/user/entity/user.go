@@ -17,6 +17,8 @@ type User struct {
 	PasswordHash string
 	PhoneNumber  string
 
+	IsShadow bool
+
 	Roles []Role
 }
 

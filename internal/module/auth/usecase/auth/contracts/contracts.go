@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Fi44er/sdmed/internal/module/auth/entity"
+	auth_entity "github.com/Fi44er/sdmed/internal/module/auth/entity"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
 )
 
@@ -27,8 +27,8 @@ type INotificationService interface {
 }
 
 type ISessionRepository interface {
-	GetSessionInfo(ctx context.Context) (*auth_entity.UserSession, error)
-	PutSessionInfo(ctx context.Context, sessionInfo *auth_entity.UserSession) error
+	GetSessionInfo(ctx context.Context) (*auth_entity.ActiveSession, error)
+	PutSessionInfo(ctx context.Context, sessionInfo *auth_entity.ActiveSession) error
 	DeleteSessionInfo(ctx context.Context) error
 }
 

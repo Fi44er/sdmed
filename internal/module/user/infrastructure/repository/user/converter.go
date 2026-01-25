@@ -1,8 +1,8 @@
 package user_repository
 
 import (
-	"github.com/Fi44er/sdmed/internal/module/user/entity"
-	"github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
+	user_entity "github.com/Fi44er/sdmed/internal/module/user/entity"
+	user_model "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
 )
 
 type Converter struct{}
@@ -21,6 +21,7 @@ func (c *Converter) ToModel(entity *user_entity.User) *user_model.User {
 		Patronymic:   entity.Patronymic,
 		PhoneNumber:  entity.PhoneNumber,
 		Roles:        roles,
+		IsShadow:     entity.IsShadow,
 	}
 }
 
@@ -38,5 +39,6 @@ func (c *Converter) ToEntity(model *user_model.User) *user_entity.User {
 		Patronymic:   model.Patronymic,
 		PhoneNumber:  model.PhoneNumber,
 		Roles:        roles,
+		IsShadow:     model.IsShadow,
 	}
 }

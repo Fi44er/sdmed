@@ -12,12 +12,6 @@ type Tokens struct {
 	RefreshToken string
 }
 
-type UserSession struct {
-	UserID      string
-	UserRoles   []string
-	RefreshHash string
-}
-
 type Code struct {
 	Email string
 	Code  string
