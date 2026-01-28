@@ -8,6 +8,6 @@ import (
 func (h *FileHandler) RegisterRoutes(router fiber.Router) {
 	files := router.Group("/files")
 
-	files.Post("/upload-temporary", middlewares.Authorize("files", "create"), h.UploadTemporary)
+	files.Post("/upload-temporary", middlewares.RequireAuth(), h.UploadTemporary)
 	files.Get("/:name", h.Get)
 }

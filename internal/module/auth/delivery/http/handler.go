@@ -22,9 +22,13 @@ type IAuthUsecase interface {
 	SendCode(ctx context.Context, sendCode *auth_entity.Code) error
 	RefreshTokens(ctx context.Context, inputRefreshToken string) (*auth_entity.Tokens, error)
 	SignOut(ctx context.Context) error
+	SignOutAll(ctx context.Context) error // NEW
 	ForgotPassword(ctx context.Context, code *auth_entity.Code) error
 	ValidateResetPassword(ctx context.Context, token string) (string, error)
 	ResetPassword(ctx context.Context, token string, user *auth_entity.User) error
+	CreateShadowSession(ctx context.Context) (*auth_entity.Tokens, *auth_entity.User, error) // NEW
+	GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error)                   // NEW
+	RevokeDevice(ctx context.Context, deviceID string) error                                 // NEW
 }
 
 type AuthHandler struct {
@@ -49,6 +53,53 @@ func NewAuthHandler(
 		converter: &Converter{},
 		config:    config,
 	}
+}
+
+// @Summary CreateGuestSession
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/guest [post]
+func (h *AuthHandler) CreateGuestSession(ctx *fiber.Ctx) error {
+	context := h.getCtxWithSession(ctx)
+
+	tokens, shadowUser, err := h.usecase.CreateShadowSession(context)
+	if err != nil {
+		h.logger.Errorf("error while creating shadow session: %s", err)
+		return err
+	}
+
+	h.setCookies(ctx, tokens)
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "guest session created successfully",
+		"data": fiber.Map{
+			"user_id":   shadowUser.ID,
+			"is_shadow": true,
+		},
+	})
+}
+
+// @Summary Test
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param id query string true "ID"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/test [get]
+func (h *AuthHandler) Test(ctx *fiber.Ctx) error {
+	id := ctx.Query("id")
+	sess := session.FromFiberContext(ctx)
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"data": fiber.Map{
+			"data": sess.Get(id),
+		},
+	})
 }
 
 // @Summary SignUp
@@ -102,32 +153,7 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    tokens.AccessToken,
-		Path:     "/",
-		MaxAge:   h.config.AccessTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: true,
-	})
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "logged_in",
-		Value:    "true",
-		Path:     "/",
-		MaxAge:   h.config.AccessTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: false,
-	})
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    tokens.RefreshToken,
-		Path:     "/api/auth/refresh-token",
-		MaxAge:   h.config.RefreshTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: true,
-	})
+	h.setCookies(ctx, tokens)
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
@@ -177,23 +203,84 @@ func (h *AuthHandler) SignOut(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	expired := time.Now().Add(-time.Hour * 24)
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:    "access_token",
-		Value:   "",
-		Expires: expired,
-	})
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:    "logged_in",
-		Value:   "",
-		Expires: expired,
-	})
+	h.clearCookies(ctx)
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
 		"message": "sign out successfully",
+	})
+}
+
+// @Summary SignOutAll
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/sign-out-all [post]
+func (h *AuthHandler) SignOutAll(ctx *fiber.Ctx) error {
+	context := h.getCtxWithSession(ctx)
+
+	if err := h.usecase.SignOutAll(context); err != nil {
+		h.logger.Errorf("error while sign out all: %s", err)
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "signed out from all devices except current",
+	})
+}
+
+// @Summary GetDevices
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/devices [get]
+func (h *AuthHandler) GetDevices(ctx *fiber.Ctx) error {
+	context := h.getCtxWithSession(ctx)
+
+	devices, err := h.usecase.GetUserDevices(context)
+	if err != nil {
+		h.logger.Errorf("error while getting devices: %s", err)
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status": "success",
+		"data":   devices,
+	})
+}
+
+// @Summary RevokeDevice
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param device_id path string true "Device ID"
+// @Success 200 {object} response.Response "OK"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/devices/{device_id}/revoke [post]
+func (h *AuthHandler) RevokeDevice(ctx *fiber.Ctx) error {
+	deviceID := ctx.Params("device_id")
+	if deviceID == "" {
+		return ctx.Status(400).JSON(fiber.Map{
+			"status":  "fail",
+			"message": "device_id is required",
+		})
+	}
+
+	context := h.getCtxWithSession(ctx)
+
+	if err := h.usecase.RevokeDevice(context, deviceID); err != nil {
+		h.logger.Errorf("error while revoking device: %s", err)
+		return err
+	}
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "device revoked successfully",
 	})
 }
 
@@ -216,34 +303,7 @@ func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	h.logger.Debugf("Tokens: %v", tokens)
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    tokens.AccessToken,
-		Path:     "/",
-		MaxAge:   h.config.AccessTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: true,
-	})
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "logged_in",
-		Value:    "true",
-		Path:     "/",
-		MaxAge:   h.config.AccessTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: false,
-	})
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    tokens.RefreshToken,
-		Path:     "/api/auth/refresh-token",
-		MaxAge:   h.config.RefreshTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: true,
-	})
+	h.setCookies(ctx, tokens)
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
@@ -367,4 +427,55 @@ func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
 	context := context.WithValue(ctx.Context(), "session", *sess)
 
 	return context
+}
+
+func (h *AuthHandler) setCookies(ctx *fiber.Ctx, tokens *auth_entity.Tokens) {
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "access_token",
+		Value:    tokens.AccessToken,
+		Path:     "/",
+		MaxAge:   h.config.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "logged_in",
+		Value:    "true",
+		Path:     "/",
+		MaxAge:   h.config.AccessTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: false,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:     "refresh_token",
+		Value:    tokens.RefreshToken,
+		Path:     "/api/auth/refresh-token",
+		MaxAge:   h.config.RefreshTokenMaxAge * 60,
+		Secure:   false,
+		HTTPOnly: true,
+	})
+}
+
+func (h *AuthHandler) clearCookies(ctx *fiber.Ctx) {
+	expired := time.Now().Add(-time.Hour * 24)
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "access_token",
+		Value:   "",
+		Expires: expired,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "logged_in",
+		Value:   "",
+		Expires: expired,
+	})
+
+	ctx.Cookie(&fiber.Cookie{
+		Name:    "refresh_token",
+		Value:   "",
+		Expires: expired,
+	})
 }

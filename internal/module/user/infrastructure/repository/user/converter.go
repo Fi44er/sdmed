@@ -13,15 +13,19 @@ func (c *Converter) ToModel(entity *user_entity.User) *user_model.User {
 		roles[i] = user_model.Role{ID: r.ID, Name: r.Name}
 	}
 	return &user_model.User{
-		ID:           entity.ID,
-		Email:        entity.Email,
-		PasswordHash: entity.PasswordHash,
-		Name:         entity.Name,
-		Surname:      entity.Surname,
-		Patronymic:   entity.Patronymic,
-		PhoneNumber:  entity.PhoneNumber,
-		Roles:        roles,
-		IsShadow:     entity.IsShadow,
+		ID:              entity.ID,
+		Email:           entity.Email,
+		PasswordHash:    entity.PasswordHash,
+		Name:            entity.Name,
+		Surname:         entity.Surname,
+		Patronymic:      entity.Patronymic,
+		PhoneNumber:     entity.PhoneNumber,
+		Roles:           roles,
+		IsShadow:        entity.IsShadow,
+		ShadowCreatedAt: entity.ShadowCreatedAt,
+		ShadowExpiresAt: entity.ShadowExpiresAt,
+		CreatedAt:       entity.CreatedAt,
+		UpdatedAt:       entity.UpdatedAt,
 	}
 }
 
@@ -31,14 +35,18 @@ func (c *Converter) ToEntity(model *user_model.User) *user_entity.User {
 		roles[i] = user_entity.Role{ID: r.ID, Name: r.Name}
 	}
 	return &user_entity.User{
-		ID:           model.ID,
-		Email:        model.Email,
-		PasswordHash: model.PasswordHash,
-		Name:         model.Name,
-		Surname:      model.Surname,
-		Patronymic:   model.Patronymic,
-		PhoneNumber:  model.PhoneNumber,
-		Roles:        roles,
-		IsShadow:     model.IsShadow,
+		ID:              model.ID,
+		Email:           model.Email,
+		PasswordHash:    model.PasswordHash,
+		Name:            model.Name,
+		Surname:         model.Surname,
+		Patronymic:      model.Patronymic,
+		PhoneNumber:     model.PhoneNumber,
+		Roles:           roles,
+		IsShadow:        model.IsShadow,
+		ShadowCreatedAt: model.ShadowCreatedAt,
+		ShadowExpiresAt: model.ShadowExpiresAt,
+		CreatedAt:       model.CreatedAt,
+		UpdatedAt:       model.UpdatedAt,
 	}
 }

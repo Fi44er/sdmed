@@ -23,4 +23,5 @@ type TokenDetails struct {
 	TokenUUID string
 	UserID    string
 	ExpiresIn *int64
+	DeviceID  string
 }

@@ -3,23 +3,26 @@ package user_entity
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	ID         string
-	Name       string
-	Surname    string
-	Patronymic string
-
+	ID           string
+	Name         string
+	Surname      string
+	Patronymic   string
 	Email        string
 	PasswordHash string
 	PhoneNumber  string
+	IsShadow     bool
+	Roles        []Role
 
-	IsShadow bool
-
-	Roles []Role
+	ShadowCreatedAt *time.Time
+	ShadowExpiresAt *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (u *User) Validate() error {

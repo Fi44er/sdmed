@@ -37,10 +37,23 @@ func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*auth_entity.Ac
 		return nil, auth_constant.ErrSessionInfoNotFound
 	}
 
+	r.logger.Debugf("Sess data %+v", sessionData)
+
 	var userSession auth_entity.ActiveSession
-	if err := mapstructure.Decode(sessionData, &userSession); err != nil {
+	config := &mapstructure.DecoderConfig{
+		TagName: "json",
+		Result:  &userSession,
+	}
+
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create decoder: %v", err)
+	}
+	if err := decoder.Decode(sessionData); err != nil {
 		return nil, fmt.Errorf("failed to decode session data: %v", err)
 	}
+
+	r.logger.Debugf("session info: %+v", userSession)
 
 	return &userSession, nil
 }

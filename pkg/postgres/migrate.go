@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	auth_models "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/repository/models"
 	file_model "github.com/Fi44er/sdmed/internal/module/file/infrastructure/repository/model"
 	product_model "github.com/Fi44er/sdmed/internal/module/product/infrastructure/repository/model"
 	user_model "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
@@ -13,9 +14,11 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 	if trigger {
 		log.Info("📦 Migrating database...")
 		models := []any{
-			user_model.Permission{},
 			user_model.Role{},
 			user_model.User{},
+			user_model.Permission{},
+
+			auth_models.UserSession{},
 			file_model.File{},
 			product_model.Product{},
 			product_model.Category{},

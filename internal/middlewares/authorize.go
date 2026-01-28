@@ -10,14 +10,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-const ManagerKey = "accessManager"
-
 func InjectManager(am *accessmanager_service.Manager) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		c.Locals(ManagerKey, am)
 		return c.Next()
 	}
 }
+
+const ManagerKey = "accessManager"
 
 func Guest() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
@@ -30,8 +30,9 @@ func Guest() fiber.Handler {
 
 		sessionData, ok := sess.Get("session_info").(map[string]any)
 		if !ok || sessionData == nil {
-			data := auth_entity.UserSession{
+			data := auth_entity.ActiveSession{
 				UserRoles: []string{"guest"},
+				IsShadow:  true,
 			}
 
 			var newData map[string]any
@@ -53,6 +54,7 @@ func Authorize(obj, act string) fiber.Handler {
 				"error": "Access manager not found",
 			})
 		}
+
 		am := val.(*accessmanager_service.Manager)
 
 		sess := session.FromFiberContext(ctx)
@@ -69,7 +71,7 @@ func Authorize(obj, act string) fiber.Handler {
 			})
 		}
 
-		var userSession auth_entity.UserSession
+		var userSession auth_entity.ActiveSession
 		if err := mapstructure.Decode(sessionData, &userSession); err != nil {
 			return fmt.Errorf("failed to decode session data: %v", err)
 		}
@@ -88,6 +90,41 @@ func Authorize(obj, act string) fiber.Handler {
 		if !hasAccess {
 			return ctx.Status(fiber.StatusForbidden).JSON(fiber.Map{
 				"error": "Forbidden",
+			})
+		}
+
+		return ctx.Next()
+	}
+}
+
+func RequireAuth() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		sess := session.FromFiberContext(ctx)
+		if sess == nil {
+			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Session not found",
+			})
+		}
+
+		sessionData, ok := sess.Get("session_info").(map[string]any)
+		if !ok || sessionData == nil {
+			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Not authenticated",
+			})
+		}
+
+		var userSession auth_entity.ActiveSession
+		if err := mapstructure.Decode(sessionData, &userSession); err != nil {
+			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Invalid session data",
+			})
+		}
+
+		// Проверяем, что пользователь не shadow
+		if userSession.IsShadow {
+			return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error":   "Authentication required",
+				"message": "Please sign in to access this resource",
 			})
 		}
 

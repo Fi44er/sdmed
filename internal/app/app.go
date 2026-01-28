@@ -211,7 +211,6 @@ func (app *App) initSessionManager() error {
 			12*time.Hour,
 			"session",
 		)
-
 	}
 
 	return nil

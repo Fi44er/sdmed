@@ -58,6 +58,10 @@ func (a *UserUsecaseAdapter) Update(ctx context.Context, user *authEntity.User) 
 	return a.userUsecase.Update(ctx, externalUser)
 }
 
+func (a *UserUsecaseAdapter) Delete(ctx context.Context, id string) error {
+	return a.userUsecase.Delete(ctx, id)
+}
+
 func (a *UserUsecaseAdapter) GetAllRoles(ctx context.Context) ([]authEntity.Role, error) {
 	roles, err := a.roleUsecase.GetAll(ctx)
 	if err != nil {

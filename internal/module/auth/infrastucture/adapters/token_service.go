@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Fi44er/sdmed/internal/module/auth/entity"
+	auth_entity "github.com/Fi44er/sdmed/internal/module/auth/entity"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -16,11 +16,13 @@ func NewTokenService() *TokenService {
 	return &TokenService{}
 }
 
-func (s *TokenService) CreateToken(userID string, ttl time.Duration, privateKey string) (*auth_entity.TokenDetails, error) {
+func (s *TokenService) CreateToken(userID, deviceID string, ttl time.Duration, privateKey string) (*auth_entity.TokenDetails, error) {
 	now := time.Now().UTC()
 	td := &auth_entity.TokenDetails{
 		ExpiresIn: new(int64),
 		Token:     new(string),
+		UserID:    userID,
+		DeviceID:  deviceID,
 	}
 	*td.ExpiresIn = now.Add(ttl).Unix()
 	td.TokenUUID = uuid.NewString()
@@ -38,6 +40,8 @@ func (s *TokenService) CreateToken(userID string, ttl time.Duration, privateKey 
 	*td.Token, err = jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"sub":        userID,
 		"token_uuid": td.TokenUUID,
+		"device_id":  deviceID,
+		"user_id":    userID,
 		"exp":        td.ExpiresIn,
 		"iat":        now.Unix(),
 		"nbf":        now.Unix(),
@@ -74,8 +78,28 @@ func (s *TokenService) ValidateToken(token string, publicKey string) (*auth_enti
 		return nil, fmt.Errorf("invalid token")
 	}
 
+	userID, ok := claims["sub"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'sub' claim")
+	}
+
+	// NEW: извлекаем device_id из claims
+	deviceID, ok := claims["device_id"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'device_id' claim")
+	}
+
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'exp' claim")
+	}
+
+	expInt := int64(exp)
+
 	return &auth_entity.TokenDetails{
-		TokenUUID: fmt.Sprint(claims["token_uuid"]),
-		UserID:    fmt.Sprint(claims["sub"]),
+		Token:     &token,
+		UserID:    userID,
+		DeviceID:  deviceID, // NEW
+		ExpiresIn: &expInt,
 	}, nil
 }

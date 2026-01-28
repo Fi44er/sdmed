@@ -12,16 +12,35 @@ import (
 	"github.com/Fi44er/sdmed/internal/module/auth/usecase/auth/contracts"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
 	"github.com/Fi44er/sdmed/pkg/logger"
+	"github.com/google/uuid"
 )
 
+type IAuthUsecase interface {
+	CreateShadowSession(ctx context.Context) (*auth_entity.Tokens, *auth_entity.User, error)
+	SignIn(ctx context.Context, user *auth_entity.User) (*auth_entity.Tokens, error)
+	VerifyCode(ctx context.Context, verifyCode *auth_entity.Code) error
+	SignUp(ctx context.Context, user *auth_entity.User) error
+	SendCode(ctx context.Context, sendCode *auth_entity.Code) error
+	RefreshTokens(ctx context.Context, inputRefreshToken string) (*auth_entity.Tokens, error)
+	SignOut(ctx context.Context) error
+	SignOutAll(ctx context.Context) error
+	GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error)
+	RevokeDevice(ctx context.Context, deviceID string) error
+	ForgotPassword(ctx context.Context, code *auth_entity.Code) error
+	ValidateResetPassword(ctx context.Context, token string) (string, error)
+	ResetPassword(ctx context.Context, token string, user *auth_entity.User) error
+}
+
 type AuthUsecase struct {
-	logger            *logger.Logger
-	cache             contracts.ICache
-	config            *config.Config
-	userUsecase       contracts.IUserUsecase
-	notifyerService   contracts.INotificationService
-	sessionRepository contracts.ISessionRepository
-	tokenService      contracts.ITokenService
+	logger                *logger.Logger
+	cache                 contracts.ICache
+	config                *config.Config
+	userUsecase           contracts.IUserUsecase
+	notifyerService       contracts.INotificationService
+	sessionRepository     contracts.ISessionRepository
+	tokenService          contracts.ITokenService
+	userSessionRepository contracts.IUserSessionRepository
+	shadowUserService     contracts.IShadowUserService
 }
 
 func NewAuthUsecase(
@@ -32,15 +51,19 @@ func NewAuthUsecase(
 	notificationService contracts.INotificationService,
 	sessionRepository contracts.ISessionRepository,
 	tokenService contracts.ITokenService,
+	userSessionRepository contracts.IUserSessionRepository,
+	shadowUserService contracts.IShadowUserService,
 ) *AuthUsecase {
 	return &AuthUsecase{
-		logger:            logger,
-		config:            config,
-		cache:             cache,
-		userUsecase:       userUsecase,
-		notifyerService:   notificationService,
-		sessionRepository: sessionRepository,
-		tokenService:      tokenService,
+		logger:                logger,
+		config:                config,
+		cache:                 cache,
+		userUsecase:           userUsecase,
+		notifyerService:       notificationService,
+		sessionRepository:     sessionRepository,
+		tokenService:          tokenService,
+		userSessionRepository: userSessionRepository,
+		shadowUserService:     shadowUserService,
 	}
 }
 
@@ -50,13 +73,68 @@ const (
 	ForgotPasswordRedisPrefix = "forgot_password_"
 )
 
-func (u *AuthUsecase) createToken(userID string, expiresIn time.Duration, privateKey string) (string, error) {
-	tokenDetails, err := u.tokenService.CreateToken(userID, expiresIn, privateKey)
+func (u *AuthUsecase) createToken(userID, deviceID string, expiresIn time.Duration, privateKey string) (string, error) {
+	tokenDetails, err := u.tokenService.CreateToken(userID, deviceID, expiresIn, privateKey)
 	if err != nil {
 		return "", auth_constant.ErrUnprocessableEntity
 	}
 
 	return *tokenDetails.Token, err
+}
+
+func (u *AuthUsecase) CreateShadowSession(ctx context.Context) (*auth_entity.Tokens, *auth_entity.User, error) {
+	// Создаем shadow user
+	shadowUser, err := u.shadowUserService.CreateShadowUser(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	deviceID := uuid.New().String()
+
+	// Создаем токены
+	accessToken, err := u.createToken(shadowUser.ID, deviceID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	refreshToken, err := u.createToken(shadowUser.ID, deviceID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	refreshHash, err := auth_utils.HashString(refreshToken)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Сохраняем сессию в Redis
+	userSession := &auth_entity.ActiveSession{
+		UserID:      shadowUser.ID,
+		RefreshHash: refreshHash,
+		DeviceID:    deviceID,
+		UserRoles:   []string{"guest"},
+		IsShadow:    true,
+	}
+
+	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {
+		return nil, nil, err
+	}
+
+	// Сохраняем в БД для управления устройствами
+	dbSession := &auth_entity.UserSession{
+		ID:          deviceID,
+		UserID:      shadowUser.ID,
+		RefreshHash: refreshHash,
+		DeviceName:  "Guest Device",
+		ExpiresAt:   time.Now().Add(u.config.RefreshTokenExpiresIn),
+		IsRevoked:   false,
+	}
+
+	if err := u.userSessionRepository.Create(ctx, dbSession); err != nil {
+		return nil, nil, err
+	}
+
+	return &auth_entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, shadowUser, nil
 }
 
 func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth_entity.Tokens, error) {
@@ -69,12 +147,14 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth
 		return nil, auth_constant.ErrInvalidEmailOrPassword
 	}
 
-	accessToken, err := u.createToken(existingUser.ID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
+	deviceID := uuid.New().String()
+
+	accessToken, err := u.createToken(existingUser.ID, deviceID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := u.createToken(existingUser.ID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
+	refreshToken, err := u.createToken(existingUser.ID, deviceID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -92,11 +172,25 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth
 	userSession := &auth_entity.ActiveSession{
 		UserID:      existingUser.ID,
 		RefreshHash: refreshHash,
-		Roles:       strinRoles,
+		DeviceID:    deviceID,
+		UserRoles:   strinRoles,
 		IsShadow:    false,
 	}
 
 	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {
+		return nil, err
+	}
+
+	dbSession := &auth_entity.UserSession{
+		ID:          deviceID,
+		UserID:      existingUser.ID,
+		RefreshHash: refreshHash,
+		DeviceName:  "Unknown Device", // TODO: Парсить из User-Agent
+		ExpiresAt:   time.Now().Add(u.config.RefreshTokenExpiresIn),
+		IsRevoked:   false,
+	}
+
+	if err := u.userSessionRepository.Create(ctx, dbSession); err != nil {
 		return nil, err
 	}
 
@@ -123,15 +217,23 @@ func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *auth_entity.Co
 		return err
 	}
 
-	if err := u.userUsecase.Create(ctx, &user); err != nil {
-		return err
+	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
+	if err == nil && sessionInfo.IsShadow {
+		// Конвертируем shadow user в реального
+		if err := u.shadowUserService.PromoteToRealUser(ctx, sessionInfo.UserID, &user); err != nil {
+			return err
+		}
+	} else {
+		// Создаем нового пользователя
+		if err := u.userUsecase.Create(ctx, &user); err != nil {
+			return err
+		}
 	}
 
 	return u.cache.Del(ctx, UserRedisPrefix+hashEmail)
 }
 
 func (u *AuthUsecase) SignUp(ctx context.Context, user *auth_entity.User) error {
-	// user.PhoneNumber = regexp.MustCompile("[^0-9]").ReplaceAllString(user.PhoneNumber, "")
 	if len(user.PhoneNumber) != 11 {
 		return auth_constant.ErrInvalidPhoneNumber
 	}
@@ -215,6 +317,14 @@ func (u *AuthUsecase) RefreshTokens(ctx context.Context, inputRefreshToken strin
 		return nil, auth_constant.ErrForbidden
 	}
 
+	isRevoked, err := u.userSessionRepository.IsRevoked(ctx, detail.DeviceID)
+	if err != nil {
+		return nil, err
+	}
+	if isRevoked {
+		return nil, auth_constant.ErrForbidden
+	}
+
 	refreshHash, err := auth_utils.HashString(inputRefreshToken)
 	if err != nil {
 		return nil, err
@@ -224,23 +334,33 @@ func (u *AuthUsecase) RefreshTokens(ctx context.Context, inputRefreshToken strin
 		return nil, auth_constant.ErrForbidden
 	}
 
-	accessToken, err := u.createToken(detail.UserID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
+	accessToken, err := u.createToken(detail.UserID, detail.DeviceID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := u.createToken(detail.UserID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
+	refreshToken, err := u.createToken(detail.UserID, detail.DeviceID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshHash, err = auth_utils.HashString(refreshToken)
+	newRefreshHash, err := auth_utils.HashString(refreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	sessionInfo.RefreshHash = refreshHash
+	sessionInfo.RefreshHash = newRefreshHash
 	if err := u.sessionRepository.PutSessionInfo(ctx, sessionInfo); err != nil {
+		return nil, err
+	}
+
+	dbSession, err := u.userSessionRepository.Get(ctx, detail.DeviceID)
+	if err != nil {
+		return nil, err
+	}
+	dbSession.RefreshHash = newRefreshHash
+	dbSession.UpdatedAt = time.Now()
+	if err := u.userSessionRepository.Update(ctx, dbSession); err != nil {
 		return nil, err
 	}
 
@@ -248,11 +368,75 @@ func (u *AuthUsecase) RefreshTokens(ctx context.Context, inputRefreshToken strin
 }
 
 func (u *AuthUsecase) SignOut(ctx context.Context) error {
+	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
+	if err != nil {
+		return err
+	}
+
 	if err := u.sessionRepository.DeleteSessionInfo(ctx); err != nil {
 		return err
 	}
 
+	if err := u.userSessionRepository.Delete(ctx, sessionInfo.DeviceID); err != nil {
+		u.logger.Warnf("Failed to delete session from DB: %v", err)
+	}
+
 	return nil
+}
+
+func (u *AuthUsecase) SignOutAll(ctx context.Context) error {
+	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
+	if err != nil {
+		return err
+	}
+
+	return u.userSessionRepository.RevokeAllExcept(ctx, sessionInfo.UserID, sessionInfo.DeviceID)
+}
+
+func (u *AuthUsecase) GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error) {
+	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sessions, err := u.userSessionRepository.GetByUserID(ctx, sessionInfo.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	devices := make([]*auth_entity.DeviceInfo, len(sessions))
+	for i, session := range sessions {
+		devices[i] = &auth_entity.DeviceInfo{
+			DeviceID:   session.ID,
+			DeviceName: session.DeviceName,
+			UserAgent:  session.UserAgent,
+			LastIP:     session.LastIP,
+			IsCurrent:  session.ID == sessionInfo.DeviceID,
+			CreatedAt:  session.CreatedAt,
+			LastUsedAt: session.UpdatedAt,
+		}
+	}
+
+	return devices, nil
+}
+
+func (u *AuthUsecase) RevokeDevice(ctx context.Context, deviceID string) error {
+	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Проверяем, что устройство принадлежит этому пользователю
+	session, err := u.userSessionRepository.Get(ctx, deviceID)
+	if err != nil {
+		return err
+	}
+
+	if session.UserID != sessionInfo.UserID {
+		return auth_constant.ErrForbidden
+	}
+
+	return u.userSessionRepository.RevokeSession(ctx, deviceID)
 }
 
 func (u *AuthUsecase) ForgotPassword(ctx context.Context, code *auth_entity.Code) error {
@@ -316,6 +500,10 @@ func (u *AuthUsecase) ResetPassword(ctx context.Context, token string, user *aut
 
 	if err := u.cache.Del(ctx, ForgotPasswordRedisPrefix+token); err != nil {
 		return err
+	}
+
+	if err := u.userSessionRepository.RevokeAll(ctx, userID); err != nil {
+		u.logger.Warnf("Failed to revoke all sessions after password reset: %v", err)
 	}
 
 	return nil

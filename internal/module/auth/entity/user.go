@@ -1,12 +1,17 @@
 package auth_entity
 
+import "time"
+
 type User struct {
-	ID          string
-	Email       string
-	Password    string
-	PhoneNumber string
-	FIO         string
-	Roles       []Role
+	ID              string
+	Email           string
+	Password        string
+	PhoneNumber     string
+	FIO             string
+	IsShadow        bool
+	ShadowCreatedAt *time.Time
+	ShadowExpiresAt *time.Time
+	Roles           []Role
 }
 
 type Role struct {

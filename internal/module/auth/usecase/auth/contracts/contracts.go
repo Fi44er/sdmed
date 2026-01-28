@@ -33,6 +33,27 @@ type ISessionRepository interface {
 }
 
 type ITokenService interface {
-	CreateToken(userID string, ttl time.Duration, privateKey string) (*auth_entity.TokenDetails, error)
+	CreateToken(userID, deviceID string, ttl time.Duration, privateKey string) (*auth_entity.TokenDetails, error)
 	ValidateToken(token, publicKey string) (*auth_entity.TokenDetails, error)
+}
+
+type IUserSessionRepository interface {
+	Create(ctx context.Context, userSession *auth_entity.UserSession) error
+	Delete(ctx context.Context, userSessionID string) error
+	Get(ctx context.Context, userSessionID string) (*auth_entity.UserSession, error)
+	Update(ctx context.Context, userSession *auth_entity.UserSession) error
+
+	// NEW: Device management methods
+	GetByUserID(ctx context.Context, userID string) ([]*auth_entity.UserSession, error)
+	RevokeSession(ctx context.Context, sessionID string) error
+	RevokeAllExcept(ctx context.Context, userID string, exceptSessionID string) error
+	RevokeAll(ctx context.Context, userID string) error
+	DeleteExpired(ctx context.Context) error
+	IsRevoked(ctx context.Context, sessionID string) (bool, error)
+}
+
+type IShadowUserService interface {
+	CreateShadowUser(ctx context.Context) (*auth_entity.User, error)
+	PromoteToRealUser(ctx context.Context, shadowUserID string, user *auth_entity.User) error
+	CleanupExpiredShadows(ctx context.Context) error
 }
