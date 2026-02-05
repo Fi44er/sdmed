@@ -127,13 +127,16 @@ func toUserEntity(user *authEntity.User) *userEntity.User {
 
 	name, surname, patronymic := splitFIO(user.FIO)
 	return &userEntity.User{
-		ID:           user.ID,
-		Email:        user.Email,
-		Name:         name,
-		Surname:      surname,
-		Patronymic:   patronymic,
-		PasswordHash: user.Password,
-		PhoneNumber:  user.PhoneNumber,
+		ID:              user.ID,
+		Email:           user.Email,
+		Name:            name,
+		Surname:         surname,
+		Patronymic:      patronymic,
+		PasswordHash:    user.Password,
+		PhoneNumber:     user.PhoneNumber,
+		IsShadow:        user.IsShadow,
+		ShadowCreatedAt: user.ShadowCreatedAt,
+		ShadowExpiresAt: user.ShadowExpiresAt,
 	}
 }
 

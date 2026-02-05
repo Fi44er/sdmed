@@ -26,10 +26,6 @@ func NewAuthMiddleware(logger *logger.Logger, config *config.Config) *AuthMiddle
 	}
 }
 
-type ITokenService interface {
-	ValidateToken(token, publicKey string) (*auth_entity.TokenDetails, error)
-}
-
 func (m *AuthMiddleware) Guest() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		sess := session.FromFiberContext(ctx)

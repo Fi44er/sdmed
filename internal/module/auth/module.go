@@ -30,7 +30,6 @@ type AuthModule struct {
 	roleUsecase           role_usecase.IRoleUsecase
 	notificationServce    *service.NotificationService
 	sessionRepository     *repository.SessionRepository
-	tokenService          *auth_adapters.TokenService
 	userSessionRepository user_session_repository.IUserSessionRepository
 	shadowUserUsecase     shadow_user.IShadowUserService
 
@@ -68,7 +67,6 @@ func NewAuthModule(
 func (m *AuthModule) Init() {
 	m.authAdapters = auth_adapters.NewUserUsecaseAdapter(m.userUsecase, m.roleUsecase)
 	m.sessionRepository = repository.NewSessionRepository(m.logger)
-	m.tokenService = auth_adapters.NewTokenService()
 	m.userSessionRepository = user_session_repository.NewUserSessionRepository(m.logger, m.db)
 	m.shadowUserUsecase = shadow_user.NewShadowUserService(m.logger, m.authAdapters, m.config)
 	m.authUsecase = auth_usecase.NewAuthUsecase(
@@ -78,7 +76,6 @@ func (m *AuthModule) Init() {
 		m.authAdapters,
 		m.notificationServce,
 		m.sessionRepository,
-		m.tokenService,
 		m.userSessionRepository,
 		m.shadowUserUsecase,
 	)

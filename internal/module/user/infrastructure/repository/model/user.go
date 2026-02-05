@@ -4,7 +4,7 @@ import "time"
 
 type User struct {
 	ID           string `gorm:"primaryKey;type:uuid;default:uuid_generate_v4();"`
-	Email        string `gorm:"type:varchar(100);unique;not null"`
+	Email        string `gorm:"type:varchar(100);not null"`
 	PasswordHash string `gorm:"type:varchar(255);not null"`
 	Name         string `gorm:"type:varchar(255);not null"`
 	Surname      string `gorm:"type:varchar(255);"`

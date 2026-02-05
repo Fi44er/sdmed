@@ -32,11 +32,6 @@ type ISessionRepository interface {
 	DeleteSessionInfo(ctx context.Context) error
 }
 
-type ITokenService interface {
-	CreateToken(userID, deviceID string, ttl time.Duration, privateKey string) (*auth_entity.TokenDetails, error)
-	ValidateToken(token, publicKey string) (*auth_entity.TokenDetails, error)
-}
-
 type IUserSessionRepository interface {
 	Create(ctx context.Context, userSession *auth_entity.UserSession) error
 	Delete(ctx context.Context, userSessionID string) error

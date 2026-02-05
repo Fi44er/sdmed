@@ -10,11 +10,10 @@ type Converter struct {
 
 func (c *Converter) ToEntity(session *auth_models.UserSession) *auth_entity.UserSession {
 	return &auth_entity.UserSession{
-		ID:          session.ID,
-		UserID:      session.UserID,
-		RefreshHash: session.RefreshHash,
-		UserAgent:   session.UserAgent,
-		LastIP:      session.LastIP,
+		ID:        session.ID,
+		UserID:    session.UserID,
+		UserAgent: session.UserAgent,
+		LastIP:    session.LastIP,
 
 		ExpiresAt: session.ExpiresAt,
 		CreatedAt: session.CreatedAt,
@@ -24,11 +23,10 @@ func (c *Converter) ToEntity(session *auth_models.UserSession) *auth_entity.User
 
 func (c *Converter) ToModel(session *auth_entity.UserSession) *auth_models.UserSession {
 	return &auth_models.UserSession{
-		ID:          session.ID,
-		UserID:      session.UserID,
-		RefreshHash: session.RefreshHash,
-		UserAgent:   session.UserAgent,
-		LastIP:      session.LastIP,
+		ID:        session.ID,
+		UserID:    session.UserID,
+		UserAgent: session.UserAgent,
+		LastIP:    session.LastIP,
 
 		ExpiresAt: session.ExpiresAt,
 		CreatedAt: session.CreatedAt,

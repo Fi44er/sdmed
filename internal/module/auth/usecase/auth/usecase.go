@@ -16,12 +16,11 @@ import (
 )
 
 type IAuthUsecase interface {
-	CreateShadowSession(ctx context.Context) (*auth_entity.Tokens, *auth_entity.User, error)
-	SignIn(ctx context.Context, user *auth_entity.User) (*auth_entity.Tokens, error)
+	CreateShadowSession(ctx context.Context) (*auth_entity.User, error)
+	SignIn(ctx context.Context, user *auth_entity.User) error
 	VerifyCode(ctx context.Context, verifyCode *auth_entity.Code) error
 	SignUp(ctx context.Context, user *auth_entity.User) error
 	SendCode(ctx context.Context, sendCode *auth_entity.Code) error
-	RefreshTokens(ctx context.Context, inputRefreshToken string) (*auth_entity.Tokens, error)
 	SignOut(ctx context.Context) error
 	SignOutAll(ctx context.Context) error
 	GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error)
@@ -38,7 +37,6 @@ type AuthUsecase struct {
 	userUsecase           contracts.IUserUsecase
 	notifyerService       contracts.INotificationService
 	sessionRepository     contracts.ISessionRepository
-	tokenService          contracts.ITokenService
 	userSessionRepository contracts.IUserSessionRepository
 	shadowUserService     contracts.IShadowUserService
 }
@@ -50,7 +48,6 @@ func NewAuthUsecase(
 	userUsecase contracts.IUserUsecase,
 	notificationService contracts.INotificationService,
 	sessionRepository contracts.ISessionRepository,
-	tokenService contracts.ITokenService,
 	userSessionRepository contracts.IUserSessionRepository,
 	shadowUserService contracts.IShadowUserService,
 ) *AuthUsecase {
@@ -61,7 +58,6 @@ func NewAuthUsecase(
 		userUsecase:           userUsecase,
 		notifyerService:       notificationService,
 		sessionRepository:     sessionRepository,
-		tokenService:          tokenService,
 		userSessionRepository: userSessionRepository,
 		shadowUserService:     shadowUserService,
 	}
@@ -73,96 +69,53 @@ const (
 	ForgotPasswordRedisPrefix = "forgot_password_"
 )
 
-func (u *AuthUsecase) createToken(userID, deviceID string, expiresIn time.Duration, privateKey string) (string, error) {
-	tokenDetails, err := u.tokenService.CreateToken(userID, deviceID, expiresIn, privateKey)
-	if err != nil {
-		return "", auth_constant.ErrUnprocessableEntity
-	}
-
-	return *tokenDetails.Token, err
-}
-
-func (u *AuthUsecase) CreateShadowSession(ctx context.Context) (*auth_entity.Tokens, *auth_entity.User, error) {
+func (u *AuthUsecase) CreateShadowSession(ctx context.Context) (*auth_entity.User, error) {
 	// Создаем shadow user
 	shadowUser, err := u.shadowUserService.CreateShadowUser(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	deviceID := uuid.New().String()
 
-	// Создаем токены
-	accessToken, err := u.createToken(shadowUser.ID, deviceID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	refreshToken, err := u.createToken(shadowUser.ID, deviceID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	refreshHash, err := auth_utils.HashString(refreshToken)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Сохраняем сессию в Redis
 	userSession := &auth_entity.ActiveSession{
-		UserID:      shadowUser.ID,
-		RefreshHash: refreshHash,
-		DeviceID:    deviceID,
-		UserRoles:   []string{"guest"},
-		IsShadow:    true,
+		UserID:    shadowUser.ID,
+		DeviceID:  deviceID,
+		UserRoles: []string{"guest"},
+		IsShadow:  true,
 	}
 
 	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Сохраняем в БД для управления устройствами
 	dbSession := &auth_entity.UserSession{
-		ID:          deviceID,
-		UserID:      shadowUser.ID,
-		RefreshHash: refreshHash,
-		DeviceName:  "Guest Device",
-		ExpiresAt:   time.Now().Add(u.config.RefreshTokenExpiresIn),
-		IsRevoked:   false,
+		ID:         deviceID,
+		UserID:     shadowUser.ID,
+		DeviceName: "Guest Device",
+		ExpiresAt:  time.Now().Add(u.config.RefreshTokenExpiresIn),
+		IsRevoked:  false,
 	}
 
 	if err := u.userSessionRepository.Create(ctx, dbSession); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &auth_entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, shadowUser, nil
+	return shadowUser, nil
 }
 
-func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth_entity.Tokens, error) {
+func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) error {
 	existingUser, err := u.userUsecase.GetByEmail(ctx, user.Email)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !u.userUsecase.ComparePassword(existingUser, user.Password) {
-		return nil, auth_constant.ErrInvalidEmailOrPassword
+		return auth_constant.ErrInvalidEmailOrPassword
 	}
 
 	deviceID := uuid.New().String()
-
-	accessToken, err := u.createToken(existingUser.ID, deviceID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := u.createToken(existingUser.ID, deviceID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshHash, err := auth_utils.HashString(refreshToken)
-	if err != nil {
-		return nil, err
-	}
 
 	strinRoles := make([]string, 0)
 	for _, role := range existingUser.Roles {
@@ -170,31 +123,29 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) (*auth
 	}
 
 	userSession := &auth_entity.ActiveSession{
-		UserID:      existingUser.ID,
-		RefreshHash: refreshHash,
-		DeviceID:    deviceID,
-		UserRoles:   strinRoles,
-		IsShadow:    false,
+		UserID:    existingUser.ID,
+		DeviceID:  deviceID,
+		UserRoles: strinRoles,
+		IsShadow:  false,
 	}
 
 	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {
-		return nil, err
+		return err
 	}
 
 	dbSession := &auth_entity.UserSession{
-		ID:          deviceID,
-		UserID:      existingUser.ID,
-		RefreshHash: refreshHash,
-		DeviceName:  "Unknown Device", // TODO: Парсить из User-Agent
-		ExpiresAt:   time.Now().Add(u.config.RefreshTokenExpiresIn),
-		IsRevoked:   false,
+		ID:         deviceID,
+		UserID:     existingUser.ID,
+		DeviceName: "Unknown Device", // TODO: Парсить из User-Agent
+		ExpiresAt:  time.Now().Add(u.config.RefreshTokenExpiresIn),
+		IsRevoked:  false,
 	}
 
 	if err := u.userSessionRepository.Create(ctx, dbSession); err != nil {
-		return nil, err
+		return err
 	}
 
-	return &auth_entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+	return nil
 }
 
 func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *auth_entity.Code) error {
@@ -218,6 +169,7 @@ func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *auth_entity.Co
 	}
 
 	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
+	u.logger.Debugf("session info in VerifyCode: %+v \n %v", sessionInfo, err)
 	if err == nil && sessionInfo.IsShadow {
 		// Конвертируем shadow user в реального
 		if err := u.shadowUserService.PromoteToRealUser(ctx, sessionInfo.UserID, &user); err != nil {
@@ -304,67 +256,6 @@ func (u *AuthUsecase) SendCode(ctx context.Context, sendCode *auth_entity.Code) 
 
 	u.logger.Info(code)
 	return nil
-}
-
-func (u *AuthUsecase) RefreshTokens(ctx context.Context, inputRefreshToken string) (*auth_entity.Tokens, error) {
-	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	detail, err := u.tokenService.ValidateToken(inputRefreshToken, u.config.RefreshTokenPublicKey)
-	if err != nil {
-		return nil, auth_constant.ErrForbidden
-	}
-
-	isRevoked, err := u.userSessionRepository.IsRevoked(ctx, detail.DeviceID)
-	if err != nil {
-		return nil, err
-	}
-	if isRevoked {
-		return nil, auth_constant.ErrForbidden
-	}
-
-	refreshHash, err := auth_utils.HashString(inputRefreshToken)
-	if err != nil {
-		return nil, err
-	}
-
-	if sessionInfo.RefreshHash != refreshHash {
-		return nil, auth_constant.ErrForbidden
-	}
-
-	accessToken, err := u.createToken(detail.UserID, detail.DeviceID, u.config.AccessTokenExpiresIn, u.config.AccessTokenPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	refreshToken, err := u.createToken(detail.UserID, detail.DeviceID, u.config.RefreshTokenExpiresIn, u.config.RefreshTokenPrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	newRefreshHash, err := auth_utils.HashString(refreshToken)
-	if err != nil {
-		return nil, err
-	}
-
-	sessionInfo.RefreshHash = newRefreshHash
-	if err := u.sessionRepository.PutSessionInfo(ctx, sessionInfo); err != nil {
-		return nil, err
-	}
-
-	dbSession, err := u.userSessionRepository.Get(ctx, detail.DeviceID)
-	if err != nil {
-		return nil, err
-	}
-	dbSession.RefreshHash = newRefreshHash
-	dbSession.UpdatedAt = time.Now()
-	if err := u.userSessionRepository.Update(ctx, dbSession); err != nil {
-		return nil, err
-	}
-
-	return &auth_entity.Tokens{AccessToken: accessToken, RefreshToken: refreshToken}, nil
 }
 
 func (u *AuthUsecase) SignOut(ctx context.Context) error {

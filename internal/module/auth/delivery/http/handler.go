@@ -16,19 +16,18 @@ import (
 )
 
 type IAuthUsecase interface {
-	SignIn(ctx context.Context, user *auth_entity.User) (*auth_entity.Tokens, error)
+	SignIn(ctx context.Context, user *auth_entity.User) error
 	VerifyCode(ctx context.Context, verifyCode *auth_entity.Code) error
 	SignUp(ctx context.Context, user *auth_entity.User) error
 	SendCode(ctx context.Context, sendCode *auth_entity.Code) error
-	RefreshTokens(ctx context.Context, inputRefreshToken string) (*auth_entity.Tokens, error)
 	SignOut(ctx context.Context) error
 	SignOutAll(ctx context.Context) error // NEW
 	ForgotPassword(ctx context.Context, code *auth_entity.Code) error
 	ValidateResetPassword(ctx context.Context, token string) (string, error)
 	ResetPassword(ctx context.Context, token string, user *auth_entity.User) error
-	CreateShadowSession(ctx context.Context) (*auth_entity.Tokens, *auth_entity.User, error) // NEW
-	GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error)                   // NEW
-	RevokeDevice(ctx context.Context, deviceID string) error                                 // NEW
+	CreateShadowSession(ctx context.Context) (*auth_entity.User, error)    // NEW
+	GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error) // NEW
+	RevokeDevice(ctx context.Context, deviceID string) error               // NEW
 }
 
 type AuthHandler struct {
@@ -65,13 +64,13 @@ func NewAuthHandler(
 func (h *AuthHandler) CreateGuestSession(ctx *fiber.Ctx) error {
 	context := h.getCtxWithSession(ctx)
 
-	tokens, shadowUser, err := h.usecase.CreateShadowSession(context)
+	shadowUser, err := h.usecase.CreateShadowSession(context)
 	if err != nil {
 		h.logger.Errorf("error while creating shadow session: %s", err)
 		return err
 	}
 
-	h.setCookies(ctx, tokens)
+	h.setCookies(ctx)
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
@@ -79,25 +78,6 @@ func (h *AuthHandler) CreateGuestSession(ctx *fiber.Ctx) error {
 		"data": fiber.Map{
 			"user_id":   shadowUser.ID,
 			"is_shadow": true,
-		},
-	})
-}
-
-// @Summary Test
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param id query string true "ID"
-// @Success 200 {object} response.Response "OK"
-// @Failure 500 {object} response.Response "Error"
-// @Router /auth/test [get]
-func (h *AuthHandler) Test(ctx *fiber.Ctx) error {
-	id := ctx.Query("id")
-	sess := session.FromFiberContext(ctx)
-
-	return ctx.Status(200).JSON(fiber.Map{
-		"data": fiber.Map{
-			"data": sess.Get(id),
 		},
 	})
 }
@@ -147,13 +127,13 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 
 	context := h.getCtxWithSession(ctx)
 
-	tokens, err := h.usecase.SignIn(context, entity)
+	err = h.usecase.SignIn(context, entity)
 	if err != nil {
 		h.logger.Errorf("error while create user: %s", err)
 		return err
 	}
 
-	h.setCookies(ctx, tokens)
+	h.setCookies(ctx)
 
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
@@ -284,33 +264,6 @@ func (h *AuthHandler) RevokeDevice(ctx *fiber.Ctx) error {
 	})
 }
 
-// @Summary RefreshToken
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.Response "OK"
-// @Failure 500 {object} response.Response "Error"
-// @Router /auth/refresh-token [post]
-func (h *AuthHandler) RefreshToken(ctx *fiber.Ctx) error {
-	refreshToken := ctx.Cookies("refresh_token")
-	if refreshToken == "" {
-		return fiber.ErrUnauthorized
-	}
-
-	context := h.getCtxWithSession(ctx)
-	tokens, err := h.usecase.RefreshTokens(context, refreshToken)
-	if err != nil {
-		return err
-	}
-
-	h.setCookies(ctx, tokens)
-
-	return ctx.Status(200).JSON(fiber.Map{
-		"status":  "success",
-		"message": "refresh token successfully",
-	})
-}
-
 // @Summary SendCode
 // @Tags Auth
 // @Accept json
@@ -429,16 +382,7 @@ func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
 	return context
 }
 
-func (h *AuthHandler) setCookies(ctx *fiber.Ctx, tokens *auth_entity.Tokens) {
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "access_token",
-		Value:    tokens.AccessToken,
-		Path:     "/",
-		MaxAge:   h.config.AccessTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: true,
-	})
-
+func (h *AuthHandler) setCookies(ctx *fiber.Ctx) {
 	ctx.Cookie(&fiber.Cookie{
 		Name:     "logged_in",
 		Value:    "true",
@@ -447,34 +391,12 @@ func (h *AuthHandler) setCookies(ctx *fiber.Ctx, tokens *auth_entity.Tokens) {
 		Secure:   false,
 		HTTPOnly: false,
 	})
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:     "refresh_token",
-		Value:    tokens.RefreshToken,
-		Path:     "/api/auth/refresh-token",
-		MaxAge:   h.config.RefreshTokenMaxAge * 60,
-		Secure:   false,
-		HTTPOnly: true,
-	})
 }
 
 func (h *AuthHandler) clearCookies(ctx *fiber.Ctx) {
 	expired := time.Now().Add(-time.Hour * 24)
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:    "access_token",
-		Value:   "",
-		Expires: expired,
-	})
-
 	ctx.Cookie(&fiber.Cookie{
 		Name:    "logged_in",
-		Value:   "",
-		Expires: expired,
-	})
-
-	ctx.Cookie(&fiber.Cookie{
-		Name:    "refresh_token",
 		Value:   "",
 		Expires: expired,
 	})

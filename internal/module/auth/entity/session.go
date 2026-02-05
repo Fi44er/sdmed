@@ -3,24 +3,22 @@ package auth_entity
 import "time"
 
 type ActiveSession struct {
-	UserID      string   `json:"u_id"`
-	UserRoles   []string `json:"roles"`
-	DeviceID    string   `json:"device_id"`
-	DeviceName  string   `json:"device_name"`
-	IP          string   `json:"ip"`
-	RefreshHash string   `json:"r_hash"`
-	IsShadow    bool     `json:"is_g"`
+	UserID     string   `json:"u_id"`
+	UserRoles  []string `json:"roles"`
+	DeviceID   string   `json:"device_id"`
+	DeviceName string   `json:"device_name"`
+	IP         string   `json:"ip"`
+	IsShadow   bool     `json:"is_g"`
 	// Fingerprint string   `json:"fp"`
 }
 
 type UserSession struct {
-	ID          string
-	UserID      string
-	RefreshHash string
-	UserAgent   string
-	LastIP      string
-	DeviceName  string
-	IsRevoked   bool
+	ID         string
+	UserID     string
+	UserAgent  string
+	LastIP     string
+	DeviceName string
+	IsRevoked  bool
 	// Fingerprint string
 
 	CreatedAt time.Time
