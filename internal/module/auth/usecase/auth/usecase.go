@@ -115,35 +115,100 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) error 
 		return auth_constant.ErrInvalidEmailOrPassword
 	}
 
-	deviceID := uuid.New().String()
+	currentSession, err := u.sessionRepository.GetSessionInfo(ctx)
+	var deviceID string
+
+	if err == nil && currentSession != nil && currentSession.IsShadow {
+		deviceID = currentSession.DeviceID
+
+		dbSession, err := u.userSessionRepository.Get(ctx, deviceID)
+		if err == nil && dbSession != nil {
+			dbSession.UserID = existingUser.ID
+			dbSession.LastUsedAt = time.Now()
+			if err := u.userSessionRepository.Update(ctx, dbSession); err != nil {
+				u.logger.Errorf("failed to update session: %v", err)
+			}
+		}
+	} else {
+		deviceID = uuid.New().String()
+
+		dbSession := &auth_entity.UserSession{
+			ID:         deviceID,
+			UserID:     existingUser.ID,
+			DeviceName: "Unknown Device", // TODO: Парсить из User-Agent
+			ExpiresAt:  time.Now().Add(u.config.RefreshTokenExpiresIn),
+			IsRevoked:  false,
+		}
+
+		if err := u.userSessionRepository.Create(ctx, dbSession); err != nil {
+			return err
+		}
+	}
 
 	strinRoles := make([]string, 0)
 	for _, role := range existingUser.Roles {
 		strinRoles = append(strinRoles, role.Name)
 	}
 
+	now := time.Now()
 	userSession := &auth_entity.ActiveSession{
 		UserID:    existingUser.ID,
 		DeviceID:  deviceID,
 		UserRoles: strinRoles,
 		IsShadow:  false,
+		CreatedAt: now,
+		ExpiresAt: now.Add(u.config.RefreshTokenExpiresIn),
 	}
 
 	if err := u.sessionRepository.PutSessionInfo(ctx, userSession); err != nil {
 		return err
 	}
 
-	dbSession := &auth_entity.UserSession{
-		ID:         deviceID,
-		UserID:     existingUser.ID,
-		DeviceName: "Unknown Device", // TODO: Парсить из User-Agent
-		ExpiresAt:  time.Now().Add(u.config.RefreshTokenExpiresIn),
-		IsRevoked:  false,
+	return nil
+}
+
+func (u *AuthUsecase) RefreshSession(ctx context.Context) error {
+	// Получаем текущую сессию
+	currentSession, err := u.sessionRepository.GetSessionInfo(ctx)
+	if err != nil {
+		return auth_constant.ErrSessionInfoNotFound
 	}
 
-	if err := u.userSessionRepository.Create(ctx, dbSession); err != nil {
+	// Проверяем, не является ли сессия shadow
+	if currentSession.IsShadow {
+		return fmt.Errorf("cannot refresh shadow session")
+	}
+
+	// Проверяем, не истекла ли сессия
+	if time.Now().After(currentSession.ExpiresAt) {
+		return fmt.Errorf("session expired")
+	}
+
+	// Проверяем, не отозвана ли сессия в БД
+	dbSession, err := u.userSessionRepository.Get(ctx, currentSession.DeviceID)
+	if err != nil {
 		return err
 	}
+
+	if dbSession.IsRevoked {
+		return fmt.Errorf("session has been revoked")
+	}
+
+	// Обновляем время последнего использования в БД
+	if err := u.userSessionRepository.UpdateLastUsed(ctx, currentSession.DeviceID); err != nil {
+		u.logger.Errorf("failed to update last used time: %v", err)
+	}
+
+	// Продлеваем время жизни сессии
+	now := time.Now()
+	currentSession.ExpiresAt = now.Add(u.config.RefreshTokenExpiresIn)
+
+	// Сохраняем обновленную сессию
+	if err := u.sessionRepository.PutSessionInfo(ctx, currentSession); err != nil {
+		return err
+	}
+
+	u.logger.Debugf("Refreshed session for user %s, device %s", currentSession.UserID, currentSession.DeviceID)
 
 	return nil
 }
@@ -281,13 +346,25 @@ func (u *AuthUsecase) SignOutAll(ctx context.Context) error {
 		return err
 	}
 
-	return u.userSessionRepository.RevokeAllExcept(ctx, sessionInfo.UserID, sessionInfo.DeviceID)
+	if sessionInfo.IsShadow {
+		return fmt.Errorf("cannot sign out from shadow session")
+	}
+
+	if err := u.userSessionRepository.RevokeAllExcept(ctx, sessionInfo.UserID, sessionInfo.DeviceID); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u *AuthUsecase) GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error) {
 	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if sessionInfo.IsShadow {
+		return nil, fmt.Errorf("shadow users don't have devices")
 	}
 
 	sessions, err := u.userSessionRepository.GetByUserID(ctx, sessionInfo.UserID)
@@ -297,14 +374,17 @@ func (u *AuthUsecase) GetUserDevices(ctx context.Context) ([]*auth_entity.Device
 
 	devices := make([]*auth_entity.DeviceInfo, len(sessions))
 	for i, session := range sessions {
+		if session.IsRevoked {
+			continue
+		}
+
 		devices[i] = &auth_entity.DeviceInfo{
 			DeviceID:   session.ID,
 			DeviceName: session.DeviceName,
-			UserAgent:  session.UserAgent,
 			LastIP:     session.LastIP,
 			IsCurrent:  session.ID == sessionInfo.DeviceID,
 			CreatedAt:  session.CreatedAt,
-			LastUsedAt: session.UpdatedAt,
+			LastUsedAt: session.LastUsedAt,
 		}
 	}
 
@@ -317,6 +397,10 @@ func (u *AuthUsecase) RevokeDevice(ctx context.Context, deviceID string) error {
 		return err
 	}
 
+	if sessionInfo.IsShadow {
+		return fmt.Errorf("shadow users cannot revoke devices")
+	}
+
 	// Проверяем, что устройство принадлежит этому пользователю
 	session, err := u.userSessionRepository.Get(ctx, deviceID)
 	if err != nil {
@@ -325,6 +409,10 @@ func (u *AuthUsecase) RevokeDevice(ctx context.Context, deviceID string) error {
 
 	if session.UserID != sessionInfo.UserID {
 		return auth_constant.ErrForbidden
+	}
+
+	if deviceID == sessionInfo.DeviceID {
+		return fmt.Errorf("cannot revoke current device")
 	}
 
 	return u.userSessionRepository.RevokeSession(ctx, deviceID)

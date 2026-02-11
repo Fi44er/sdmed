@@ -104,7 +104,13 @@ func (app *App) initMiddlewares() error {
 	app.app.Use(middleware.ErrHandler)
 
 	app.app.Use(sessionadapter.FiberMiddleware(app.sessionManager))
-	app.app.Use(middlewares.Guest())
+	app.app.Use(middlewares.ShadowSessionMiddleware(
+		app.moduleProvider.authModule.GetShadowUserService(),
+		app.moduleProvider.authModule.GetSessionRepository(),
+		app.moduleProvider.authModule.GetUserSessionRepository(),
+		app.logger,
+		app.config,
+	))
 	app.app.Use(middlewares.InjectManager(app.moduleProvider.authModule.GetAccessManager()))
 
 	return nil

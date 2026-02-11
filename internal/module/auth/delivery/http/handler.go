@@ -28,6 +28,7 @@ type IAuthUsecase interface {
 	CreateShadowSession(ctx context.Context) (*auth_entity.User, error)    // NEW
 	GetUserDevices(ctx context.Context) ([]*auth_entity.DeviceInfo, error) // NEW
 	RevokeDevice(ctx context.Context, deviceID string) error               // NEW
+	RefreshSession(ctx context.Context) error
 }
 
 type AuthHandler struct {
@@ -52,34 +53,6 @@ func NewAuthHandler(
 		converter: &Converter{},
 		config:    config,
 	}
-}
-
-// @Summary CreateGuestSession
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.Response "OK"
-// @Failure 500 {object} response.Response "Error"
-// @Router /auth/guest [post]
-func (h *AuthHandler) CreateGuestSession(ctx *fiber.Ctx) error {
-	context := h.getCtxWithSession(ctx)
-
-	shadowUser, err := h.usecase.CreateShadowSession(context)
-	if err != nil {
-		h.logger.Errorf("error while creating shadow session: %s", err)
-		return err
-	}
-
-	h.setCookies(ctx)
-
-	return ctx.Status(200).JSON(fiber.Map{
-		"status":  "success",
-		"message": "guest session created successfully",
-		"data": fiber.Map{
-			"user_id":   shadowUser.ID,
-			"is_shadow": true,
-		},
-	})
 }
 
 // @Summary SignUp
@@ -138,6 +111,40 @@ func (h *AuthHandler) SignIn(ctx *fiber.Ctx) error {
 	return ctx.Status(200).JSON(fiber.Map{
 		"status":  "success",
 		"message": "user sign in successfully",
+	})
+}
+
+// @Summary RefreshSession
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Security CsrfToken
+// @Success 200 {object} response.Response "OK"
+// @Failure 401 {object} response.Response "Unauthorized"
+// @Failure 500 {object} response.Response "Error"
+// @Router /auth/refresh [post]
+func (h *AuthHandler) RefreshSession(ctx *fiber.Ctx) error {
+	// Проверяем CSRF токен
+	// if !h.validateCSRFToken(ctx) {
+	// 	return ctx.Status(403).JSON(fiber.Map{
+	// 		"status":  "fail",
+	// 		"message": "invalid CSRF token",
+	// 	})
+	// }
+
+	context := h.getCtxWithSession(ctx)
+
+	if err := h.usecase.RefreshSession(context); err != nil {
+		h.logger.Errorf("error while refreshing session: %s", err)
+		return err
+	}
+
+	// Обновляем куки
+	// h.setSecureCookies(ctx)
+
+	return ctx.Status(200).JSON(fiber.Map{
+		"status":  "success",
+		"message": "session refreshed successfully",
 	})
 }
 

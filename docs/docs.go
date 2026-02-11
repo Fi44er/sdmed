@@ -119,8 +119,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/guest": {
+        "/auth/refresh": {
             "post": {
+                "security": [
+                    {
+                        "CsrfToken": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -130,7 +135,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "CreateGuestSession",
+                "summary": "RefreshSession",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -138,30 +143,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
-                    "500": {
-                        "description": "Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/refresh-token": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "RefreshToken",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -376,43 +359,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/auth_dto.SignUpDTO"
                         }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/test": {
-            "get": {
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Test",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {

@@ -15,9 +15,10 @@ func (c *Converter) ToEntity(session *auth_models.UserSession) *auth_entity.User
 		UserAgent: session.UserAgent,
 		LastIP:    session.LastIP,
 
-		ExpiresAt: session.ExpiresAt,
-		CreatedAt: session.CreatedAt,
-		UpdatedAt: session.UpdatedAt,
+		ExpiresAt:  session.ExpiresAt,
+		CreatedAt:  session.CreatedAt,
+		UpdatedAt:  session.UpdatedAt,
+		LastUsedAt: session.LastUsedAt,
 	}
 }
 
@@ -28,8 +29,9 @@ func (c *Converter) ToModel(session *auth_entity.UserSession) *auth_models.UserS
 		UserAgent: session.UserAgent,
 		LastIP:    session.LastIP,
 
-		ExpiresAt: session.ExpiresAt,
-		CreatedAt: session.CreatedAt,
-		UpdatedAt: session.UpdatedAt,
+		ExpiresAt:  session.ExpiresAt,
+		CreatedAt:  session.CreatedAt,
+		UpdatedAt:  session.UpdatedAt,
+		LastUsedAt: session.LastUsedAt,
 	}
 }

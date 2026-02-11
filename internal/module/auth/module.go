@@ -95,3 +95,15 @@ func (m *AuthModule) InitDelivery(router fiber.Router) {
 func (m *AuthModule) GetAccessManager() *accessmanager_service.Manager {
 	return m.accessManager
 }
+
+func (m *AuthModule) GetShadowUserService() shadow_user.IShadowUserService {
+	return m.shadowUserUsecase
+}
+
+func (m *AuthModule) GetUserSessionRepository() user_session_repository.IUserSessionRepository {
+	return m.userSessionRepository
+}
+
+func (m *AuthModule) GetSessionRepository() *repository.SessionRepository {
+	return m.sessionRepository
+}

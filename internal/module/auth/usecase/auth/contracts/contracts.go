@@ -45,6 +45,7 @@ type IUserSessionRepository interface {
 	RevokeAll(ctx context.Context, userID string) error
 	DeleteExpired(ctx context.Context) error
 	IsRevoked(ctx context.Context, sessionID string) (bool, error)
+	UpdateLastUsed(ctx context.Context, id string) error
 }
 
 type IShadowUserService interface {

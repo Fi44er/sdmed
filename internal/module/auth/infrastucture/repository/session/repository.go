@@ -3,6 +3,7 @@ package auth_repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	auth_entity "github.com/Fi44er/sdmed/internal/module/auth/entity"
 	auth_constant "github.com/Fi44er/sdmed/internal/module/auth/pkg/constant"
@@ -43,6 +44,11 @@ func (r *SessionRepository) GetSessionInfo(ctx context.Context) (*auth_entity.Ac
 	config := &mapstructure.DecoderConfig{
 		TagName: "json",
 		Result:  &userSession,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			// Хук для преобразования строк в time.Time
+			mapstructure.StringToTimeHookFunc(time.RFC3339),
+			// Можно добавить другие хуки если нужно
+		),
 	}
 
 	decoder, err := mapstructure.NewDecoder(config)

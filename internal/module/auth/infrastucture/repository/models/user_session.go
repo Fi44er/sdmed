@@ -15,5 +15,6 @@ type UserSession struct {
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 	ExpiresAt   time.Time `gorm:"index:idx_user_sessions_expires_at;not null"`
+	LastUsedAt  time.Time `gorm:"index:idx_user_sessions_last_used_at;not null"`
 	// User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }

@@ -23,6 +23,7 @@ type IUserSessionRepository interface {
 	RevokeAll(ctx context.Context, userID string) error
 	DeleteExpired(ctx context.Context) error
 	IsRevoked(ctx context.Context, sessionID string) (bool, error)
+	UpdateLastUsed(ctx context.Context, id string) error
 }
 
 type UserSessionRepository struct {
@@ -40,6 +41,10 @@ func NewUserSessionRepository(logger *logger.Logger, db *gorm.DB) IUserSessionRe
 }
 
 func (r *UserSessionRepository) Create(ctx context.Context, userSession *auth_entity.UserSession) error {
+	userSession.CreatedAt = time.Now()
+	userSession.UpdatedAt = time.Now()
+	userSession.LastUsedAt = time.Now()
+
 	r.logger.Infof("Creating user session %s", userSession.ID)
 	model := r.converter.ToModel(userSession)
 	if err := r.db.WithContext(ctx).Create(model).Error; err != nil {
@@ -90,8 +95,8 @@ func (r *UserSessionRepository) GetByUserID(ctx context.Context, userID string) 
 	r.logger.Infof("Getting all sessions for user %s", userID)
 	var models []auth_models.UserSession
 	if err := r.db.WithContext(ctx).
-		Where("user_id = ? AND is_revoked = ?", userID, false).
-		Order("updated_at DESC").
+		Where("user_id = ? AND is_revoked = ? AND expires_at > ?", userID, false, time.Now()).
+		Order("last_used_at DESC").
 		Find(&models).Error; err != nil {
 		r.logger.Errorf("Failed to get user sessions: %v", err)
 		return nil, err
@@ -172,9 +177,26 @@ func (r *UserSessionRepository) IsRevoked(ctx context.Context, sessionID string)
 		Where("id = ?", sessionID).
 		First(&session).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return true, nil // session не найдена = считаем revoked
+			return true, nil
 		}
 		return false, err
 	}
 	return session.IsRevoked, nil
+}
+
+func (r *UserSessionRepository) UpdateLastUsed(ctx context.Context, id string) error {
+	now := time.Now()
+
+	if err := r.db.WithContext(ctx).
+		Model(&auth_entity.UserSession{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"last_used_at": now,
+			"updated_at":   now,
+		}).Error; err != nil {
+		r.logger.Errorf("failed to update last used time: %v", err)
+		return err
+	}
+
+	return nil
 }
