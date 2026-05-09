@@ -4,6 +4,7 @@ import (
 	auth_models "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/repository/models"
 	file_model "github.com/Fi44er/sdmed/internal/module/file/infrastructure/repository/model"
 	product_model "github.com/Fi44er/sdmed/internal/module/product/infrastructure/repository/model"
+	scraper_models "github.com/Fi44er/sdmed/internal/module/scraper/infrastructure/repository/models"
 	user_model "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
@@ -25,6 +26,7 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 			product_model.Characteristic{},
 			product_model.CharacteristicValue{},
 			product_model.CharOption{},
+			scraper_models.ScraperSettings{},
 		}
 
 		log.Info("📦 Creating types...")

@@ -1016,6 +1016,103 @@ const docTemplate = `{
                 }
             }
         },
+        "/scraper/run": {
+            "post": {
+                "description": "Starts the scraper and returns results. Note: progress is logged server-side.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scraper"
+                ],
+                "summary": "Run scraping process",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/scraper_entity.Items"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/scraper/settings": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scraper"
+                ],
+                "summary": "Get scraper settings",
+                "responses": {
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scraper"
+                ],
+                "summary": "Update scraper settings",
+                "parameters": [
+                    {
+                        "description": "Update Settings",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/scraper_dto.UpdateSettingsDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "description": "Get all users",
@@ -1626,6 +1723,91 @@ const docTemplate = `{
                     "items": {}
                 },
                 "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "scraper_dto.UpdateSettingsDTO": {
+            "type": "object",
+            "required": [
+                "interval_ms",
+                "max_goroutines",
+                "max_retries",
+                "pause_s",
+                "retry_delay_s",
+                "timeout_s"
+            ],
+            "properties": {
+                "interval_ms": {
+                    "type": "integer",
+                    "minimum": 500
+                },
+                "max_goroutines": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 1
+                },
+                "max_retries": {
+                    "type": "integer",
+                    "maximum": 10,
+                    "minimum": 1
+                },
+                "pause_s": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "retry_delay_s": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "timeout_s": {
+                    "type": "integer",
+                    "minimum": 1
+                }
+            }
+        },
+        "scraper_entity.Item": {
+            "type": "object",
+            "properties": {
+                "price": {
+                    "type": "number",
+                    "format": "float64"
+                },
+                "region": {
+                    "type": "string"
+                }
+            }
+        },
+        "scraper_entity.Items": {
+            "type": "object",
+            "properties": {
+                "categoryArticle": {
+                    "type": "string"
+                },
+                "categoryName": {
+                    "type": "string"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/scraper_entity.Item"
+                    }
+                },
+                "product": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/scraper_entity.ParseProductsArticlesType"
+                    }
+                }
+            }
+        },
+        "scraper_entity.ParseProductsArticlesType": {
+            "type": "object",
+            "properties": {
+                "article": {
+                    "type": "string"
+                },
+                "name": {
                     "type": "string"
                 }
             }

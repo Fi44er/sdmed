@@ -5,6 +5,7 @@ import (
 	file_module "github.com/Fi44er/sdmed/internal/module/file"
 	notification_module "github.com/Fi44er/sdmed/internal/module/notification"
 	product_module "github.com/Fi44er/sdmed/internal/module/product"
+	scraper_module "github.com/Fi44er/sdmed/internal/module/scraper"
 	user_module "github.com/Fi44er/sdmed/internal/module/user"
 )
 
@@ -16,6 +17,7 @@ type moduleProvider struct {
 	authModule         *auth_module.AuthModule
 	fileModule         *file_module.FileModule
 	productModule      *product_module.ProductModule
+	scraperModule      *scraper_module.ScraperModule
 }
 
 func NewModuleProvider(app *App) (*moduleProvider, error) {
@@ -37,6 +39,7 @@ func (p *moduleProvider) initDeps() error {
 		p.AuthModule,
 		p.FileModule,
 		p.ProductModule,
+		p.ScraperModule,
 	}
 	for _, init := range inits {
 		err := init()
@@ -57,6 +60,16 @@ func (p *moduleProvider) UserModule() error {
 func (p *moduleProvider) NotificationModule() error {
 	p.notificationModule = notification_module.NewNotificationModule(p.app.logger, p.app.config)
 	p.notificationModule.Init()
+	return nil
+}
+
+func (p *moduleProvider) ScraperModule() error {
+	p.scraperModule = scraper_module.NewScraperModule(
+		p.app.logger,
+		p.app.validator,
+		p.app.db,
+	)
+	p.scraperModule.Init()
 	return nil
 }
 

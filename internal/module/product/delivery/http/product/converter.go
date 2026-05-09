@@ -72,6 +72,7 @@ func (c *Converter) ToProductResponse(product *product_entity.Product) *product_
 	return &product_dto.ProductResponse{
 		ID:                   product.ID,
 		Name:                 product.Name,
+		Slug:                 product.Slug,
 		Article:              product.Article,
 		Description:          product.Description,
 		ManualPrice:          *product.ManualPrice,

@@ -11,6 +11,7 @@ import (
 	auth_utils "github.com/Fi44er/sdmed/internal/module/auth/pkg/utils"
 	"github.com/Fi44er/sdmed/internal/module/auth/usecase/auth/contracts"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
+	"github.com/Fi44er/sdmed/pkg/customerr"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/google/uuid"
 )
@@ -70,7 +71,6 @@ const (
 )
 
 func (u *AuthUsecase) CreateShadowSession(ctx context.Context) (*auth_entity.User, error) {
-	// Создаем shadow user
 	shadowUser, err := u.shadowUserService.CreateShadowUser(ctx)
 	if err != nil {
 		return nil, err
@@ -89,7 +89,6 @@ func (u *AuthUsecase) CreateShadowSession(ctx context.Context) (*auth_entity.Use
 		return nil, err
 	}
 
-	// Сохраняем в БД для управления устройствами
 	dbSession := &auth_entity.UserSession{
 		ID:         deviceID,
 		UserID:     shadowUser.ID,
@@ -168,23 +167,19 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) error 
 }
 
 func (u *AuthUsecase) RefreshSession(ctx context.Context) error {
-	// Получаем текущую сессию
 	currentSession, err := u.sessionRepository.GetSessionInfo(ctx)
 	if err != nil {
 		return auth_constant.ErrSessionInfoNotFound
 	}
 
-	// Проверяем, не является ли сессия shadow
 	if currentSession.IsShadow {
 		return fmt.Errorf("cannot refresh shadow session")
 	}
 
-	// Проверяем, не истекла ли сессия
 	if time.Now().After(currentSession.ExpiresAt) {
 		return fmt.Errorf("session expired")
 	}
 
-	// Проверяем, не отозвана ли сессия в БД
 	dbSession, err := u.userSessionRepository.Get(ctx, currentSession.DeviceID)
 	if err != nil {
 		return err
@@ -194,16 +189,13 @@ func (u *AuthUsecase) RefreshSession(ctx context.Context) error {
 		return fmt.Errorf("session has been revoked")
 	}
 
-	// Обновляем время последнего использования в БД
 	if err := u.userSessionRepository.UpdateLastUsed(ctx, currentSession.DeviceID); err != nil {
 		u.logger.Errorf("failed to update last used time: %v", err)
 	}
 
-	// Продлеваем время жизни сессии
 	now := time.Now()
 	currentSession.ExpiresAt = now.Add(u.config.RefreshTokenExpiresIn)
 
-	// Сохраняем обновленную сессию
 	if err := u.sessionRepository.PutSessionInfo(ctx, currentSession); err != nil {
 		return err
 	}
@@ -236,12 +228,10 @@ func (u *AuthUsecase) VerifyCode(ctx context.Context, verifyCode *auth_entity.Co
 	sessionInfo, err := u.sessionRepository.GetSessionInfo(ctx)
 	u.logger.Debugf("session info in VerifyCode: %+v \n %v", sessionInfo, err)
 	if err == nil && sessionInfo.IsShadow {
-		// Конвертируем shadow user в реального
 		if err := u.shadowUserService.PromoteToRealUser(ctx, sessionInfo.UserID, &user); err != nil {
 			return err
 		}
 	} else {
-		// Создаем нового пользователя
 		if err := u.userUsecase.Create(ctx, &user); err != nil {
 			return err
 		}
@@ -364,7 +354,7 @@ func (u *AuthUsecase) GetUserDevices(ctx context.Context) ([]*auth_entity.Device
 	}
 
 	if sessionInfo.IsShadow {
-		return nil, fmt.Errorf("shadow users don't have devices")
+		return nil, customerr.NewError(404, "shadow users don't have devices")
 	}
 
 	sessions, err := u.userSessionRepository.GetByUserID(ctx, sessionInfo.UserID)
@@ -373,7 +363,9 @@ func (u *AuthUsecase) GetUserDevices(ctx context.Context) ([]*auth_entity.Device
 	}
 
 	devices := make([]*auth_entity.DeviceInfo, len(sessions))
+
 	for i, session := range sessions {
+		u.logger.Infof("session: %+v", *session)
 		if session.IsRevoked {
 			continue
 		}

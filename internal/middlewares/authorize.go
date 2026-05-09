@@ -56,14 +56,13 @@ func ShadowSessionMiddleware(
 
 		ctx := context.WithValue(c.Context(), "session", *sess)
 
-		// КРИТИЧЕСКИ ВАЖНО: Проверяем есть ли уже информация в сессии
 		sessionInfo, err := sessionRepository.GetSessionInfo(ctx)
 
 		logger.Warnf("Sess ebanay %+v", sessionInfo)
 
 		// Если сессия существует - только обновляем время последней активности
 		if err == nil && sessionInfo != nil {
-			logger.Debugf("Session already exists for device: %s", sessionInfo.DeviceID)
+			logger.Debugf("Session already exists for device: %+v", sessionInfo)
 
 			// Обновляем время последней активности в БД (асинхронно, не блокируем запрос)
 			if sessionInfo.DeviceID != "" {
@@ -134,7 +133,6 @@ func ShadowSessionMiddleware(
 
 		if err := userSessionRepository.Create(ctx, dbSession); err != nil {
 			logger.Errorf("Failed to create user session in DB: %v", err)
-			// Даже если не удалось сохранить в БД, сессия в Redis уже есть
 		} else {
 			logger.Infof("Created shadow session for user %s with device %s", shadowUser.ID, deviceID)
 		}

@@ -235,6 +235,66 @@ definitions:
       status:
         type: string
     type: object
+  scraper_dto.UpdateSettingsDTO:
+    properties:
+      interval_ms:
+        minimum: 500
+        type: integer
+      max_goroutines:
+        maximum: 10
+        minimum: 1
+        type: integer
+      max_retries:
+        maximum: 10
+        minimum: 1
+        type: integer
+      pause_s:
+        minimum: 1
+        type: integer
+      retry_delay_s:
+        minimum: 1
+        type: integer
+      timeout_s:
+        minimum: 1
+        type: integer
+    required:
+    - interval_ms
+    - max_goroutines
+    - max_retries
+    - pause_s
+    - retry_delay_s
+    - timeout_s
+    type: object
+  scraper_entity.Item:
+    properties:
+      price:
+        format: float64
+        type: number
+      region:
+        type: string
+    type: object
+  scraper_entity.Items:
+    properties:
+      categoryArticle:
+        type: string
+      categoryName:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/scraper_entity.Item'
+        type: array
+      product:
+        items:
+          $ref: '#/definitions/scraper_entity.ParseProductsArticlesType'
+        type: array
+    type: object
+  scraper_entity.ParseProductsArticlesType:
+    properties:
+      article:
+        type: string
+      name:
+        type: string
+    type: object
   user_dto.UserDTO:
     properties:
       email:
@@ -933,6 +993,70 @@ paths:
       summary: Get filters for a category
       tags:
       - products
+  /scraper/run:
+    post:
+      consumes:
+      - application/json
+      description: 'Starts the scraper and returns results. Note: progress is logged
+        server-side.'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/scraper_entity.Items'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Run scraping process
+      tags:
+      - Scraper
+  /scraper/settings:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get scraper settings
+      tags:
+      - Scraper
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Update Settings
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/scraper_dto.UpdateSettingsDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Update scraper settings
+      tags:
+      - Scraper
   /users:
     get:
       consumes:

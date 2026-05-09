@@ -346,6 +346,7 @@ func (app *App) initRouter() error {
 	app.moduleProvider.authModule.InitDelivery(api)
 	app.moduleProvider.fileModule.InitDelivery(api)
 	app.moduleProvider.productModule.InitDelivery(api)
+	app.moduleProvider.scraperModule.InitDelivery(api)
 
 	return nil
 }
