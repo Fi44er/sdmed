@@ -265,35 +265,41 @@ definitions:
     - retry_delay_s
     - timeout_s
     type: object
-  scraper_entity.Item:
+  scraper_http.ScraperStatusResponse:
     properties:
-      price:
-        format: float64
+      completed_tasks:
+        type: integer
+      is_running:
+        type: boolean
+      message:
+        type: string
+      percent:
         type: number
-      region:
-        type: string
+      total_tasks:
+        type: integer
     type: object
-  scraper_entity.Items:
+  scraper_http.StartScraperRequest:
     properties:
-      categoryArticle:
-        type: string
-      categoryName:
-        type: string
-      items:
+      articles:
+        example:
+        - 06-01-01
         items:
-          $ref: '#/definitions/scraper_entity.Item'
+          type: string
         type: array
-      product:
+      categories:
+        example:
+        - "06"
+        - "07"
         items:
-          $ref: '#/definitions/scraper_entity.ParseProductsArticlesType'
+          type: string
         type: array
-    type: object
-  scraper_entity.ParseProductsArticlesType:
-    properties:
-      article:
-        type: string
-      name:
-        type: string
+      regions:
+        example:
+        - "77"
+        - "78"
+        items:
+          type: string
+        type: array
     type: object
   user_dto.UserDTO:
     properties:
@@ -993,28 +999,6 @@ paths:
       summary: Get filters for a category
       tags:
       - products
-  /scraper/run:
-    post:
-      consumes:
-      - application/json
-      description: 'Starts the scraper and returns results. Note: progress is logged
-        server-side.'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/scraper_entity.Items'
-            type: array
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: Run scraping process
-      tags:
-      - Scraper
   /scraper/settings:
     get:
       consumes:
@@ -1055,6 +1039,72 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: Update scraper settings
+      tags:
+      - Scraper
+  /scraper/start:
+    post:
+      consumes:
+      - application/json
+      description: Запускает фоновый процесс сбора данных КТСР и синхронизации с БД.
+      parameters:
+      - description: Фильтры парсинга (оставьте пустыми для полного парсинга)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/scraper_http.StartScraperRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Процесс запущен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Парсер уже запущен
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Запустить процесс парсинга
+      tags:
+      - Scraper
+  /scraper/status:
+    get:
+      description: Возвращает информацию о текущем прогрессе, фазе и запущен ли процесс.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/scraper_http.ScraperStatusResponse'
+      summary: Получить статус парсинга
+      tags:
+      - Scraper
+  /scraper/status/stream:
+    get:
+      description: Удерживает соединение и отправляет обновления прогресса в реальном
+        времени
+      responses: {}
+      summary: Стрим статуса парсинга (SSE)
+      tags:
+      - Scraper
+  /scraper/stop:
+    post:
+      description: Прерывает выполнение текущей задачи парсинга.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Остановить парсинг
       tags:
       - Scraper
   /users:

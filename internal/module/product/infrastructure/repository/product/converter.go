@@ -8,6 +8,10 @@ import (
 type Converter struct{}
 
 func (c *Converter) ToModel(entity *product_entity.Product) *product_model.Product {
+	manualPrice := entity.ManualPrice
+	if manualPrice == nil {
+		manualPrice = new(float64)
+	}
 	return &product_model.Product{
 		ID:          entity.ID,
 		Name:        entity.Name,
@@ -16,7 +20,7 @@ func (c *Converter) ToModel(entity *product_entity.Product) *product_model.Produ
 		Description: entity.Description,
 		CategoryID:  entity.CategoryID,
 
-		ManualPrice:    *entity.ManualPrice,
+		ManualPrice:    *manualPrice,
 		UseManualPrice: entity.UseManualPrice,
 
 		IsActive: entity.IsActive,

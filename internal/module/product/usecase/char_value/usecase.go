@@ -17,7 +17,7 @@ import (
 var ownerType = "char_value"
 
 type ICharValueUsecase interface {
-	CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error
+	CreateMany(ctx context.Context, charValues []*product_entity.ProductCharValue) error
 }
 
 type CharValueUsecase struct {
@@ -41,7 +41,7 @@ func NewCharValueUsecase(
 	}
 }
 
-func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error {
+func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []*product_entity.ProductCharValue) error {
 	u.logger.Info("Creating char values")
 
 	return u.uow.Do(ctx, func(ctx context.Context) error {
@@ -77,7 +77,7 @@ func (u *CharValueUsecase) CreateMany(ctx context.Context, charValues []product_
 		}
 
 		for i := range charValues {
-			value := &charValues[i]
+			value := charValues[i]
 			characteristic, exists := characteristicsMap[value.CharacteristicID]
 			if !exists {
 				return product_constant.ErrCharacteristicNotFound.WithContext(

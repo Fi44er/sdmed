@@ -21,3 +21,9 @@ type ParseProductsArticlesType struct {
 	Article string
 	Name    string
 }
+
+type ScrapeParams struct {
+	Categories []string // Фильтр по разделам (06, 07...)
+	Articles   []string // Фильтр по конкретным подкатегориям (06-01-01...)
+	Regions    []string // Опционально: фильтр по регионам (ISO коды)
+}

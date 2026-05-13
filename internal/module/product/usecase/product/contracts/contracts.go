@@ -26,6 +26,7 @@ type IProductRepository interface {
 	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
 	Count(ctx context.Context) (int64, error)
 	GetFiltersByCategory(ctx context.Context, categoryID string) ([]product_entity.Filter, error)
+	CreateMany(ctx context.Context, products []*product_entity.Product) error
 }
 
 type ICache interface {
@@ -35,5 +36,5 @@ type ICache interface {
 }
 
 type ICharValueUsecase interface {
-	CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error
+	CreateMany(ctx context.Context, charValues []*product_entity.ProductCharValue) error
 }

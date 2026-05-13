@@ -9,7 +9,7 @@ import (
 type ICharValueRepository interface {
 	Create(ctx context.Context, charValue *product_entity.ProductCharValue) error
 	Delete(ctx context.Context, id string) error
-	CreateMany(ctx context.Context, charValues []product_entity.ProductCharValue) error
+	CreateMany(ctx context.Context, charValues []*product_entity.ProductCharValue) error
 }
 
 type ICharacteristicUsecase interface {

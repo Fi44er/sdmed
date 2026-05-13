@@ -1016,38 +1016,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/scraper/run": {
-            "post": {
-                "description": "Starts the scraper and returns results. Note: progress is logged server-side.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Scraper"
-                ],
-                "summary": "Run scraping process",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/scraper_entity.Items"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/scraper/settings": {
             "get": {
                 "consumes": [
@@ -1108,6 +1076,105 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/scraper/start": {
+            "post": {
+                "description": "Запускает фоновый процесс сбора данных КТСР и синхронизации с БД.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scraper"
+                ],
+                "summary": "Запустить процесс парсинга",
+                "parameters": [
+                    {
+                        "description": "Фильтры парсинга (оставьте пустыми для полного парсинга)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/scraper_http.StartScraperRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Процесс запущен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Парсер уже запущен",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/scraper/status": {
+            "get": {
+                "description": "Возвращает информацию о текущем прогрессе, фазе и запущен ли процесс.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scraper"
+                ],
+                "summary": "Получить статус парсинга",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/scraper_http.ScraperStatusResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/scraper/status/stream": {
+            "get": {
+                "description": "Удерживает соединение и отправляет обновления прогресса в реальном времени",
+                "tags": [
+                    "Scraper"
+                ],
+                "summary": "Стрим статуса парсинга (SSE)",
+                "responses": {}
+            }
+        },
+        "/scraper/stop": {
+            "post": {
+                "description": "Прерывает выполнение текущей задачи парсинга.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Scraper"
+                ],
+                "summary": "Остановить парсинг",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -1766,49 +1833,57 @@ const docTemplate = `{
                 }
             }
         },
-        "scraper_entity.Item": {
+        "scraper_http.ScraperStatusResponse": {
             "type": "object",
             "properties": {
-                "price": {
-                    "type": "number",
-                    "format": "float64"
+                "completed_tasks": {
+                    "type": "integer"
                 },
-                "region": {
+                "is_running": {
+                    "type": "boolean"
+                },
+                "message": {
                     "type": "string"
+                },
+                "percent": {
+                    "type": "number"
+                },
+                "total_tasks": {
+                    "type": "integer"
                 }
             }
         },
-        "scraper_entity.Items": {
+        "scraper_http.StartScraperRequest": {
             "type": "object",
             "properties": {
-                "categoryArticle": {
-                    "type": "string"
-                },
-                "categoryName": {
-                    "type": "string"
-                },
-                "items": {
+                "articles": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/scraper_entity.Item"
-                    }
+                        "type": "string"
+                    },
+                    "example": [
+                        "06-01-01"
+                    ]
                 },
-                "product": {
+                "categories": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/scraper_entity.ParseProductsArticlesType"
-                    }
-                }
-            }
-        },
-        "scraper_entity.ParseProductsArticlesType": {
-            "type": "object",
-            "properties": {
-                "article": {
-                    "type": "string"
+                        "type": "string"
+                    },
+                    "example": [
+                        "06",
+                        "07"
+                    ]
                 },
-                "name": {
-                    "type": "string"
+                "regions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "77",
+                        "78"
+                    ]
                 }
             }
         },

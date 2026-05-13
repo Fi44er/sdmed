@@ -19,6 +19,7 @@ type IProductUsecase interface {
 	GetAll(ctx context.Context, params *product_entity.ProductFilterParams) ([]product_entity.Product, int64, error)
 
 	GetFilters(ctx context.Context, categoryID string) ([]product_entity.Filter, error)
+	CreateMany(ctx context.Context, products []*product_entity.Product) error
 }
 
 type ProductUsecase struct {
@@ -100,6 +101,81 @@ func (u *ProductUsecase) GetBySlug(ctx context.Context, slug string) (*product_e
 	return product, nil
 }
 
+func (u *ProductUsecase) CreateMany(ctx context.Context, products []*product_entity.Product) error {
+	if len(products) == 0 {
+		return nil
+	}
+
+	u.logger.Infof("Batch creating %d products", len(products))
+
+	return u.uow.Do(ctx, func(ctx context.Context) error {
+		repo, err := u.uow.GetRepository(ctx, ownerType)
+		if err != nil {
+			return err
+		}
+		productRepo := repo.(product_usecase_contracts.IProductRepository)
+
+		// 1. Фильтруем продукты, которые уже существуют
+		// В идеале в репозиторий нужно добавить метод GetByArticles([]string)
+		// Если его нет, используем простую проверку (или пропускаем, если в репо стоит OnConflict DoNothing)
+		toCreate := make([]*product_entity.Product, 0, len(products))
+		for _, p := range products {
+			exist, err := productRepo.GetByArticle(ctx, p.Article)
+			if err != nil {
+				return err
+			}
+			if exist == nil {
+				p.Slogify() // Генерируем слаг
+				toCreate = append(toCreate, p)
+			}
+		}
+
+		if len(toCreate) == 0 {
+			u.logger.Info("All products already exist, skipping")
+			return nil
+		}
+
+		// 2. Пакетное сохранение продуктов
+		// После этого метода у объектов в toCreate должны заполниться ID (если это делает репо)
+		if err := productRepo.CreateMany(ctx, toCreate); err != nil {
+			return err
+		}
+
+		// 3. Обработка характеристик и файлов
+		var allCharValues []*product_entity.ProductCharValue
+
+		for _, p := range toCreate {
+			// Подготавливаем файлы (картинки)
+			if len(p.Images) > 0 {
+				imageNames := make([]string, 0, len(p.Images))
+				for _, img := range p.Images {
+					imageNames = append(imageNames, img.Name)
+				}
+				// Делаем файлы постоянными
+				if err := u.fileUsecase.MakeFilesPermanent(ctx, imageNames, p.ID, ownerType); err != nil {
+					return err
+				}
+			}
+
+			// Привязываем характеристики к ID созданного продукта
+			for i := range p.CharValues {
+				p.CharValues[i].ProductID = p.ID
+				allCharValues = append(allCharValues, &p.CharValues[i])
+			}
+		}
+
+		// 4. Пакетное сохранение всех характеристик всех продуктов одним запросом
+		if len(allCharValues) > 0 {
+			if err := u.charValueUsecase.CreateMany(ctx, allCharValues); err != nil {
+				return err
+			}
+		}
+
+		u.logger.Infof("Successfully created %d products and their characteristics", len(toCreate))
+		return nil
+	})
+}
+
 func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Product) error {
 	u.logger.Infof("Creating product: %s", product.Name)
 
@@ -145,8 +221,13 @@ func (u *ProductUsecase) Create(ctx context.Context, product *product_entity.Pro
 			product.CharValues[i].ProductID = product.ID
 		}
 
-		if len(product.CharValues) > 0 {
-			if err := u.charValueUsecase.CreateMany(ctx, product.CharValues); err != nil {
+		charValues := make([]*product_entity.ProductCharValue, 0, len(product.CharValues))
+		for i := range product.CharValues {
+			charValues = append(charValues, &product.CharValues[i])
+		}
+
+		if len(charValues) > 0 {
+			if err := u.charValueUsecase.CreateMany(ctx, charValues); err != nil {
 				u.logger.Errorf("Failed to create char values for product %s: %v", product.ID, err)
 				return err
 			}

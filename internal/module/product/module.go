@@ -105,3 +105,7 @@ func (m *ProductModule) InitDelivery(router fiber.Router) {
 	m.categoryHandler.RegisterRoutes(router)
 	m.productHandler.RegisterRoutes(router)
 }
+
+func (m *ProductModule) GetProductUsecase() product_usecase.IProductUsecase {
+	return m.productUsecase
+}

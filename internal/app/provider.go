@@ -6,6 +6,7 @@ import (
 	notification_module "github.com/Fi44er/sdmed/internal/module/notification"
 	product_module "github.com/Fi44er/sdmed/internal/module/product"
 	scraper_module "github.com/Fi44er/sdmed/internal/module/scraper"
+	tru_module "github.com/Fi44er/sdmed/internal/module/tru"
 	user_module "github.com/Fi44er/sdmed/internal/module/user"
 )
 
@@ -18,6 +19,7 @@ type moduleProvider struct {
 	fileModule         *file_module.FileModule
 	productModule      *product_module.ProductModule
 	scraperModule      *scraper_module.ScraperModule
+	truModule          *tru_module.TruModule
 }
 
 func NewModuleProvider(app *App) (*moduleProvider, error) {
@@ -39,6 +41,7 @@ func (p *moduleProvider) initDeps() error {
 		p.AuthModule,
 		p.FileModule,
 		p.ProductModule,
+		p.TruModule,
 		p.ScraperModule,
 	}
 	for _, init := range inits {
@@ -68,6 +71,8 @@ func (p *moduleProvider) ScraperModule() error {
 		p.app.logger,
 		p.app.validator,
 		p.app.db,
+		p.productModule.GetProductUsecase(),
+		p.truModule.GetTRUCodeUsecase(),
 	)
 	p.scraperModule.Init()
 	return nil
@@ -111,5 +116,14 @@ func (p *moduleProvider) ProductModule() error {
 		p.app.redisManager,
 	)
 	p.productModule.Init()
+	return nil
+}
+
+func (p *moduleProvider) TruModule() error {
+	p.truModule = tru_module.NewTruModule(
+		p.app.logger,
+		p.app.db,
+	)
+	p.truModule.Init()
 	return nil
 }

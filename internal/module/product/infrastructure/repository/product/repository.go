@@ -21,6 +21,7 @@ type IProductRepository interface {
 	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
 	Count(ctx context.Context) (int64, error)
 	GetFiltersByCategory(ctx context.Context, categoryID string) ([]product_entity.Filter, error)
+	CreateMany(ctx context.Context, products []*product_entity.Product) error
 }
 
 type ProductRepository struct {
@@ -35,6 +36,31 @@ func NewProductRepository(logger *logger.Logger, db *gorm.DB) IProductRepository
 		db:        db,
 		converter: &Converter{},
 	}
+}
+
+func (r *ProductRepository) CreateMany(ctx context.Context, products []*product_entity.Product) error {
+	if len(products) == 0 {
+		return nil
+	}
+
+	r.logger.Infof("Batch creating %d products", len(products))
+
+	models := make([]*product_model.Product, 0, len(products))
+	for _, p := range products {
+		models = append(models, r.converter.ToModel(p))
+	}
+
+	if err := r.db.WithContext(ctx).CreateInBatches(models, 1000).Error; err != nil {
+		r.logger.Errorf("Failed to batch create products: %v", err)
+		return err
+	}
+
+	for i, m := range models {
+		products[i].ID = m.ID
+	}
+
+	r.logger.Info("Batch products created successfully")
+	return nil
 }
 
 func (r *ProductRepository) Create(ctx context.Context, product *product_entity.Product) error {

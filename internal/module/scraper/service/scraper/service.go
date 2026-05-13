@@ -15,6 +15,7 @@ import (
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/andybalholm/brotli"
+	"golang.org/x/sync/errgroup"
 )
 
 type IRateLimiterService interface {
@@ -36,15 +37,30 @@ func NewScraperService(logger *logger.Logger, rateLimiterService IRateLimiterSer
 	}
 }
 
-func (s *ScraperService) Scraper(ctx context.Context, onProgress func(completed, total int, message string)) []scraper_entity.Items {
+func (s *ScraperService) Scraper(
+	ctx context.Context,
+	params scraper_entity.ScrapeParams,
+	onProgress func(completed, total int, message string),
+) []scraper_entity.Items {
 	regions := scraper_constant.Regions
+	if len(params.Regions) > 0 {
+		var filtered []scraper_constant.Region
+		for _, r := range regions {
+			for _, target := range params.Regions {
+				if r.Iso3166 == target {
+					filtered = append(filtered, r)
+				}
+			}
+		}
+		regions = filtered
+	}
+
 	mainUrl := "https://ktsr.sfr.gov.ru"
-
 	s.logger.Info("Starting web scraper")
-	// log.Info(fmt.Sprintf("[Scraper] Total articles: %d, Total regions: %d, Total price requests: ~%d",
-	// 	len(articles), len(regions), len(articles)*len(regions)))
+	if onProgress != nil {
+		onProgress(1, 100, "Подключение к КТСР...")
+	}
 
-	// Гарантируем cleanup rate limiter при завершении
 	defer s.rateLimiterService.CleanupRateLimiter()
 
 	doc := s.rateLimiterService.Request(ctx, mainUrl)
@@ -58,14 +74,23 @@ func (s *ScraperService) Scraper(ctx context.Context, onProgress func(completed,
 	sectionsMap := s.ParseSectionUrl(doc)
 	s.logger.Info("Parsed section URLs")
 
-	// Предварительное заполнение articleUrlMap
-
 	// [06-01-01] -> {url: https://ktsr.sfr.gov.ru/ru-RU/product/product/order86n/5, name: 06-01-01 Трость опорная, регулируемая по высоте, без устройства противоскольжения}
 	articleUrlMap := make(map[string]scraper_entity.Category)
 	for key, value := range sectionsMap {
+		if len(params.Categories) > 0 && !contains(params.Categories, key) {
+			continue
+		}
+		if onProgress != nil {
+			onProgress(5, 100, "Анализ разделов...")
+		}
 		url := fmt.Sprintf("%v%v", mainUrl, value)
 		s.logger.Infof("Pre-parsing category article URL for article type: %v URL: %v", key, url)
-		s.ParseCategoryArticleUrl(ctx, url, articleUrlMap)
+		s.ParseCategoryArticleUrl(ctx, url, params.Articles, articleUrlMap)
+	}
+
+	if len(articleUrlMap) == 0 {
+		s.logger.Warn("No articles found with provided filters")
+		return nil
 	}
 
 	// Предварительное заполнение productsMap
@@ -73,113 +98,77 @@ func (s *ScraperService) Scraper(ctx context.Context, onProgress func(completed,
 	for _, info := range articleUrlMap {
 		if _, ok := productsMap[info.URL]; !ok {
 			s.logger.Infof("Fetching products articles for URL: %v", info.URL)
+			if onProgress != nil {
+				onProgress(15, 100, "Сбор списка товаров...")
+			}
 			productsMap[info.URL] = s.ParseProductsArticles(ctx, info.URL)
 		}
 	}
 
 	totalTasks := len(articleUrlMap) * len(regions)
 	completedTasks := 0
-
 	items := make(map[string]scraper_entity.Items)
-	results := make(chan struct {
-		article string
-		item    scraper_entity.Items
-	}, totalTasks)
-
-	var wg sync.WaitGroup
 	var mu sync.Mutex
 
+	g, gCtx := errgroup.WithContext(ctx)
 	maxGoroutines := 2
-	sem := make(chan struct{}, maxGoroutines)
+	g.SetLimit(maxGoroutines)
 
-	for article, _ := range articleUrlMap {
+	for article, categoryInfo := range articleUrlMap {
 		articleType := strings.Split(article, "-")[0]
 		s.logger.Infof("Processing article: %v with type: %v", article, articleType)
 		for _, region := range regions {
-			wg.Add(1)
-			sem <- struct{}{}
+			a, aT, r, cat := article, articleType, region, categoryInfo
 
-			go func(article, articleType string, region scraper_constant.Region) {
-				defer wg.Done()
-				defer func() { <-sem }()
-
+			g.Go(func() error {
 				select {
-				case <-ctx.Done():
-					s.logger.Warnf("Context done, stopping goroutine for article: %v and region: %v", article, region.Iso3166)
-					return
+				case <-gCtx.Done():
+					return gCtx.Err()
 				default:
 				}
 
-				certificatePrice := s.ParceCertificatePriceRegion(ctx, region, article, articleType)
-				if certificatePrice == nil {
-					s.logger.Warnf("No certificate price found for article: %v in region: %v", article, region.Iso3166)
-
-					mu.Lock()
-					completedTasks++
-					progress := completedTasks
-					mu.Unlock()
-					s.logger.Infof("[Progress] %d/%d (%.1f%%)", progress, totalTasks, float64(progress)/float64(totalTasks)*100)
-					if onProgress != nil {
-						onProgress(progress, totalTasks, fmt.Sprintf("Артикул: %s, регион: %s (нет цены)", article, region.Iso3166))
-					}
-
-					return
+				certPrice := s.ParceCertificatePriceRegion(gCtx, r, a, aT)
+				price := 0.0
+				if certPrice != nil {
+					price = *certPrice
 				}
 
 				mu.Lock()
-				if existingItems, exist := items[article]; exist {
-					existingItems.Items = append(existingItems.Items, scraper_entity.Item{
-						Price:  *certificatePrice,
-						Region: region.Iso3166,
+				completedTasks++
+				internalStep := 20 + int(float64(completedTasks)/float64(totalTasks)*80)
+
+				if existing, exist := items[a]; exist {
+					existing.Items = append(existing.Items, scraper_entity.Item{
+						Price:  price,
+						Region: r.Iso3166,
 					})
-					items[article] = existingItems
+					items[a] = existing
 				} else {
-					newItems := scraper_entity.Items{
-						CategoryArticle: article,
-						CategoryName:    articleUrlMap[article].Name,
-						Product:         productsMap[articleUrlMap[article].URL],
+					items[a] = scraper_entity.Items{
+						CategoryArticle: a,
+						CategoryName:    cat.Name,
+						Product:         productsMap[cat.URL],
 						Items: []scraper_entity.Item{
-							{
-								Price:  *certificatePrice,
-								Region: region.Iso3166,
-							},
+							{Price: price, Region: r.Iso3166},
 						},
 					}
-					items[article] = newItems
 				}
-				result := items[article]
-
-				completedTasks++
-				progress := completedTasks
-				mu.Unlock()
 
 				s.logger.Infof("[Progress] %d/%d (%.1f%%) — article: %s, region: %s",
-					progress, totalTasks, float64(progress)/float64(totalTasks)*100, article, region.Iso3166)
-				if onProgress != nil {
-					onProgress(progress, totalTasks, fmt.Sprintf("Артикул: %s, регион: %s", article, region.Iso3166))
-				}
+					completedTasks, totalTasks, float64(completedTasks)/float64(totalTasks)*100, article, region.Iso3166)
 
-				select {
-				case <-ctx.Done():
-					return
-				case results <- struct {
-					article string
-					item    scraper_entity.Items
-				}{article, result}:
+				if onProgress != nil {
+					onProgress(internalStep, 100, fmt.Sprintf("Парсинг цен: %s (%s)", a, r.Iso3166))
 				}
-			}(article, articleType, region)
+				mu.Unlock()
+
+				return nil
+			})
 		}
 	}
 
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	for result := range results {
-		mu.Lock()
-		items[result.article] = result.item
-		mu.Unlock()
+	if err := g.Wait(); err != nil {
+		s.logger.Warnf("Scraper interrupted: %v", err)
 	}
 
 	itemSlice := make([]scraper_entity.Items, 0, len(items))
@@ -191,7 +180,7 @@ func (s *ScraperService) Scraper(ctx context.Context, onProgress func(completed,
 	return itemSlice
 }
 
-func (s *ScraperService) ParseCategoryArticleUrl(ctx context.Context, url string, articleUrlMap map[string]scraper_entity.Category) {
+func (s *ScraperService) ParseCategoryArticleUrl(ctx context.Context, url string, filterArticles []string, articleUrlMap map[string]scraper_entity.Category) {
 	doc := s.rateLimiterService.Request(ctx, url)
 
 	doc.Find("a.category-inner-item-info").Each(func(i int, s *goquery.Selection) {
@@ -207,6 +196,10 @@ func (s *ScraperService) ParseCategoryArticleUrl(ctx context.Context, url string
 					cartUrl = "https://ktsr.sfr.gov.ru" + href
 				}
 			})
+
+			if len(filterArticles) > 0 && !contains(filterArticles, article) {
+				return
+			}
 			s.Find("div.category-inner-item__title").Each(func(i int, div *goquery.Selection) {
 				text := strings.TrimSpace(div.Text())
 				if text != "" {
@@ -374,4 +367,13 @@ func (s *ScraperService) ParseSectionUrl(doc *goquery.Document) map[string]strin
 	})
 
 	return section
+}
+
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
