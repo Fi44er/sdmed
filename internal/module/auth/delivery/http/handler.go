@@ -157,6 +157,7 @@ func (h *AuthHandler) RefreshSession(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.Response "Error"
 // @Router /auth/verify-code [post]
 func (h *AuthHandler) VerifyCode(ctx *fiber.Ctx) error {
+	context := h.getCtxWithSession(ctx)
 	dto := new(auth_dto.VerifyCodeDTO)
 
 	entity, err := utils.ParseAndValidate(ctx, dto, h.validator, h.converter.ToEntityVerifyCode, h.logger)
@@ -164,7 +165,7 @@ func (h *AuthHandler) VerifyCode(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	if err := h.usecase.VerifyCode(ctx.Context(), entity); err != nil {
+	if err := h.usecase.VerifyCode(context, entity); err != nil {
 		h.logger.Errorf("error while create user: %s", err)
 		return err
 	}
@@ -383,10 +384,10 @@ func (h *AuthHandler) ResetPassword(ctx *fiber.Ctx) error {
 
 func (h *AuthHandler) getCtxWithSession(ctx *fiber.Ctx) context.Context {
 	sess := session.FromFiberContext(ctx)
-
-	context := context.WithValue(ctx.Context(), "session", *sess)
-
-	return context
+	if sess == nil {
+		return ctx.Context()
+	}
+	return context.WithValue(ctx.Context(), "session", *sess)
 }
 
 func (h *AuthHandler) setCookies(ctx *fiber.Ctx) {

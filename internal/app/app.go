@@ -319,6 +319,14 @@ func (app *App) registerBackgroundProcesses() error {
 		}
 	}
 
+	if app.moduleProvider != nil && app.moduleProvider.authModule != nil {
+		shadowCleaner := app.moduleProvider.authModule.GetShadowUserCleaner()
+		if shadowCleaner != nil {
+			app.processManager.Register(shadowCleaner)
+			app.logger.Info("✅ ShadowUserCleaner registered in process manager")
+		}
+	}
+
 	return nil
 }
 

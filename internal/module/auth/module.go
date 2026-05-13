@@ -3,6 +3,7 @@ package auth_module
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/Fi44er/sdmed/internal/config"
 	auth_handler "github.com/Fi44er/sdmed/internal/module/auth/delivery/http"
@@ -32,6 +33,7 @@ type AuthModule struct {
 	sessionRepository     *repository.SessionRepository
 	userSessionRepository user_session_repository.IUserSessionRepository
 	shadowUserUsecase     shadow_user.IShadowUserService
+	shadowUserCleaner     *shadow_user.ShadowUserCleaner
 
 	accessManager *accessmanager_service.Manager
 
@@ -69,6 +71,7 @@ func (m *AuthModule) Init() {
 	m.sessionRepository = repository.NewSessionRepository(m.logger)
 	m.userSessionRepository = user_session_repository.NewUserSessionRepository(m.logger, m.db)
 	m.shadowUserUsecase = shadow_user.NewShadowUserService(m.logger, m.authAdapters, m.config)
+	m.shadowUserCleaner = shadow_user.NewShadowUserCleaner(m.shadowUserUsecase, m.logger, 1*time.Hour)
 	m.authUsecase = auth_usecase.NewAuthUsecase(
 		m.logger,
 		m.redisManager,
@@ -98,6 +101,10 @@ func (m *AuthModule) GetAccessManager() *accessmanager_service.Manager {
 
 func (m *AuthModule) GetShadowUserService() shadow_user.IShadowUserService {
 	return m.shadowUserUsecase
+}
+
+func (m *AuthModule) GetShadowUserCleaner() *shadow_user.ShadowUserCleaner {
+	return m.shadowUserCleaner
 }
 
 func (m *AuthModule) GetUserSessionRepository() user_session_repository.IUserSessionRepository {

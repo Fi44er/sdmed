@@ -188,7 +188,7 @@ func (r *UserSessionRepository) UpdateLastUsed(ctx context.Context, id string) e
 	now := time.Now()
 
 	if err := r.db.WithContext(ctx).
-		Model(&auth_entity.UserSession{}).
+		Model(&auth_models.UserSession{}).
 		Where("id = ?", id).
 		Updates(map[string]any{
 			"last_used_at": now,

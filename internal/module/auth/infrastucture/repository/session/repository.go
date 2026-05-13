@@ -71,6 +71,12 @@ func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *aut
 		return auth_constant.ErrSessionInfoNotFound
 	}
 
+	var data map[string]any
+	if err := mapstructure.Decode(sessionInfo, &data); err != nil {
+		return fmt.Errorf("failed to encode session info: %w", err)
+	}
+	session.Put(sessionInfoKey, data)
+
 	session.Put(sessionInfoKey, sessionInfo)
 	return nil
 }

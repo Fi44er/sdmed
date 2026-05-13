@@ -25,9 +25,10 @@ type ShadowUserService struct {
 
 type IUserUsecase interface {
 	Create(ctx context.Context, user *auth_entity.User) error
-	Update(ctx context.Context, user *auth_entity.User) error
+	Promote(ctx context.Context, user *auth_entity.User) error
 	GetByID(ctx context.Context, id string) (*auth_entity.User, error)
 	Delete(ctx context.Context, id string) error
+	DeleteExpiredShadows(ctx context.Context) (int64, error)
 }
 
 func NewShadowUserService(
@@ -77,6 +78,8 @@ func (s *ShadowUserService) PromoteToRealUser(ctx context.Context, shadowUserID 
 		return err
 	}
 
+	s.logger.Debugf("user: %+v", existingUser)
+
 	if !existingUser.IsShadow {
 		return auth_constant.ErrUserAlreadyExists
 	}
@@ -91,7 +94,7 @@ func (s *ShadowUserService) PromoteToRealUser(ctx context.Context, shadowUserID 
 	existingUser.ShadowExpiresAt = nil
 	// Роли будут обновлены в user usecase
 
-	if err := s.userUsecase.Update(ctx, existingUser); err != nil {
+	if err := s.userUsecase.Promote(ctx, existingUser); err != nil {
 		s.logger.Errorf("Failed to promote shadow user: %v", err)
 		return err
 	}
@@ -100,14 +103,13 @@ func (s *ShadowUserService) PromoteToRealUser(ctx context.Context, shadowUserID 
 	return nil
 }
 
-// CleanupExpiredShadows - удаляет истекших shadow users (для cron job)
 func (s *ShadowUserService) CleanupExpiredShadows(ctx context.Context) error {
 	s.logger.Info("Starting cleanup of expired shadow users")
-
-	// Эту логику нужно реализовать в user repository
-	// Здесь просто заглушка для примера архитектуры
-	// В реальности сделай метод в user_repository: DeleteExpiredShadows()
-
-	s.logger.Info("Expired shadow users cleanup completed")
+	count, err := s.userUsecase.DeleteExpiredShadows(ctx)
+	if err != nil {
+		s.logger.Errorf("Failed to cleanup expired shadow users: %v", err)
+		return err
+	}
+	s.logger.Infof("Cleanup completed: deleted %d expired shadow users", count)
 	return nil
 }

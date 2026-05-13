@@ -362,22 +362,19 @@ func (u *AuthUsecase) GetUserDevices(ctx context.Context) ([]*auth_entity.Device
 		return nil, err
 	}
 
-	devices := make([]*auth_entity.DeviceInfo, len(sessions))
-
-	for i, session := range sessions {
-		u.logger.Infof("session: %+v", *session)
+	devices := make([]*auth_entity.DeviceInfo, 0, len(sessions))
+	for _, session := range sessions {
 		if session.IsRevoked {
 			continue
 		}
-
-		devices[i] = &auth_entity.DeviceInfo{
+		devices = append(devices, &auth_entity.DeviceInfo{
 			DeviceID:   session.ID,
 			DeviceName: session.DeviceName,
 			LastIP:     session.LastIP,
 			IsCurrent:  session.ID == sessionInfo.DeviceID,
 			CreatedAt:  session.CreatedAt,
 			LastUsedAt: session.LastUsedAt,
-		}
+		})
 	}
 
 	return devices, nil

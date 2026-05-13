@@ -2,6 +2,7 @@ package user_repository
 
 import (
 	"context"
+	"time"
 
 	user_entity "github.com/Fi44er/sdmed/internal/module/user/entity"
 	user_model "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
@@ -23,6 +24,19 @@ func NewUserRepository(logger *logger.Logger, db *gorm.DB) *UserRepository {
 	}
 }
 
+func (r *UserRepository) DeleteExpiredShadows(ctx context.Context) (int64, error) {
+	r.logger.Info("Deleting expired shadow users")
+	result := r.db.WithContext(ctx).
+		Where("is_shadow = ? AND shadow_expires_at < ?", true, time.Now()).
+		Delete(&user_model.User{})
+	if result.Error != nil {
+		r.logger.Errorf("Error deleting expired shadow users: %v", result.Error)
+		return 0, result.Error
+	}
+	r.logger.Infof("Deleted %d expired shadow users", result.RowsAffected)
+	return result.RowsAffected, nil
+}
+
 func (r *UserRepository) Create(ctx context.Context, user *user_entity.User) error {
 	r.logger.Infof("Creating user: %+v", user)
 	userModel := r.converter.ToModel(user)
@@ -32,6 +46,24 @@ func (r *UserRepository) Create(ctx context.Context, user *user_entity.User) err
 	}
 	user.ID = userModel.ID
 	r.logger.Info("User created successfully")
+	return nil
+}
+
+func (r *UserRepository) Promote(ctx context.Context, user *user_entity.User) error {
+	userModel := r.converter.ToModel(user)
+	if err := r.db.WithContext(ctx).
+		Model(&user_model.User{}).
+		Where("id = ?", user.ID).
+		Select(
+			"email", "password_hash", "name", "surname",
+			"patronymic", "phone_number",
+			"is_shadow", "shadow_created_at", "shadow_expires_at",
+			"updated_at",
+		).
+		Updates(userModel).Error; err != nil {
+		r.logger.Errorf("Error promoting user: %v", err)
+		return err
+	}
 	return nil
 }
 

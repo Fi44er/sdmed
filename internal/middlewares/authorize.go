@@ -28,6 +28,7 @@ type IUserSessionRepository interface {
 	Create(ctx context.Context, session *auth_entity.UserSession) error
 	Get(ctx context.Context, id string) (*auth_entity.UserSession, error)
 	UpdateLastUsed(ctx context.Context, id string) error
+	Delete(ctx context.Context, id string) error
 }
 
 func InjectManager(am *accessmanager_service.Manager) fiber.Handler {
@@ -110,14 +111,6 @@ func ShadowSessionMiddleware(
 			UserAgent: userAgent,
 		}
 
-		// Сохраняем в Redis - это ОБЯЗАТЕЛЬНАЯ операция
-		if err := sessionRepository.PutSessionInfo(ctx, activeSession); err != nil {
-			logger.Errorf("Failed to save session info to Redis: %v", err)
-			// Если не удалось сохранить в Redis, не создаем запись в БД
-			return c.Next()
-		}
-
-		// Сохраняем в БД для управления устройствами
 		dbSession := &auth_entity.UserSession{
 			ID:         deviceID,
 			UserID:     shadowUser.ID,
@@ -135,6 +128,13 @@ func ShadowSessionMiddleware(
 			logger.Errorf("Failed to create user session in DB: %v", err)
 		} else {
 			logger.Infof("Created shadow session for user %s with device %s", shadowUser.ID, deviceID)
+		}
+
+		if err := sessionRepository.PutSessionInfo(ctx, activeSession); err != nil {
+			logger.Errorf("Failed to save session info to Redis: %v", err)
+			userSessionRepository.Delete(context.Background(), deviceID)
+
+			return c.Next()
 		}
 
 		return c.Next()

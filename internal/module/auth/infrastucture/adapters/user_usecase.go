@@ -24,6 +24,10 @@ func NewUserUsecaseAdapter(userUsecase *userUsecase.UserUsecase, roleUsecase rol
 	}
 }
 
+func (a *UserUsecaseAdapter) DeleteExpiredShadows(ctx context.Context) (int64, error) {
+	return a.userUsecase.DeleteExpiredShadows(ctx)
+}
+
 func (a *UserUsecaseAdapter) GetByEmail(ctx context.Context, email string) (*authEntity.User, error) {
 	user, err := a.userUsecase.GetByEmail(ctx, email)
 	if err != nil {
@@ -58,6 +62,11 @@ func (a *UserUsecaseAdapter) Update(ctx context.Context, user *authEntity.User) 
 	return a.userUsecase.Update(ctx, externalUser)
 }
 
+func (a *UserUsecaseAdapter) Promote(ctx context.Context, user *authEntity.User) error {
+	externalUser := toUserEntity(user)
+	return a.userUsecase.Promote(ctx, externalUser)
+}
+
 func (a *UserUsecaseAdapter) Delete(ctx context.Context, id string) error {
 	return a.userUsecase.Delete(ctx, id)
 }
@@ -85,12 +94,18 @@ func toAuthUser(user *userEntity.User) *authEntity.User {
 		roles[i] = *toAuthRole(&role)
 	}
 
+	fio := user.Name + " " + user.Surname + " " + user.Patronymic
+
 	return &authEntity.User{
-		ID:          user.ID,
-		Email:       user.Email,
-		Password:    user.PasswordHash,
-		PhoneNumber: user.PhoneNumber,
-		Roles:       roles,
+		ID:              user.ID,
+		Email:           user.Email,
+		Password:        user.PasswordHash,
+		PhoneNumber:     user.PhoneNumber,
+		Roles:           roles,
+		IsShadow:        user.IsShadow,
+		ShadowCreatedAt: user.ShadowCreatedAt,
+		ShadowExpiresAt: user.ShadowExpiresAt,
+		FIO:             fio,
 	}
 }
 

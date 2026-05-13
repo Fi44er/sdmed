@@ -15,6 +15,8 @@ type IUserRepository interface {
 	Create(ctx context.Context, user_entity *user_entity.User) error
 	Update(ctx context.Context, user_entity *user_entity.User) error
 	Delete(ctx context.Context, id string) error
+	DeleteExpiredShadows(ctx context.Context) (int64, error)
+	Promote(ctx context.Context, user *user_entity.User) error
 }
 
 type UserUsecase struct {
@@ -30,6 +32,21 @@ func NewUserUsecase(
 		repository: repository,
 		logger:     logger,
 	}
+}
+
+func (u *UserUsecase) Promote(ctx context.Context, user *user_entity.User) error {
+	if err := u.repository.Promote(ctx, user); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *UserUsecase) DeleteExpiredShadows(ctx context.Context) (int64, error) {
+	count, err := u.repository.DeleteExpiredShadows(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (u *UserUsecase) GetAll(ctx context.Context, limit, offset int) ([]user_entity.User, error) {
