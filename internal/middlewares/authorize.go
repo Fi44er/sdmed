@@ -186,6 +186,25 @@ func Guest() fiber.Handler {
 	}
 }
 
+func decodeActiveSession(sessionData map[string]any) (*auth_entity.ActiveSession, error) {
+	var userSession auth_entity.ActiveSession
+	config := &mapstructure.DecoderConfig{
+		TagName: "json",
+		Result:  &userSession,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeHookFunc(time.RFC3339),
+		),
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return nil, err
+	}
+	if err := decoder.Decode(sessionData); err != nil {
+		return nil, err
+	}
+	return &userSession, nil
+}
+
 func Authorize(obj, act string) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		val := ctx.Locals(ManagerKey)
@@ -211,8 +230,8 @@ func Authorize(obj, act string) fiber.Handler {
 			})
 		}
 
-		var userSession auth_entity.ActiveSession
-		if err := mapstructure.Decode(sessionData, &userSession); err != nil {
+		userSession, err := decodeActiveSession(sessionData)
+		if err != nil {
 			return fmt.Errorf("failed to decode session data: %v", err)
 		}
 
@@ -253,8 +272,8 @@ func RequireAuth() fiber.Handler {
 			})
 		}
 
-		var userSession auth_entity.ActiveSession
-		if err := mapstructure.Decode(sessionData, &userSession); err != nil {
+		userSession, err := decodeActiveSession(sessionData)
+		if err != nil {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Invalid session data",
 			})

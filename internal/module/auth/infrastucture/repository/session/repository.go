@@ -72,7 +72,15 @@ func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *aut
 	}
 
 	var data map[string]any
-	if err := mapstructure.Decode(sessionInfo, &data); err != nil {
+	config := &mapstructure.DecoderConfig{
+		TagName: "json",
+		Result:  &data,
+	}
+	decoder, err := mapstructure.NewDecoder(config)
+	if err != nil {
+		return fmt.Errorf("failed to create encoder: %w", err)
+	}
+	if err := decoder.Decode(sessionInfo); err != nil {
 		return fmt.Errorf("failed to encode session info: %w", err)
 	}
 	session.Put(sessionInfoKey, data)

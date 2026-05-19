@@ -31,7 +31,7 @@ g = _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = g(r.sub, p.sub) && r.obj == p.obj && r.act == p.act
+m = g(r.sub, p.sub) && (p.obj == "*" || r.obj == p.obj) && (p.act == "*" || r.act == p.act)
 `
 
 func NewManager(db *gorm.DB, userUsecaseAdapter *auth_adapters.UserUsecaseAdapter) (*Manager, error) {

@@ -51,6 +51,99 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 		}
 	}
 
+	// Always seed default roles and permissions if they do not exist
+	if err := SeedRolesAndPermissions(db, log); err != nil {
+		log.Errorf("✖ Failed to seed roles and permissions: %v", err)
+		return err
+	}
+
 	log.Info("✅ Database connection successfully")
 	return nil
 }
+
+func SeedRolesAndPermissions(db *gorm.DB, log *logger.Logger) error {
+	var count int64
+	if err := db.Model(&user_model.Role{}).Count(&count).Error; err != nil {
+		log.Errorf("Failed to count roles: %v", err)
+		return err
+	}
+	if count > 0 {
+		log.Info("Roles already seeded")
+		return nil
+	}
+
+	log.Info("🌱 Seeding roles and permissions...")
+
+	// 1. Create all unique permissions
+	permissionsList := []string{
+		"*:*",
+		"orders:all",
+		"orders:my",
+		"products:write",
+		"products:read",
+		"categories:write",
+		"categories:read",
+		"scraper:read",
+		"scraper:write",
+		"users:all",
+	}
+
+	permMap := make(map[string]user_model.Permission)
+	for _, name := range permissionsList {
+		perm := user_model.Permission{
+			Name: name,
+		}
+		if err := db.Create(&perm).Error; err != nil {
+			log.Errorf("Failed to create permission %s: %v", name, err)
+			return err
+		}
+		permMap[name] = perm
+	}
+
+	// 2. Define roles and their associated permissions
+	rolePermissions := map[string][]string{
+		"admin": {
+			"*:*",
+		},
+		"manager": {
+			"orders:all",
+			"products:write",
+			"products:read",
+			"categories:write",
+			"categories:read",
+			"scraper:read",
+			"scraper:write",
+		},
+		"user": {
+			"orders:my",
+			"products:read",
+			"categories:read",
+		},
+		"guest": {
+			"products:read",
+			"categories:read",
+		},
+	}
+
+	for roleName, permNames := range rolePermissions {
+		var rolePerms []user_model.Permission
+		for _, name := range permNames {
+			if perm, ok := permMap[name]; ok {
+				rolePerms = append(rolePerms, perm)
+			}
+		}
+
+		role := user_model.Role{
+			Name:        roleName,
+			Permissions: rolePerms,
+		}
+		if err := db.Create(&role).Error; err != nil {
+			log.Errorf("Failed to create role %s: %v", roleName, err)
+			return err
+		}
+	}
+
+	log.Info("✅ Seeding roles and permissions completed successfully")
+	return nil
+}
+

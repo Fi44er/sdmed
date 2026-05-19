@@ -1,14 +1,17 @@
 package user_http
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/Fi44er/sdmed/internal/middlewares"
+	"github.com/gofiber/fiber/v2"
+)
 
 func (h *UserHandler) RegisterRoutes(router fiber.Router) {
-	users := router.Group("/users")
+	users := router.Group("/users", middlewares.RequireAuth())
 
-	users.Get("/", h.GetAll)
+	users.Get("/", middlewares.Authorize("users", "all"), h.GetAll)
 	users.Get("/me", h.GetMy)
-	users.Get("/:id", h.GetByID)
-	users.Post("/", h.Create)
-	users.Put("/:id", h.Update)
-	users.Delete("/:id", h.Delete)
+	users.Get("/:id", middlewares.Authorize("users", "all"), h.GetByID)
+	users.Post("/", middlewares.Authorize("users", "all"), h.Create)
+	users.Put("/:id", middlewares.Authorize("users", "all"), h.Update)
+	users.Delete("/:id", middlewares.Authorize("users", "all"), h.Delete)
 }
