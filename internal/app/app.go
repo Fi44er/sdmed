@@ -355,6 +355,12 @@ func (app *App) initRouter() error {
 	app.moduleProvider.fileModule.InitDelivery(api)
 	app.moduleProvider.productModule.InitDelivery(api)
 	app.moduleProvider.scraperModule.InitDelivery(api)
+	app.moduleProvider.cartModule.InitDelivery(api)
+	app.moduleProvider.orderModule.InitDelivery(
+		api,
+		middlewares.RequireAuth(),
+		middlewares.Authorize("orders", "all"),
+	)
 
 	return nil
 }

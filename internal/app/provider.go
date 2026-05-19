@@ -2,12 +2,14 @@ package app
 
 import (
 	auth_module "github.com/Fi44er/sdmed/internal/module/auth"
+	cart_module "github.com/Fi44er/sdmed/internal/module/cart"
 	file_module "github.com/Fi44er/sdmed/internal/module/file"
 	notification_module "github.com/Fi44er/sdmed/internal/module/notification"
 	product_module "github.com/Fi44er/sdmed/internal/module/product"
 	scraper_module "github.com/Fi44er/sdmed/internal/module/scraper"
 	tru_module "github.com/Fi44er/sdmed/internal/module/tru"
 	user_module "github.com/Fi44er/sdmed/internal/module/user"
+	order_module "github.com/Fi44er/sdmed/internal/module/order"
 )
 
 type moduleProvider struct {
@@ -20,6 +22,8 @@ type moduleProvider struct {
 	productModule      *product_module.ProductModule
 	scraperModule      *scraper_module.ScraperModule
 	truModule          *tru_module.TruModule
+	cartModule         *cart_module.CartModule
+	orderModule        *order_module.OrderModule
 }
 
 func NewModuleProvider(app *App) (*moduleProvider, error) {
@@ -38,11 +42,13 @@ func (p *moduleProvider) initDeps() error {
 	inits := []func() error{
 		p.UserModule,
 		p.NotificationModule,
-		p.AuthModule,
 		p.FileModule,
 		p.ProductModule,
 		p.TruModule,
 		p.ScraperModule,
+		p.CartModule,
+		p.OrderModule,
+		p.AuthModule,
 	}
 	for _, init := range inits {
 		err := init()
@@ -88,6 +94,7 @@ func (p *moduleProvider) AuthModule() error {
 		p.userModule.GetUserUsecase(),
 		p.userModule.GetRoleUsecase(),
 		p.notificationModule.GetNotificationService(),
+		p.cartModule.GetCartMigrator(),
 	)
 	p.authModule.Init()
 	return nil
@@ -125,5 +132,33 @@ func (p *moduleProvider) TruModule() error {
 		p.app.db,
 	)
 	p.truModule.Init()
+	return nil
+}
+
+func (p *moduleProvider) CartModule() error {
+	p.cartModule = cart_module.NewCartModule(
+		p.app.db,
+		p.app.logger,
+		p.app.validator,
+		p.app.uow,
+		p.productModule.GetProductUsecase(),
+		p.truModule.GetTRUCodeUsecase(),
+	)
+	p.cartModule.Init()
+	return nil
+}
+
+func (p *moduleProvider) OrderModule() error {
+	p.orderModule = order_module.NewOrderModule(
+		p.app.db,
+		p.app.logger,
+		p.app.validator,
+		p.app.config,
+		p.cartModule.GetUsecase(),
+		p.productModule.GetProductUsecase(),
+		p.truModule.GetTRUCodeUsecase(),
+		p.notificationModule.GetNotificationService(),
+	)
+	p.orderModule.Init()
 	return nil
 }

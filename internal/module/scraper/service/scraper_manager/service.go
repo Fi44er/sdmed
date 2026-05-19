@@ -119,8 +119,8 @@ func (s *ScraperManagerService) runWorkflow(ctx context.Context, params scraper_
 
 func (s *ScraperManagerService) syncWithDatabase(ctx context.Context, data []enrichedResult, start, weight float64) error {
 	truGroup := make(map[string]*scraper_entity.TRUCode)
-	var products []scraper_entity.Product
 
+	// 1. Группируем ТРУ-коды и их цены
 	for _, res := range data {
 		code := res.TRU
 		if code == "" {
@@ -141,12 +141,9 @@ func (s *ScraperManagerService) syncWithDatabase(ctx context.Context, data []enr
 				Price:     regItem.Price,
 			})
 		}
-
-		for _, p := range res.Item.Product {
-			products = append(products, scraper_entity.Product{Article: p.Article, Name: p.Name})
-		}
 	}
 
+	// 2. Получаем ID для существующих ТРУ-кодов перед Upsert
 	truToUpsert := make([]*scraper_entity.TRUCode, 0, len(truGroup))
 	for code, entity := range truGroup {
 		existing, err := s.truCodeUseCase.GetByCode(ctx, code)
@@ -156,6 +153,7 @@ func (s *ScraperManagerService) syncWithDatabase(ctx context.Context, data []enr
 		truToUpsert = append(truToUpsert, entity)
 	}
 
+	// 3. Выполняем UpsertMany для ТРУ-кодов
 	if len(truToUpsert) > 0 {
 		truChunks := chunkSlice(truToUpsert, 100)
 		for i, chunk := range truChunks {
@@ -167,6 +165,39 @@ func (s *ScraperManagerService) syncWithDatabase(ctx context.Context, data []enr
 		}
 	}
 
+	// 4. Опрашиваем ТРУ-коды из базы данных, чтобы гарантированно получить ID (особенно для новых ТРУ-кодов)
+	truCodeIDMap := make(map[string]string)
+	for code := range truGroup {
+		existing, err := s.truCodeUseCase.GetByCode(ctx, code)
+		if err == nil && existing != nil {
+			truCodeIDMap[code] = existing.ID
+		}
+	}
+
+	// 5. Собираем товары и автоматически связываем их с ТРУ-кодами
+	var products []scraper_entity.Product
+	for _, res := range data {
+		code := res.TRU
+		if code == "" {
+			code = res.Item.CategoryArticle
+		}
+
+		var truCodeIDPointer *string
+		if id, exists := truCodeIDMap[code]; exists && id != "" {
+			val := id
+			truCodeIDPointer = &val
+		}
+
+		for _, p := range res.Item.Product {
+			products = append(products, scraper_entity.Product{
+				Article:   p.Article,
+				Name:      p.Name,
+				TRUCodeID: truCodeIDPointer, // Связываем товар с ID ТРУ-кода
+			})
+		}
+	}
+
+	// 6. Выполняем сохранение товаров
 	if len(products) > 0 {
 		productChunks := chunkSlice(products, 500)
 		productStartOffset := start + (weight / 2)
@@ -175,7 +206,7 @@ func (s *ScraperManagerService) syncWithDatabase(ctx context.Context, data []enr
 			s.updateGlobalStatus(weight/2, productStartOffset, i+1, len(productChunks),
 				fmt.Sprintf("БД: Сохранение товаров (%d/%d)", i+1, len(productChunks)))
 			chunk := make([]*scraper_entity.Product, 0, len(c))
-			for idx, _ := range c {
+			for idx := range c {
 				chunk = append(chunk, &c[idx])
 			}
 			if err := s.productUseCase.CreateMany(ctx, chunk); err != nil {

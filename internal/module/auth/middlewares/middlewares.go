@@ -49,6 +49,16 @@ func (m *AuthMiddleware) Guest() fiber.Handler {
 			sess.Put("session_info", newData)
 		}
 
+		// Устанавливаем данные в Locals если они есть в сессии
+		if sessionData, ok := sess.Get("session_info").(map[string]any); ok {
+			if userID, ok := sessionData["user_id"].(string); ok {
+				ctx.Locals("user_id", userID)
+			}
+			if isShadow, ok := sessionData["is_shadow"].(bool); ok {
+				ctx.Locals("is_shadow", isShadow)
+			}
+		}
+
 		return ctx.Next()
 	}
 }
@@ -100,6 +110,10 @@ func (m *AuthMiddleware) Authorize(obj, act string) fiber.Handler {
 			})
 		}
 
+		// Устанавливаем данные в Locals
+		ctx.Locals("user_id", userSession.UserID)
+		ctx.Locals("is_shadow", userSession.IsShadow)
+
 		return ctx.Next()
 	}
 }
@@ -134,6 +148,10 @@ func (m *AuthMiddleware) RequireAuth() fiber.Handler {
 				"message": "Please sign in to access this resource",
 			})
 		}
+
+		// Устанавливаем данные в Locals
+		ctx.Locals("user_id", userSession.UserID)
+		ctx.Locals("is_shadow", userSession.IsShadow)
 
 		return ctx.Next()
 	}

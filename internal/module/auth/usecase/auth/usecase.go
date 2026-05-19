@@ -40,6 +40,7 @@ type AuthUsecase struct {
 	sessionRepository     contracts.ISessionRepository
 	userSessionRepository contracts.IUserSessionRepository
 	shadowUserService     contracts.IShadowUserService
+	cartMigrator          contracts.ICartMigrator
 }
 
 func NewAuthUsecase(
@@ -51,6 +52,7 @@ func NewAuthUsecase(
 	sessionRepository contracts.ISessionRepository,
 	userSessionRepository contracts.IUserSessionRepository,
 	shadowUserService contracts.IShadowUserService,
+	cartMigrator contracts.ICartMigrator,
 ) *AuthUsecase {
 	return &AuthUsecase{
 		logger:                logger,
@@ -61,6 +63,7 @@ func NewAuthUsecase(
 		sessionRepository:     sessionRepository,
 		userSessionRepository: userSessionRepository,
 		shadowUserService:     shadowUserService,
+		cartMigrator:          cartMigrator,
 	}
 }
 
@@ -126,6 +129,13 @@ func (u *AuthUsecase) SignIn(ctx context.Context, user *auth_entity.User) error 
 			dbSession.LastUsedAt = time.Now()
 			if err := u.userSessionRepository.Update(ctx, dbSession); err != nil {
 				u.logger.Errorf("failed to update session: %v", err)
+			}
+		}
+
+		// Миграция корзины из shadow user в основной аккаунт
+		if u.cartMigrator != nil {
+			if err := u.cartMigrator.Migrate(ctx, currentSession.UserID, existingUser.ID); err != nil {
+				u.logger.Errorf("failed to migrate cart from shadow user %s: %v", currentSession.UserID, err)
 			}
 		}
 	} else {

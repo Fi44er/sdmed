@@ -11,6 +11,7 @@ type CreateProductRequest struct {
 	Images               []string           `json:"images" validate:"required,min=1,dive,url"`
 	CategoryID           string             `json:"category_id" validate:"omitempty"`
 	CharacteristicValues []CharValueRequest `json:"characteristic_values" validate:"omitempty"`
+	TRUCodeID            *string            `json:"tru_code_id" validate:"omitempty,uuid4"`
 }
 
 type ProductResponse struct {
@@ -23,6 +24,7 @@ type ProductResponse struct {
 	IsActive             bool                `json:"is_active"`
 	Images               []FileResponse      `json:"images"`
 	CharacteristicValues []CharValueResponse `json:"characteristic_values"`
+	TRUCodeID            *string             `json:"tru_code_id"`
 	CreateAt             time.Time           `json:"created_at"`
 	UpdateAt             time.Time           `json:"updated_at"`
 }

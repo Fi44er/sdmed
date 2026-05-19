@@ -76,8 +76,6 @@ func (r *SessionRepository) PutSessionInfo(ctx context.Context, sessionInfo *aut
 		return fmt.Errorf("failed to encode session info: %w", err)
 	}
 	session.Put(sessionInfoKey, data)
-
-	session.Put(sessionInfoKey, sessionInfo)
 	return nil
 }
 

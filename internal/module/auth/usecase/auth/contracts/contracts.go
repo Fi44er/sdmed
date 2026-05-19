@@ -53,3 +53,7 @@ type IShadowUserService interface {
 	PromoteToRealUser(ctx context.Context, shadowUserID string, user *auth_entity.User) error
 	CleanupExpiredShadows(ctx context.Context) error
 }
+
+type ICartMigrator interface {
+	Migrate(ctx context.Context, fromUserID, toUserID string) error
+}

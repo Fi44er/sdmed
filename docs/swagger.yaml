@@ -48,6 +48,198 @@ definitions:
     - code
     - email
     type: object
+  cart_dto.AddCartItemRequest:
+    properties:
+      dynamic_options:
+        items:
+          $ref: '#/definitions/cart_entity.DynamicOption'
+        type: array
+      iso:
+        type: string
+      product_id:
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - product_id
+    - quantity
+    type: object
+  cart_dto.CartItemResponse:
+    properties:
+      article:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      iso:
+        type: string
+      name:
+        type: string
+      product_id:
+        type: string
+      quantity:
+        type: integer
+      selected_options:
+        items:
+          $ref: '#/definitions/cart_entity.SelectedOptionResponse'
+        type: array
+      total_price:
+        type: number
+      unit_price:
+        type: number
+    type: object
+  cart_dto.CartResponse:
+    properties:
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/cart_dto.CartItemResponse'
+        type: array
+      total_price:
+        type: number
+      total_qty:
+        type: integer
+    type: object
+  cart_dto.MoveCartRequest:
+    properties:
+      user_id:
+        type: string
+    type: object
+  cart_entity.DynamicOption:
+    properties:
+      id:
+        type: string
+      value:
+        type: string
+    type: object
+  cart_entity.SelectedOptionResponse:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  order_dto.ChangeOrderStatusRequest:
+    properties:
+      order_id:
+        type: string
+      status:
+        $ref: '#/definitions/order_entity.OrderStatus'
+    required:
+    - order_id
+    - status
+    type: object
+  order_dto.CreateDirectOrderRequest:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      fio:
+        type: string
+      phone_number:
+        type: string
+      product_id:
+        type: string
+    required:
+    - address
+    - email
+    - fio
+    - phone_number
+    - product_id
+    type: object
+  order_dto.CreateOrderRequest:
+    properties:
+      address:
+        type: string
+      email:
+        type: string
+      fio:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - address
+    - email
+    - fio
+    - phone_number
+    type: object
+  order_entity.Order:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      email:
+        type: string
+      fio:
+        type: string
+      fragmentLink:
+        type: string
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/order_entity.OrderItem'
+        type: array
+      phone:
+        type: string
+      status:
+        $ref: '#/definitions/order_entity.OrderStatus'
+      totalPrice:
+        format: float64
+        type: number
+      updatedAt:
+        type: string
+      userID:
+        type: string
+    type: object
+  order_entity.OrderItem:
+    properties:
+      article:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      orderID:
+        type: string
+      price:
+        format: float64
+        type: number
+      productID:
+        type: string
+      quantity:
+        type: integer
+      selectedOptions:
+        description: JSON data
+      totalPrice:
+        format: float64
+        type: number
+      updatedAt:
+        type: string
+    type: object
+  order_entity.OrderStatus:
+    enum:
+    - pending
+    - paid
+    - cancelled
+    - refunded
+    - shipping
+    - completed
+    type: string
+    x-enum-varnames:
+    - OrderStatusPending
+    - OrderStatusPaid
+    - OrderStatusCancelled
+    - OrderStatusRefunded
+    - OrderStatusShpping
+    - OrderStatusCompleted
   product_dto.CategoryResponse:
     properties:
       characteristics:
@@ -178,6 +370,8 @@ definitions:
       name:
         maxLength: 100
         minLength: 2
+        type: string
+      tru_code_id:
         type: string
     required:
     - article
@@ -623,6 +817,110 @@ paths:
       summary: VerifyCode
       tags:
       - Auth
+  /cart:
+    get:
+      consumes:
+      - application/json
+      description: Get cart for current user or session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cart_dto.CartResponse'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get cart
+      tags:
+      - cart
+  /cart/items:
+    post:
+      consumes:
+      - application/json
+      description: Add item to cart for current user or session
+      parameters:
+      - description: Cart Item
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/cart_dto.AddCartItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cart_dto.CartResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Add item to cart
+      tags:
+      - cart
+  /cart/items/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete item from cart for current user or session
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/cart_dto.CartResponse'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Delete item from cart
+      tags:
+      - cart
+  /cart/move:
+    post:
+      consumes:
+      - application/json
+      description: Move session cart to user after login
+      parameters:
+      - description: Move Data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/cart_dto.MoveCartRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Move session cart to user
+      tags:
+      - cart
   /categories:
     get:
       consumes:
@@ -872,6 +1170,157 @@ paths:
       summary: Upload Temporary File
       tags:
       - files
+  /orders:
+    post:
+      consumes:
+      - application/json
+      description: Create a new order using items in the user's current cart and generate
+        a PayKeeper payment link
+      parameters:
+      - description: Order Details
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/order_dto.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Create order from cart
+      tags:
+      - orders
+  /orders/admin:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of all orders in the system
+      parameters:
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/order_entity.Order'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get all orders (Admin only)
+      tags:
+      - orders
+  /orders/admin/status:
+    post:
+      consumes:
+      - application/json
+      description: Update the status of an existing order
+      parameters:
+      - description: Status Details
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/order_dto.ChangeOrderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Change order status (Admin only)
+      tags:
+      - orders
+  /orders/direct:
+    post:
+      consumes:
+      - application/json
+      description: Create a direct order for a single product without using the cart
+        and generate a PayKeeper payment link
+      parameters:
+      - description: Direct Order Details
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/order_dto.CreateDirectOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Create direct order
+      tags:
+      - orders
+  /orders/my:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all orders belonging to the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/order_entity.Order'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Get my orders
+      tags:
+      - orders
   /products:
     get:
       consumes:

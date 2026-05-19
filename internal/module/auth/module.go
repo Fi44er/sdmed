@@ -12,7 +12,9 @@ import (
 	user_session_repository "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/repository/user_session"
 	accessmanager_service "github.com/Fi44er/sdmed/internal/module/auth/usecase/access_manager"
 	auth_usecase "github.com/Fi44er/sdmed/internal/module/auth/usecase/auth"
+	session_usecase "github.com/Fi44er/sdmed/internal/module/auth/usecase/session"
 	"github.com/Fi44er/sdmed/internal/module/auth/usecase/shadow_user"
+	auth_usecase_contracts "github.com/Fi44er/sdmed/internal/module/auth/usecase/auth/contracts"
 	"github.com/Fi44er/sdmed/internal/module/notification/service"
 	role_usecase "github.com/Fi44er/sdmed/internal/module/user/usecase/role"
 	user_usecase "github.com/Fi44er/sdmed/internal/module/user/usecase/user"
@@ -34,6 +36,7 @@ type AuthModule struct {
 	userSessionRepository user_session_repository.IUserSessionRepository
 	shadowUserUsecase     shadow_user.IShadowUserService
 	shadowUserCleaner     *shadow_user.ShadowUserCleaner
+	sessionUsecase        *session_usecase.SessionUseCase
 
 	accessManager *accessmanager_service.Manager
 
@@ -42,6 +45,8 @@ type AuthModule struct {
 	db           *gorm.DB
 	redisManager redis.IRedisManager
 	config       *config.Config
+
+	cartMigrator auth_usecase_contracts.ICartMigrator
 }
 
 func NewAuthModule(
@@ -53,6 +58,7 @@ func NewAuthModule(
 	userUsecase *user_usecase.UserUsecase,
 	roleUsecase role_usecase.IRoleUsecase,
 	notificationService *service.NotificationService,
+	cartMigrator auth_usecase_contracts.ICartMigrator,
 ) *AuthModule {
 	return &AuthModule{
 		logger:             logger,
@@ -63,6 +69,7 @@ func NewAuthModule(
 		userUsecase:        userUsecase,
 		roleUsecase:        roleUsecase,
 		notificationServce: notificationService,
+		cartMigrator:       cartMigrator,
 	}
 }
 
@@ -81,7 +88,9 @@ func (m *AuthModule) Init() {
 		m.sessionRepository,
 		m.userSessionRepository,
 		m.shadowUserUsecase,
+		m.cartMigrator,
 	)
+	m.sessionUsecase = session_usecase.NewSessionUseCase(m.sessionRepository)
 
 	m.authHandler = auth_handler.NewAuthHandler(m.authUsecase, m.logger, m.validator, m.config)
 	m.accessManager, _ = accessmanager_service.NewManager(m.db, m.authAdapters)
@@ -113,4 +122,8 @@ func (m *AuthModule) GetUserSessionRepository() user_session_repository.IUserSes
 
 func (m *AuthModule) GetSessionRepository() *repository.SessionRepository {
 	return m.sessionRepository
+}
+
+func (m *AuthModule) GetSessionUseCase() *session_usecase.SessionUseCase {
+	return m.sessionUsecase
 }

@@ -17,6 +17,7 @@ type IProductUsecase interface {
 	Create(ctx context.Context, product *product_entity.Product) error
 	GetBySlug(ctx context.Context, slug string) (*product_entity.Product, error)
 	GetAll(ctx context.Context, params *product_entity.ProductFilterParams) ([]product_entity.Product, int64, error)
+	GetByID(ctx context.Context, id string) (*product_entity.Product, error)
 
 	GetFilters(ctx context.Context, categoryID string) ([]product_entity.Filter, error)
 	CreateMany(ctx context.Context, products []*product_entity.Product) error
@@ -48,6 +49,16 @@ func NewProductUsecase(
 		fileUsecase:      fileUsecase,
 		charValueUsecase: charValueUsecase,
 	}
+}
+
+func (u *ProductUsecase) GetByID(ctx context.Context, id string) (*product_entity.Product, error) {
+	u.logger.Debugf("Getting product by ID: %s", id)
+	product, err := u.repository.GetByID(ctx, id)
+	if err != nil {
+		u.logger.Errorf("Failed to get product by ID: %v", err)
+		return nil, err
+	}
+	return product, nil
 }
 
 func (u *ProductUsecase) GetAll(ctx context.Context, params *product_entity.ProductFilterParams) ([]product_entity.Product, int64, error) {
@@ -127,11 +138,28 @@ func (u *ProductUsecase) CreateMany(ctx context.Context, products []*product_ent
 			if exist == nil {
 				p.Slogify() // Генерируем слаг
 				toCreate = append(toCreate, p)
+			} else {
+				// Если товар уже существует, но TRUCodeID обновился или привязался впервые, сохраняем изменения
+				shouldUpdate := false
+				if exist.TRUCodeID == nil && p.TRUCodeID != nil {
+					exist.TRUCodeID = p.TRUCodeID
+					shouldUpdate = true
+				} else if exist.TRUCodeID != nil && p.TRUCodeID != nil && *exist.TRUCodeID != *p.TRUCodeID {
+					exist.TRUCodeID = p.TRUCodeID
+					shouldUpdate = true
+				}
+				
+				if shouldUpdate {
+					u.logger.Infof("Updating TRUCodeID for existing product %s to %s", exist.Article, *p.TRUCodeID)
+					if err := productRepo.Update(ctx, exist); err != nil {
+						u.logger.Errorf("Failed to update existing product TRUCodeID: %v", err)
+					}
+				}
 			}
 		}
 
 		if len(toCreate) == 0 {
-			u.logger.Info("All products already exist, skipping")
+			u.logger.Info("All products already exist, checking for links completed")
 			return nil
 		}
 

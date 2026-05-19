@@ -23,6 +23,8 @@ type Product struct {
 	ManualPrice    *float64
 	UseManualPrice bool
 
+	TRUCodeID *string
+
 	IsActive bool
 
 	CreatedAt time.Time

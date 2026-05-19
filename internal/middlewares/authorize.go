@@ -75,6 +75,10 @@ func ShadowSessionMiddleware(
 				}()
 			}
 
+			// Устанавливаем данные в Locals для использования в хендлерах
+			c.Locals("user_id", sessionInfo.UserID)
+			c.Locals("is_shadow", sessionInfo.IsShadow)
+
 			return c.Next()
 		}
 
@@ -137,6 +141,10 @@ func ShadowSessionMiddleware(
 			return c.Next()
 		}
 
+		// Устанавливаем данные в Locals
+		c.Locals("user_id", activeSession.UserID)
+		c.Locals("is_shadow", activeSession.IsShadow)
+
 		return c.Next()
 	}
 }
@@ -162,6 +170,16 @@ func Guest() fiber.Handler {
 				return fmt.Errorf("failed to encode session data for guest user: %w", err)
 			}
 			sess.Put("session_info", newData)
+		}
+
+		// Устанавливаем данные в Locals если они есть в сессии
+		if sessionData, ok := sess.Get("session_info").(map[string]any); ok {
+			if userID, ok := sessionData["user_id"].(string); ok {
+				ctx.Locals("user_id", userID)
+			}
+			if isShadow, ok := sessionData["is_shadow"].(bool); ok {
+				ctx.Locals("is_shadow", isShadow)
+			}
 		}
 
 		return ctx.Next()
@@ -249,6 +267,10 @@ func RequireAuth() fiber.Handler {
 				"message": "Please sign in to access this resource",
 			})
 		}
+
+		// Устанавливаем данные в Locals
+		ctx.Locals("user_id", userSession.UserID)
+		ctx.Locals("is_shadow", userSession.IsShadow)
 
 		return ctx.Next()
 	}

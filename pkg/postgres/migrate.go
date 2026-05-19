@@ -2,7 +2,9 @@ package postgres
 
 import (
 	auth_models "github.com/Fi44er/sdmed/internal/module/auth/infrastucture/repository/models"
+	cart_model "github.com/Fi44er/sdmed/internal/module/cart/infrastructure/repository/model"
 	file_model "github.com/Fi44er/sdmed/internal/module/file/infrastructure/repository/model"
+	order_model "github.com/Fi44er/sdmed/internal/module/order/infrastructure/repository/model"
 	product_model "github.com/Fi44er/sdmed/internal/module/product/infrastructure/repository/model"
 	scraper_models "github.com/Fi44er/sdmed/internal/module/scraper/infrastructure/repository/models"
 	tru_model "github.com/Fi44er/sdmed/internal/module/tru/infrastructure/repository/model"
@@ -31,6 +33,11 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 
 			tru_model.TRUCode{},
 			tru_model.TRUCodePrice{},
+			cart_model.Cart{},
+			cart_model.CartItem{},
+
+			order_model.Order{},
+			order_model.OrderItem{},
 		}
 
 		log.Info("📦 Creating types...")

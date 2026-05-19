@@ -15,6 +15,8 @@ type Product struct {
 	ManualPrice    float64 `gorm:"type:decimal(10,2);not null"`
 	UseManualPrice bool    `gorm:"type:boolean;default:false"`
 
+	TRUCodeID      *string `gorm:"type:uuid;null"`
+
 	IsActive bool `gorm:"type:boolean;default:true"`
 
 	CreatedAt time.Time `gorm:"type:timestamp;default:now();"`

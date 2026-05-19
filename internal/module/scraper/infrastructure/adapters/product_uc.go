@@ -29,7 +29,8 @@ func (a *ProductUsecaseAdapter) CreateMany(ctx context.Context, products []*scra
 
 func (a *ProductUsecaseAdapter) toProductEntity(product *scraper_entity.Product) *product_entity.Product {
 	return &product_entity.Product{
-		Article: product.Article,
-		Name:    product.Name,
+		Article:   product.Article,
+		Name:      product.Name,
+		TRUCodeID: product.TRUCodeID,
 	}
 }

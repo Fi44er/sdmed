@@ -19,6 +19,7 @@ func (c *Converter) ToModel(entity *product_entity.Product) *product_model.Produ
 		Slug:        entity.Slug,
 		Description: entity.Description,
 		CategoryID:  entity.CategoryID,
+		TRUCodeID:   entity.TRUCodeID,
 
 		ManualPrice:    *manualPrice,
 		UseManualPrice: entity.UseManualPrice,
@@ -52,6 +53,7 @@ func (c *Converter) ToEntity(model *product_model.Product) *product_entity.Produ
 		Description: model.Description,
 		CategoryID:  model.CategoryID,
 		CharValues:  charValues,
+		TRUCodeID:   model.TRUCodeID,
 
 		ManualPrice:    &model.ManualPrice,
 		UseManualPrice: model.UseManualPrice,
