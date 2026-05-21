@@ -9,6 +9,8 @@ import (
 	scraper_models "github.com/Fi44er/sdmed/internal/module/scraper/infrastructure/repository/models"
 	tru_model "github.com/Fi44er/sdmed/internal/module/tru/infrastructure/repository/model"
 	user_model "github.com/Fi44er/sdmed/internal/module/user/infrastructure/repository/model"
+	chat_models "github.com/Fi44er/sdmed/internal/module/chat/infrastructure/repository/model"
+	notification_models "github.com/Fi44er/sdmed/internal/module/notification/infrastructure/repository/model"
 	"github.com/Fi44er/sdmed/pkg/logger"
 	"gorm.io/gorm"
 )
@@ -38,6 +40,12 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 
 			order_model.Order{},
 			order_model.OrderItem{},
+
+			chat_models.Chat{},
+			chat_models.Message{},
+			chat_models.ChatParticipant{},
+
+			notification_models.Notification{},
 		}
 
 		log.Info("📦 Creating types...")
@@ -62,19 +70,9 @@ func Migrate(db *gorm.DB, trigger bool, log *logger.Logger) error {
 }
 
 func SeedRolesAndPermissions(db *gorm.DB, log *logger.Logger) error {
-	var count int64
-	if err := db.Model(&user_model.Role{}).Count(&count).Error; err != nil {
-		log.Errorf("Failed to count roles: %v", err)
-		return err
-	}
-	if count > 0 {
-		log.Info("Roles already seeded")
-		return nil
-	}
+	log.Info("🌱 Ensuring roles and permissions are up-to-date...")
 
-	log.Info("🌱 Seeding roles and permissions...")
-
-	// 1. Create all unique permissions
+	// 1. Create all unique permissions if they don't exist
 	permissionsList := []string{
 		"*:*",
 		"orders:all",
@@ -86,16 +84,25 @@ func SeedRolesAndPermissions(db *gorm.DB, log *logger.Logger) error {
 		"scraper:read",
 		"scraper:write",
 		"users:all",
+		"tickets:my",
+		"tickets:all",
 	}
 
 	permMap := make(map[string]user_model.Permission)
 	for _, name := range permissionsList {
-		perm := user_model.Permission{
-			Name: name,
-		}
-		if err := db.Create(&perm).Error; err != nil {
-			log.Errorf("Failed to create permission %s: %v", name, err)
-			return err
+		var perm user_model.Permission
+		err := db.Where("name = ?", name).First(&perm).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				perm = user_model.Permission{Name: name}
+				if err := db.Create(&perm).Error; err != nil {
+					log.Errorf("Failed to create permission %s: %v", name, err)
+					return err
+				}
+			} else {
+				log.Errorf("Failed to check permission %s: %v", name, err)
+				return err
+			}
 		}
 		permMap[name] = perm
 	}
@@ -113,11 +120,13 @@ func SeedRolesAndPermissions(db *gorm.DB, log *logger.Logger) error {
 			"categories:read",
 			"scraper:read",
 			"scraper:write",
+			"tickets:all",
 		},
 		"user": {
 			"orders:my",
 			"products:read",
 			"categories:read",
+			"tickets:my",
 		},
 		"guest": {
 			"products:read",
@@ -126,24 +135,57 @@ func SeedRolesAndPermissions(db *gorm.DB, log *logger.Logger) error {
 	}
 
 	for roleName, permNames := range rolePermissions {
-		var rolePerms []user_model.Permission
-		for _, name := range permNames {
-			if perm, ok := permMap[name]; ok {
-				rolePerms = append(rolePerms, perm)
+		var role user_model.Role
+		err := db.Preload("Permissions").Where("name = ?", roleName).First(&role).Error
+		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				// Role doesn't exist, create it with all permissions
+				var rolePerms []user_model.Permission
+				for _, name := range permNames {
+					if perm, ok := permMap[name]; ok {
+						rolePerms = append(rolePerms, perm)
+					}
+				}
+				role = user_model.Role{
+					Name:        roleName,
+					Permissions: rolePerms,
+				}
+				if err := db.Create(&role).Error; err != nil {
+					log.Errorf("Failed to create role %s: %v", roleName, err)
+					return err
+				}
+				log.Infof("Created role %s with initial permissions", roleName)
+			} else {
+				log.Errorf("Failed to check role %s: %v", roleName, err)
+				return err
 			}
-		}
+		} else {
+			// Role exists, ensure all permissions are attached
+			existingPerms := make(map[string]bool)
+			for _, p := range role.Permissions {
+				existingPerms[p.Name] = true
+			}
 
-		role := user_model.Role{
-			Name:        roleName,
-			Permissions: rolePerms,
-		}
-		if err := db.Create(&role).Error; err != nil {
-			log.Errorf("Failed to create role %s: %v", roleName, err)
-			return err
+			var permsToAppend []user_model.Permission
+			for _, name := range permNames {
+				if !existingPerms[name] {
+					if perm, ok := permMap[name]; ok {
+						permsToAppend = append(permsToAppend, perm)
+					}
+				}
+			}
+
+			if len(permsToAppend) > 0 {
+				if err := db.Model(&role).Association("Permissions").Append(permsToAppend); err != nil {
+					log.Errorf("Failed to append missing permissions to role %s: %v", roleName, err)
+					return err
+				}
+				log.Infof("Appended %d missing permissions to role %s", len(permsToAppend), roleName)
+			}
 		}
 	}
 
-	log.Info("✅ Seeding roles and permissions completed successfully")
+	log.Info("✅ Ensuring roles and permissions completed successfully")
 	return nil
 }
 

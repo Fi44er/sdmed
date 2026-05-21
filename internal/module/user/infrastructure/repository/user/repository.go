@@ -181,3 +181,24 @@ func (r *UserRepository) GetAll(ctx context.Context, limit int, offset int) ([]u
 	r.logger.Info("Users got successfully")
 	return users, nil
 }
+
+func (r *UserRepository) GetByRole(ctx context.Context, roleName string) ([]user_entity.User, error) {
+	r.logger.Infof("Getting users by role: %s", roleName)
+	var userModels []user_model.User
+	err := r.db.WithContext(ctx).
+		Joins("JOIN user_roles ur ON ur.user_id = users.id").
+		Joins("JOIN roles r ON r.id = ur.role_id").
+		Where("r.name = ?", roleName).
+		Preload("Roles").
+		Find(&userModels).Error
+	if err != nil {
+		r.logger.Errorf("Error getting users by role %s: %v", roleName, err)
+		return nil, err
+	}
+	users := make([]user_entity.User, len(userModels))
+	for i, userModel := range userModels {
+		users[i] = *r.converter.ToEntity(&userModel)
+	}
+	r.logger.Infof("Successfully retrieved %d users for role %s", len(users), roleName)
+	return users, nil
+}

@@ -10,6 +10,7 @@ import (
 	tru_module "github.com/Fi44er/sdmed/internal/module/tru"
 	user_module "github.com/Fi44er/sdmed/internal/module/user"
 	order_module "github.com/Fi44er/sdmed/internal/module/order"
+	chat_module "github.com/Fi44er/sdmed/internal/module/chat"
 )
 
 type moduleProvider struct {
@@ -24,6 +25,7 @@ type moduleProvider struct {
 	truModule          *tru_module.TruModule
 	cartModule         *cart_module.CartModule
 	orderModule        *order_module.OrderModule
+	chatModule         *chat_module.ChatModule
 }
 
 func NewModuleProvider(app *App) (*moduleProvider, error) {
@@ -48,6 +50,7 @@ func (p *moduleProvider) initDeps() error {
 		p.ScraperModule,
 		p.CartModule,
 		p.OrderModule,
+		p.ChatModule,
 		p.AuthModule,
 	}
 	for _, init := range inits {
@@ -67,7 +70,7 @@ func (p *moduleProvider) UserModule() error {
 }
 
 func (p *moduleProvider) NotificationModule() error {
-	p.notificationModule = notification_module.NewNotificationModule(p.app.logger, p.app.config)
+	p.notificationModule = notification_module.NewNotificationModule(p.app.logger, p.app.config, p.app.db)
 	p.notificationModule.Init()
 	return nil
 }
@@ -160,5 +163,18 @@ func (p *moduleProvider) OrderModule() error {
 		p.notificationModule.GetNotificationService(),
 	)
 	p.orderModule.Init()
+	return nil
+}
+
+func (p *moduleProvider) ChatModule() error {
+	p.chatModule = chat_module.NewChatModule(
+		p.app.logger,
+		p.app.db,
+		p.app.validator,
+		p.app.redisClient,
+		p.userModule.GetUserUsecase(),
+		p.notificationModule.GetNotificationService(),
+	)
+	p.chatModule.Init()
 	return nil
 }

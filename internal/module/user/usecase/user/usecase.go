@@ -17,6 +17,7 @@ type IUserRepository interface {
 	Delete(ctx context.Context, id string) error
 	DeleteExpiredShadows(ctx context.Context) (int64, error)
 	Promote(ctx context.Context, user *user_entity.User) error
+	GetByRole(ctx context.Context, roleName string) ([]user_entity.User, error)
 }
 
 type UserUsecase struct {
@@ -120,4 +121,8 @@ func (u *UserUsecase) Delete(ctx context.Context, id string) error {
 
 func (u *UserUsecase) ComparePassword(user *user_entity.User, password string) bool {
 	return user.ComparePassword(password)
+}
+
+func (u *UserUsecase) GetByRole(ctx context.Context, roleName string) ([]user_entity.User, error) {
+	return u.repository.GetByRole(ctx, roleName)
 }

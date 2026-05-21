@@ -23,6 +23,7 @@ import (
 	sessionstore "github.com/Fi44er/sdmed/pkg/session/store"
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/swagger"
@@ -94,6 +95,13 @@ func (app *App) initMiddlewares() error {
 	if origins == "" {
 		origins = "http://localhost:5173,http://localhost:8080"
 	}
+	app.app.Use(func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return c.Next()
+	})
 
 	app.app.Use(cors.New(cors.Config{
 		AllowOrigins:     origins,
@@ -361,6 +369,7 @@ func (app *App) initRouter() error {
 		middlewares.RequireAuth(),
 		middlewares.Authorize("orders", "all"),
 	)
+	app.moduleProvider.chatModule.InitDelivery(api)
 
 	return nil
 }
