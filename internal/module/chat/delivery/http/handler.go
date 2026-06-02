@@ -86,6 +86,15 @@ func (h *ChatHandler) getUserID(c *fiber.Ctx) string {
 	return ""
 }
 
+// CreateTicket godoc
+// @Summary Create a new support ticket
+// @Description Creates a new customer support ticket with the first message
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.CreateTicketDTO true "Ticket creation data"
+// @Router /chat/tickets [post]
 func (h *ChatHandler) CreateTicket(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Creating ticket")
 	userID := h.getUserID(c)
@@ -120,6 +129,16 @@ func (h *ChatHandler) CreateTicket(c *fiber.Ctx) error {
 	return c.Status(201).JSON(fiber.Map{"status": "success", "data": resp})
 }
 
+// SendMessage godoc
+// @Summary Send a message to a ticket
+// @Description Send a new message to an existing ticket
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Ticket ID"
+// @Param request body dto.SendMessageDTO true "Message data"
+// @Router /chat/tickets/{id}/messages [post]
 func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Sending message")
 	userID := h.getUserID(c)
@@ -162,6 +181,15 @@ func (h *ChatHandler) SendMessage(c *fiber.Ctx) error {
 	return c.Status(201).JSON(fiber.Map{"status": "success", "data": resp})
 }
 
+// GetTicketByID godoc
+// @Summary Get ticket by ID
+// @Description Get detailed information about a specific ticket
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Ticket ID"
+// @Router /chat/tickets/{id} [get]
 func (h *ChatHandler) GetTicketByID(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Get ticket by ID")
 	userID := h.getUserID(c)
@@ -190,6 +218,17 @@ func (h *ChatHandler) GetTicketByID(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "data": resp})
 }
 
+// GetTicketMessages godoc
+// @Summary Get ticket messages
+// @Description Get paginated messages for a specific ticket
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Ticket ID"
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Page size" default(20)
+// @Router /chat/tickets/{id}/messages [get]
 func (h *ChatHandler) GetTicketMessages(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Get messages")
 	userID := h.getUserID(c)
@@ -228,6 +267,15 @@ func (h *ChatHandler) GetTicketMessages(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "data": respList})
 }
 
+// CloseTicket godoc
+// @Summary Close a ticket
+// @Description Close an existing ticket
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Ticket ID"
+// @Router /chat/tickets/{id}/close [put]
 func (h *ChatHandler) CloseTicket(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Closing ticket")
 	userID := h.getUserID(c)
@@ -243,6 +291,15 @@ func (h *ChatHandler) CloseTicket(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "ticket closed successfully"})
 }
 
+// AssignTicket godoc
+// @Summary Assign ticket to operator
+// @Description Assign a ticket to the current user (operator)
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Ticket ID"
+// @Router /chat/tickets/{id}/assign [put]
 func (h *ChatHandler) AssignTicket(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Assign ticket to operator")
 	operatorID := h.getUserID(c)
@@ -256,6 +313,15 @@ func (h *ChatHandler) AssignTicket(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "ticket assigned successfully"})
 }
 
+// MarkMessageAsRead godoc
+// @Summary Mark message as read
+// @Description Mark a specific message as read by the current user
+// @Tags messages
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Message ID"
+// @Router /chat/messages/{id}/read [post]
 func (h *ChatHandler) MarkMessageAsRead(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Mark message as read")
 	userID := h.getUserID(c)
@@ -271,6 +337,16 @@ func (h *ChatHandler) MarkMessageAsRead(c *fiber.Ctx) error {
 	return c.Status(200).JSON(fiber.Map{"status": "success", "message": "message marked as read successfully"})
 }
 
+// GetMyTickets godoc
+// @Summary Get my tickets
+// @Description Get all tickets created by the current user (customer view)
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Page size" default(20)
+// @Router /chat/tickets/my [get]
 func (h *ChatHandler) GetMyTickets(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Get my tickets")
 	userID := h.getUserID(c)
@@ -306,6 +382,16 @@ func (h *ChatHandler) GetMyTickets(c *fiber.Ctx) error {
 	})
 }
 
+// GetAllTickets godoc
+// @Summary Get all tickets (admin/manager)
+// @Description Get all tickets with pagination (admin and manager only)
+// @Tags tickets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Page size" default(20)
+// @Router /chat/tickets [get]
 func (h *ChatHandler) GetAllTickets(c *fiber.Ctx) error {
 	h.logger.Info("HTTP: Get all tickets")
 	userID := h.getUserID(c)

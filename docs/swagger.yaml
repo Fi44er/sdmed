@@ -122,6 +122,28 @@ definitions:
       value:
         type: string
     type: object
+  dto.CreateTicketDTO:
+    properties:
+      first_message:
+        type: string
+      priority:
+        maximum: 3
+        minimum: 1
+        type: integer
+      subject:
+        type: string
+    required:
+    - first_message
+    - priority
+    - subject
+    type: object
+  dto.SendMessageDTO:
+    properties:
+      payload:
+        type: string
+    required:
+    - payload
+    type: object
   order_dto.ChangeOrderStatusRequest:
     properties:
       order_id:
@@ -190,7 +212,6 @@ definitions:
       status:
         $ref: '#/definitions/order_entity.OrderStatus'
       totalPrice:
-        format: float64
         type: number
       updatedAt:
         type: string
@@ -210,7 +231,6 @@ definitions:
       orderID:
         type: string
       price:
-        format: float64
         type: number
       productID:
         type: string
@@ -219,7 +239,6 @@ definitions:
       selectedOptions:
         description: JSON data
       totalPrice:
-        format: float64
         type: number
       updatedAt:
         type: string
@@ -1106,6 +1125,202 @@ paths:
       summary: Get category by slug
       tags:
       - categories
+  /chat/messages/{id}/read:
+    post:
+      consumes:
+      - application/json
+      description: Mark a specific message as read by the current user
+      parameters:
+      - description: Message ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Mark message as read
+      tags:
+      - messages
+  /chat/tickets:
+    get:
+      consumes:
+      - application/json
+      description: Get all tickets with pagination (admin and manager only)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get all tickets (admin/manager)
+      tags:
+      - tickets
+    post:
+      consumes:
+      - application/json
+      description: Creates a new customer support ticket with the first message
+      parameters:
+      - description: Ticket creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTicketDTO'
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Create a new support ticket
+      tags:
+      - tickets
+  /chat/tickets/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a specific ticket
+      parameters:
+      - description: Ticket ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get ticket by ID
+      tags:
+      - tickets
+  /chat/tickets/{id}/assign:
+    put:
+      consumes:
+      - application/json
+      description: Assign a ticket to the current user (operator)
+      parameters:
+      - description: Ticket ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Assign ticket to operator
+      tags:
+      - tickets
+  /chat/tickets/{id}/close:
+    put:
+      consumes:
+      - application/json
+      description: Close an existing ticket
+      parameters:
+      - description: Ticket ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Close a ticket
+      tags:
+      - tickets
+  /chat/tickets/{id}/messages:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated messages for a specific ticket
+      parameters:
+      - description: Ticket ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get ticket messages
+      tags:
+      - tickets
+    post:
+      consumes:
+      - application/json
+      description: Send a new message to an existing ticket
+      parameters:
+      - description: Ticket ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Message data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SendMessageDTO'
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Send a message to a ticket
+      tags:
+      - tickets
+  /chat/tickets/my:
+    get:
+      consumes:
+      - application/json
+      description: Get all tickets created by the current user (customer view)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get my tickets
+      tags:
+      - tickets
   /files/{name}:
     get:
       consumes:
